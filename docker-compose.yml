@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  db-veterinaria:
+    image: mysql:8.0
+    container_name: db-veterinaria-mysql
+    restart: unless-stopped
+    ports:
+      - "${DB_HOST_PORT}:3307"
+    environment:
+      # Lee las credenciales del archivo .env
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - ./init-scripts:/docker-entrypoint-initdb.d
