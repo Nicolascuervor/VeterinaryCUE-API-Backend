@@ -1,6 +1,6 @@
 package co.cue.inventario_service.mapper;
 
-import co.cue.inventario_service.models.dtos.*;
+
 import co.cue.inventario_service.models.dtos.requestdtos.AccesorioRequestDTO;
 import co.cue.inventario_service.models.dtos.requestdtos.AlimentoRequestDTO;
 import co.cue.inventario_service.models.dtos.requestdtos.MedicinaRequestDTO;
@@ -12,8 +12,6 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class ProductoMapper {
-
-
     public Alimento mapToEntity(AlimentoRequestDTO dto) {
         Alimento entity = new Alimento();
         mapBaseRequestToEntity(dto, entity);

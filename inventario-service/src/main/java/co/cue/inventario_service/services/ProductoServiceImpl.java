@@ -1,7 +1,6 @@
 package co.cue.inventario_service.services;
 
 import co.cue.inventario_service.mapper.ProductoMapper;
-import co.cue.inventario_service.models.dtos.*;
 import co.cue.inventario_service.models.dtos.requestdtos.AccesorioRequestDTO;
 import co.cue.inventario_service.models.dtos.requestdtos.AlimentoRequestDTO;
 import co.cue.inventario_service.models.dtos.requestdtos.MedicinaRequestDTO;
@@ -20,7 +19,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-@AllArgsConstructor // (Mentor): Inyección por constructor
+@AllArgsConstructor
 public class ProductoServiceImpl implements IProductoService {
 
     // (Mentor): Inyectamos todos los componentes que necesitamos.
@@ -33,7 +32,6 @@ public class ProductoServiceImpl implements IProductoService {
     public List<ProductoResponseDTO> listAllActiveProductos() {
         return productoRepository.findAllByActivoTrue()
                 .stream()
-                // (Mentor): Usamos el mapper para convertir cada entidad al DTO polimórfico
                 .map(productoMapper::mapToResponseDTO)
                 .collect(Collectors.toList());
     }
@@ -48,7 +46,6 @@ public class ProductoServiceImpl implements IProductoService {
     @Override
     @Transactional
     public ProductoResponseDTO createAlimento(AlimentoRequestDTO requestDTO) {
-        // (Mentor): Reutilizamos la lógica de validación y creación
         Alimento alimento = (Alimento) createProducto(requestDTO, productoMapper.mapToEntity(requestDTO));
         return productoMapper.mapToResponseDTO(alimento);
     }

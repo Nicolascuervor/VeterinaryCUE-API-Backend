@@ -1,4 +1,3 @@
-
 CREATE DATABASE IF NOT EXISTS auth_service;
 CREATE DATABASE IF NOT EXISTS administration_service;
 CREATE DATABASE IF NOT EXISTS mascotas_service;
@@ -14,5 +13,10 @@ GRANT ALL PRIVILEGES ON `citas_service`.* TO 'CuervoAdmin'@'%';
 GRANT ALL PRIVILEGES ON `historias_service`.* TO 'CuervoAdmin'@'%';
 GRANT ALL PRIVILEGES ON `inventario_service`.* TO 'CuervoAdmin'@'%';
 GRANT ALL PRIVILEGES ON `facturas_service`.* TO 'CuervoAdmin'@'%';
+
+-- Asegurar que el usuario CuervoAdmin exista y use caching_sha2_password (MySQL 8)
+CREATE USER IF NOT EXISTS 'CuervoAdmin'@'%' IDENTIFIED WITH caching_sha2_password BY '${DB_PASSWORD}';
+-- Si el usuario existía con otro plugin, forzar alteración al plugin recomendado
+ALTER USER 'CuervoAdmin'@'%' IDENTIFIED WITH caching_sha2_password BY '${DB_PASSWORD}';
 
 FLUSH PRIVILEGES;
