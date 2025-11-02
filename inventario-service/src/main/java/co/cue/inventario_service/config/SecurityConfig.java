@@ -11,6 +11,10 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
 
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
+import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
+
+
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.util.Base64;
@@ -28,10 +32,8 @@ public class SecurityConfig {
 
     @Bean
     public JwtDecoder jwtDecoder() {
-        // Decodifica la clave secreta desde Base64
         byte[] keyBytes = Base64.getDecoder().decode(secretKey);
         SecretKey key = new SecretKeySpec(keyBytes, "HmacSHA256");
-
         return NimbusJwtDecoder.withSecretKey(key).build();
     }
 
@@ -41,25 +43,31 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> {}));
+                .oauth2ResourceServer(oauth2 -> oauth2
+                        .jwt(jwt -> jwt
+                                .jwtAuthenticationConverter(jwtAuthenticationConverter()) // Aplicamos nuestro conversor
+                        )
+                );
 
         http
                 .authorizeHttpRequests(authz -> authz
-                        // REGLA 1 (Pública): GET es público
                         .requestMatchers(HttpMethod.GET, INVENTARIO_API_PATH).permitAll()
-
-                        // REGLA 2 (Admin): POST requiere rol ADMIN
                         .requestMatchers(HttpMethod.POST, INVENTARIO_API_PATH).hasRole(ADMIN_ROLE)
-
-                        // REGLA 3 (Admin): PUT requiere rol ADMIN
                         .requestMatchers(HttpMethod.PUT, INVENTARIO_API_PATH).hasRole(ADMIN_ROLE)
-
-                        // REGLA 4 (Admin): DELETE requiere rol ADMIN
                         .requestMatchers(HttpMethod.DELETE, INVENTARIO_API_PATH).hasRole(ADMIN_ROLE)
-
-                        // REGLA 5 (Fallback): Cualquier otra petición requiere autenticación
                         .anyRequest().authenticated());
-
         return http.build();
     }
+
+
+    @Bean
+    public JwtAuthenticationConverter jwtAuthenticationConverter() {
+        JwtGrantedAuthoritiesConverter grantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();
+        grantedAuthoritiesConverter.setAuthoritiesClaimName("roles");
+        grantedAuthoritiesConverter.setAuthorityPrefix("");
+        JwtAuthenticationConverter jwtConverter = new JwtAuthenticationConverter();
+        jwtConverter.setJwtGrantedAuthoritiesConverter(grantedAuthoritiesConverter);
+        return jwtConverter;
+    }
+
 }
