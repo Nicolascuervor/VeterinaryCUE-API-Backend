@@ -5,12 +5,14 @@ import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
+import org.springframework.http.HttpMethod;
 @Configuration
 public class GatewayConfig {
     @Bean
     public RouteLocator customRouteLocator(RouteLocatorBuilder builder,
-                                           AuthenticationFilter authenticationFilter) { // <-- AÑADIDO AQUÍ
+                                           AuthenticationFilter authenticationFilter) {
+        AuthenticationFilter.Config config = new AuthenticationFilter.Config();
+        var authFilter = authenticationFilter.apply(config);
         return builder.routes()
 
                 // Ruta Pública
@@ -31,7 +33,19 @@ public class GatewayConfig {
                         .filters(f -> f.filter(authenticationFilter.apply(new AuthenticationFilter.Config())))
                         .uri("lb://mascotas-service"))
 
-                // ... (Tus otras rutas protegidas) ...
+                .route("inventario_service_public", r -> r
+                        .path("/api/inventario/**")
+                        .and()
+                        .method(HttpMethod.GET) // <-- Solo aplica a peticiones GET
+                        .uri("lb://inventario-service"))
+
+                // 3. Ruta Privada (Inventario - ESCRITURA)
+                .route("inventario_service_private", r -> r
+                        .path("/api/inventario/**")
+                        .and()
+                        .method(HttpMethod.POST, HttpMethod.PUT, HttpMethod.DELETE)
+                        .filters(f -> f.filter(authFilter))
+                        .uri("lb://inventario-service"))
 
                 .build();
     }
