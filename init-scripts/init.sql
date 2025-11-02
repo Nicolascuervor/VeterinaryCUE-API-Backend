@@ -6,17 +6,16 @@ CREATE DATABASE IF NOT EXISTS historias_service;
 CREATE DATABASE IF NOT EXISTS inventario_service;
 CREATE DATABASE IF NOT EXISTS facturas_service;
 
-GRANT ALL PRIVILEGES ON `auth_service`.* TO 'CuervoAdmin'@'%';
-GRANT ALL PRIVILEGES ON `administration_service`.* TO 'CuervoAdmin'@'%';
-GRANT ALL PRIVILEGES ON `mascotas_service`.* TO 'CuervoAdmin'@'%';
-GRANT ALL PRIVILEGES ON `citas_service`.* TO 'CuervoAdmin'@'%';
-GRANT ALL PRIVILEGES ON `historias_service`.* TO 'CuervoAdmin'@'%';
-GRANT ALL PRIVILEGES ON `inventario_service`.* TO 'CuervoAdmin'@'%';
-GRANT ALL PRIVILEGES ON `facturas_service`.* TO 'CuervoAdmin'@'%';
+-- Crear el usuario con mysql_native_password (compatible con el conector)
+CREATE USER IF NOT EXISTS 'CuervoAdmin'@'%' IDENTIFIED WITH mysql_native_password BY '371211';
 
--- Asegurar que el usuario CuervoAdmin exista y use caching_sha2_password (MySQL 8)
-CREATE USER IF NOT EXISTS 'CuervoAdmin'@'%' IDENTIFIED WITH caching_sha2_password BY '${DB_PASSWORD}';
--- Si el usuario existía con otro plugin, forzar alteración al plugin recomendado
-ALTER USER 'CuervoAdmin'@'%' IDENTIFIED WITH caching_sha2_password BY '${DB_PASSWORD}';
+-- Otorgar permisos
+GRANT ALL PRIVILEGES ON auth_service.* TO 'CuervoAdmin'@'%';
+GRANT ALL PRIVILEGES ON administration_service.* TO 'CuervoAdmin'@'%';
+GRANT ALL PRIVILEGES ON mascotas_service.* TO 'CuervoAdmin'@'%';
+GRANT ALL PRIVILEGES ON citas_service.* TO 'CuervoAdmin'@'%';
+GRANT ALL PRIVILEGES ON historias_service.* TO 'CuervoAdmin'@'%';
+GRANT ALL PRIVILEGES ON inventario_service.* TO 'CuervoAdmin'@'%';
+GRANT ALL PRIVILEGES ON facturas_service.* TO 'CuervoAdmin'@'%';
 
 FLUSH PRIVILEGES;
