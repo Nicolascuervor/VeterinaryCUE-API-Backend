@@ -10,7 +10,6 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
@@ -62,15 +61,16 @@ public class Usuario implements UserDetails{
         @Column(nullable = false)
         private LocalDateTime updatedAt;
 
-        public Usuario(String nombre, String apellido, String correo, String contrasenia, String direccion, String telefono, Role userRole) {
-            this.nombre = nombre;
-            this.apellido = apellido;
-            this.correo = correo;
-            this.contrasenia = contrasenia;
-            this.direccion = direccion;
-            this.telefono = telefono;
-            this.userRole = userRole;
-        }
+    public Usuario(String nombre, String apellido, String correo, String contrasenia, String direccion, String telefono, Role userRole) {
+        this.nombre = nombre;
+        this.apellido = apellido;
+        this.correo = correo;
+        this.contrasenia = contrasenia;
+        this.direccion = direccion;
+        this.telefono = telefono;
+        this.userRole = userRole;
+        this.activo = true;
+    }
 
 
     @Override
