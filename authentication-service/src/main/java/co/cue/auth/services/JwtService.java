@@ -4,23 +4,27 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import java.security.Key;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 
 @Service
 public class JwtService {
 
-    @Value("${jwt.secret.key}") // Lee la clave del application.properties
+    @Value("${jwt.secret.key}")
     private String secretKey;
 
 
     public String generateToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
+        Collection<? extends GrantedAuthority> roles = userDetails.getAuthorities();
+        List<String> roleNames = roles.stream()
+                .map(GrantedAuthority::getAuthority)
+                .toList();
+        claims.put("roles", roleNames);
         return createToken(claims, userDetails.getUsername());
     }
 
