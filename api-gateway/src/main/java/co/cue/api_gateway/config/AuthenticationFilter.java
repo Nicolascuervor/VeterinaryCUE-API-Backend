@@ -18,7 +18,7 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
 
     @Autowired
     public AuthenticationFilter(JwtUtil jwtUtil) {
-        super(Config.class); // <-- Debemos llamar al constructor padre
+        super(Config.class);
         this.jwtUtil = jwtUtil;
     }
 
