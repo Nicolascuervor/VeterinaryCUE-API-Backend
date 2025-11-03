@@ -32,6 +32,7 @@
         <module>inventario-service</module>
         <module>facturas-service</module>
         <module>administration-service</module>
+        <module>notification-service</module>
 
     </modules>
 

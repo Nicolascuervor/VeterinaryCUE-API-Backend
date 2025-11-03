@@ -39,7 +39,7 @@ public class GatewayConfig {
                         .method(HttpMethod.GET) // <-- Solo aplica a peticiones GET
                         .uri("lb://inventario-service"))
 
-                // 3. Ruta Privada (Inventario - ESCRITURA)
+                // Ruta Privada (Inventario - ESCRITURA)
                 .route("inventario_service_private", r -> r
                         .path("/api/inventario/**")
                         .and()
