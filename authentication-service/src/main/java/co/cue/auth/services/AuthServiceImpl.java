@@ -1,6 +1,4 @@
 package co.cue.auth.services;
-
-
 import co.cue.auth.models.dtos.AuthResponseDTO;
 import co.cue.auth.models.dtos.LoginRequestDTO;
 import co.cue.auth.models.dtos.RegistroUsuarioDTO;
@@ -20,10 +18,13 @@ import co.cue.auth.models.entities.Veterinario; // Necesario para 'actualizar'
 import jakarta.persistence.EntityNotFoundException; // Para manejar 'Optional'
 import java.util.List;
 
+import co.cue.auth.events.UsuarioRegistradoEvent;
+import org.springframework.transaction.annotation.Transactional;
+
 
 @Service
 @AllArgsConstructor
-public class AuthServiceImpl implements IAuthService{
+public class AuthServiceImpl implements IAuthService {
     private final UsuarioRepository usuarioRepository;
     private final UsuarioFactory usuarioFactory;
     private final PasswordEncoder passwordEncoder;
@@ -32,17 +33,23 @@ public class AuthServiceImpl implements IAuthService{
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
 
+    private final KafkaProducerService kafkaProducerService; // <-- INYECTAR
+
+
+
+
     @Autowired
     public AuthServiceImpl(UsuarioRepository usuarioRepository,
                            UsuarioFactory usuarioFactory,
                            PasswordEncoder passwordEncoder,
                            JwtService jwtService,
-                           AuthenticationManager authenticationManager) {
+                           AuthenticationManager authenticationManager, KafkaProducerService kafkaProducerService) {
         this.usuarioRepository = usuarioRepository;
         this.usuarioFactory = usuarioFactory;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.authenticationManager = authenticationManager;
+        this.kafkaProducerService = kafkaProducerService;
         this.self = null;
     }
 
@@ -58,7 +65,17 @@ public class AuthServiceImpl implements IAuthService{
         String contraseniaHasheada = passwordEncoder.encode(dto.getContraseña());
         dto.setContraseña(contraseniaHasheada); // Actualizamos el DTO con el hash
         Usuario nuevoUsuario = usuarioFactory.crearUsuario(dto);
+        Usuario usuarioGuardado = usuarioRepository.save(nuevoUsuario);
+
+        UsuarioRegistradoEvent event = new UsuarioRegistradoEvent(
+                usuarioGuardado.getNombre(),
+                usuarioGuardado.getCorreo()
+        );
+        kafkaProducerService.enviarEventoUsuarioRegistrado(event);
+
         return usuarioRepository.save(nuevoUsuario);
+
+
     }
 
 
