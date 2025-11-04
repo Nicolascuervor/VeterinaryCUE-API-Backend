@@ -32,7 +32,6 @@
         <module>inventario-service</module>
         <module>facturas-service</module>
         <module>administration-service</module>
-        <module>notification-service</module>
 
     </modules>
 
@@ -67,8 +66,6 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
-
-
 
     </dependencies>
 
