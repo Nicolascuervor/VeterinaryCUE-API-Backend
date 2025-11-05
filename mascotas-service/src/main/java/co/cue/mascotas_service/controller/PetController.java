@@ -4,8 +4,8 @@ import co.cue.mascotas_service.dto.PetRequestDTO;
 import co.cue.mascotas_service.dto.PetResponseDTO;
 import co.cue.mascotas_service.service.PetService;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,14 +14,14 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/pets")
-@RequiredArgsConstructor
 @Slf4j
 public class PetController {
 
-    private final PetService petService;
+    @Autowired
+    private PetService petService;
 
     @PostMapping
-    public ResponseEntity<PetResponseDTO> createPet(@RequestBody PetRequestDTO requestDTO) {
+    public ResponseEntity<PetResponseDTO> createPet(@Valid @RequestBody PetRequestDTO requestDTO) {
         log.info("POST /api/pets - Crear nueva mascota");
         PetResponseDTO response = petService.createPet(requestDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -66,7 +66,7 @@ public class PetController {
     @PutMapping("/{id}")
     public ResponseEntity<PetResponseDTO> updatePet(
             @PathVariable Long id,
-             @RequestBody PetRequestDTO requestDTO) {
+            @Valid @RequestBody PetRequestDTO requestDTO) {
         log.info("PUT /api/pets/{} - Actualizar mascota", id);
         PetResponseDTO response = petService.updatePet(id, requestDTO);
         return ResponseEntity.ok(response);
