@@ -3,6 +3,8 @@ import co.cue.auth.models.dtos.AuthResponseDTO;
 import co.cue.auth.models.dtos.LoginRequestDTO;
 import co.cue.auth.models.dtos.RegistroUsuarioDTO;
 import co.cue.auth.models.entities.Usuario;
+import co.cue.auth.models.kafka.NotificationRequestDTO;
+import co.cue.auth.models.kafka.NotificationType;
 import co.cue.auth.repository.UsuarioRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,10 +18,11 @@ import org.springframework.transaction.annotation.Transactional;
 import co.cue.auth.models.dtos.ActualizarUsuarioDTO;
 import co.cue.auth.models.entities.Veterinario; // Necesario para 'actualizar'
 import jakarta.persistence.EntityNotFoundException; // Para manejar 'Optional'
-import java.util.List;
 
-import co.cue.auth.events.UsuarioRegistradoEvent;
-import org.springframework.transaction.annotation.Transactional;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 
 
 @Service
@@ -63,19 +66,30 @@ public class AuthServiceImpl implements IAuthService {
             throw new IllegalArgumentException("El correo " + dto.getCorreo() + " ya está registrado.");
         }
         String contraseniaHasheada = passwordEncoder.encode(dto.getContraseña());
-        dto.setContraseña(contraseniaHasheada); // Actualizamos el DTO con el hash
+        dto.setContraseña(contraseniaHasheada);
+
         Usuario nuevoUsuario = usuarioFactory.crearUsuario(dto);
+
+        // Guardamos el usuario
         Usuario usuarioGuardado = usuarioRepository.save(nuevoUsuario);
 
-        UsuarioRegistradoEvent event = new UsuarioRegistradoEvent(
-                usuarioGuardado.getNombre(),
-                usuarioGuardado.getCorreo()
+        //
+        // 1. Construir el Payload genérico
+        Map<String, String> payload = new HashMap<>();
+        payload.put("nombre", usuarioGuardado.getNombre());
+        payload.put("correo", usuarioGuardado.getCorreo());
+
+        // 2. Construir la solicitud de notificación genérica
+        NotificationRequestDTO notificationRequest = new NotificationRequestDTO(
+                NotificationType.EMAIL, // <-- Especificamos la ESTRATEGIA que queremos
+                payload
         );
-        kafkaProducerService.enviarEventoUsuarioRegistrado(event);
 
-        return usuarioRepository.save(nuevoUsuario);
+        // 3. Enviar el evento genérico
+        kafkaProducerService.enviarNotificacion(notificationRequest);
 
-
+        // 4. Devolvemos el usuario que ya guardamos
+        return usuarioGuardado;
     }
 
 
