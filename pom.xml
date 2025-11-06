@@ -33,6 +33,8 @@
         <module>facturas-service</module>
         <module>administration-service</module>
         <module>notification-service</module>
+        <module>pedidos-service</module>
+        <module>carrito-service</module>
 
     </modules>
 
