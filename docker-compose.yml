@@ -23,12 +23,12 @@ services:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
 
-    # (Mentor): 2. Añadimos el Broker de Kafka, que depende de Zookeeper
+    # Añadimos el Broker de Kafka, que depende de Zookeeper
   kafka:
       image: confluentinc/cp-kafka:7.4.0
       container_name: kafka-broker
       ports:
-        # (Mentor): Exponemos el puerto 9092 para que Spring Boot se conecte
+        # Exponemos el puerto 9092 para que Spring Boot se conecte
         - "9092:9092"
       depends_on:
         - zookeeper # <-- Le dice a Docker que inicie Zookeeper primero
@@ -38,6 +38,6 @@ services:
         KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
         KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
         KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-        # (Mentor): Las siguientes líneas son para transacciones, como en el video
+        # Las siguientes líneas son para transacciones
         KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
         KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
