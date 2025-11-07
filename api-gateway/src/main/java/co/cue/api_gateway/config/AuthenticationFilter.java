@@ -36,8 +36,12 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
                 return this.onError(exchange, "Token JWT inválido", HttpStatus.UNAUTHORIZED);
             }
 
+            Long usuarioId = jwtUtil.extractUsuarioId(token);
+            ServerWebExchange mutatedExchange = exchange.mutate()
+                    .request(r -> r.header("X-Usuario-Id", String.valueOf(usuarioId)))
+                    .build();
 
-            return chain.filter(exchange);
+            return chain.filter(mutatedExchange);
         };
     }
 
