@@ -7,6 +7,8 @@ import co.cue.pedidos_service.models.dtos.kafka.PedidoItemEventDTO;
 import co.cue.pedidos_service.models.entities.Pedido;
 import co.cue.pedidos_service.models.enums.PedidoEstado;
 import co.cue.pedidos_service.repository.PedidoRepository;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
 import jdk.jfr.Event;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +27,7 @@ public class PedidoWebhookService {
     private final InventarioServiceClient inventarioClient;
     private final CarritoServiceClient carritoClient;
     private final KafkaProducerService kafkaProducer;
-
+    private final ObjectMapper objectMapper;
 
 
     @Transactional
@@ -37,7 +39,25 @@ public class PedidoWebhookService {
             return;
         }
 
-        String paymentIntentId = "pi_MOCK_ID";
+        String paymentIntentId;
+        String eventType;
+        try {
+            // (Mentor): Usamos ObjectMapper para leer el JSON del payload
+            JsonNode jsonPayload = objectMapper.readTree(payload);
+            eventType = jsonPayload.path("type").asText();
+
+            // (Mentor): Extraemos el ID del objeto de Stripe
+            paymentIntentId = jsonPayload.path("data").path("object").path("id").asText();
+
+        } catch (Exception e) {
+            throw new RuntimeException("Error al parsear el payload del Webhook", e);
+        }
+
+        // (Mentor): Verificamos el tipo de evento
+        if (!"payment_intent.succeeded".equals(eventType)) {
+            log.warn("Evento de Stripe recibido [{}], pero no es 'payment_intent.succeeded'. Ignorando.", eventType);
+            return;
+        }
 
 
         log.info("Procesando evento 'payment_intent.succeeded' para ID: {}", paymentIntentId);

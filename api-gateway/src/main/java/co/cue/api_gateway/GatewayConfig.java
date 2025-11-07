@@ -26,6 +26,10 @@ public class GatewayConfig {
                         .filters(f -> f.filter(authFilter)) // <-- Aplicamos el filtro
                         .uri("lb://carrito-service")) // <-- Apunta a Eureka
 
+                .route("pedidos_service_route", r -> r.path("/api/pedidos/**")
+                        .filters(f -> f.filter(authFilter))
+                        .uri("lb://pedidos-service"))
+
                 // RUTAS PROTEGIDAS
                 .route("citas_service_route", r -> r.path("/api/citas/**")
                         .filters(f -> f.filter(authFilter))
