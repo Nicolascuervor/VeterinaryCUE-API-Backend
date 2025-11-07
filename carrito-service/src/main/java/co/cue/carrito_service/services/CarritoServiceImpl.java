@@ -25,7 +25,7 @@ public class CarritoServiceImpl implements ICarritoService {
     private final InventarioServiceClient inventarioServiceClient;
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public CarritoResponseDTO getOrCreateCarrito(Long usuarioId, String sessionId) {
         Carrito carrito = findOrCreateCarrito(usuarioId, sessionId);
         return carritoMapper.toCarritoResponseDTO(carrito);

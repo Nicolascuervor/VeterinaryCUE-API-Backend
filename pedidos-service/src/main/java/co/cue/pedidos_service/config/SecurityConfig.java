@@ -12,6 +12,7 @@ import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.http.HttpMethod;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
@@ -46,9 +47,17 @@ public class SecurityConfig {
 
         http
                 .authorizeHttpRequests(authz -> authz
+
+                        // (Arquitecto): 1. Permite el Webhook de Stripe (Público)
                         .requestMatchers("/api/pedidos/stripe/webhook").permitAll()
 
+                        // (Arquitecto): 2. Permite el Checkout (para Invitados Y Logueados)
+                        .requestMatchers(HttpMethod.POST, "/api/pedidos/checkout").permitAll()
+
+                        // (Arquitecto): 3. Protege CUALQUIER OTRA ruta de pedidos
                         .requestMatchers("/api/pedidos/**").authenticated()
+
+                        // (Mentor): Buena práctica, denegar todo lo demás por defecto
                         .anyRequest().authenticated());
         return http.build();
     }
