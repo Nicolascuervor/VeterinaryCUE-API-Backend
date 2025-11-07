@@ -6,6 +6,7 @@ import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+
 @Configuration
 public class GatewayConfig {
     @Bean
@@ -13,38 +14,43 @@ public class GatewayConfig {
                                            AuthenticationFilter authenticationFilter) {
         AuthenticationFilter.Config config = new AuthenticationFilter.Config();
         var authFilter = authenticationFilter.apply(config);
+
         return builder.routes()
 
-                // Ruta Pública
+                // Ruta Pública (Autenticación)
                 .route("authentication_service_route", r -> r.path("/api/auth/**")
                         .uri("lb://authentication-service"))
 
-                // Rutas Protegidas
+                // Pasamos todas las peticiones /api/carrito/** a través de nuestro filtro y luego al 'carrito-service'.
+                .route("carrito_service_route", r -> r.path("/api/carrito/**")
+                        .filters(f -> f.filter(authFilter)) // <-- Aplicamos el filtro
+                        .uri("lb://carrito-service")) // <-- Apunta a Eureka
+
+                // RUTAS PROTEGIDAS
                 .route("citas_service_route", r -> r.path("/api/citas/**")
-                        // (Colega Senior): Ahora usamos la variable del parámetro
-                        .filters(f -> f.filter(authenticationFilter.apply(new AuthenticationFilter.Config())))
+                        .filters(f -> f.filter(authFilter))
                         .uri("lb://citas-service"))
 
                 .route("administration_service_route", r -> r.path("/api/admin/**")
-                        .filters(f -> f.filter(authenticationFilter.apply(new AuthenticationFilter.Config())))
+                        .filters(f -> f.filter(authFilter))
                         .uri("lb://administration-service"))
 
                 .route("mascotas_service_route", r -> r.path("/api/mascotas/**")
-                        .filters(f -> f.filter(authenticationFilter.apply(new AuthenticationFilter.Config())))
+                        .filters(f -> f.filter(authFilter))
                         .uri("lb://mascotas-service"))
 
+                // --- RUTAS DE INVENTARIO (Lógica mixta) ---
                 .route("inventario_service_public", r -> r
                         .path("/api/inventario/**")
                         .and()
-                        .method(HttpMethod.GET) // <-- Solo aplica a peticiones GET
+                        .method(HttpMethod.GET)
                         .uri("lb://inventario-service"))
 
-                // Ruta Privada (Inventario - ESCRITURA)
                 .route("inventario_service_private", r -> r
                         .path("/api/inventario/**")
                         .and()
                         .method(HttpMethod.POST, HttpMethod.PUT, HttpMethod.DELETE)
-                        .filters(f -> f.filter(authFilter))
+                        .filters(f -> f.filter(authFilter)) // <-- Protegido
                         .uri("lb://inventario-service"))
 
                 .build();

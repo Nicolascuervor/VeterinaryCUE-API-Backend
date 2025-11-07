@@ -9,6 +9,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import java.security.Key;
 import java.util.*;
+import co.cue.auth.models.entities.Usuario;
 
 
 @Service
@@ -25,6 +26,9 @@ public class JwtService {
                 .map(GrantedAuthority::getAuthority)
                 .toList();
         claims.put("roles", roleNames);
+        if (userDetails instanceof Usuario) {
+            claims.put("usuarioId", ((Usuario) userDetails).getId());
+        }
         return createToken(claims, userDetails.getUsername());
     }
 
