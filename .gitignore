@@ -19,6 +19,9 @@
 *.tar.gz
 *.rar
 .env
+
+*init-scripts
+
 # Virtual machine crash logs
 hs_err_pid*
 replay_pid*
