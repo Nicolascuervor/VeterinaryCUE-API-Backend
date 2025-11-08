@@ -45,6 +45,12 @@ public class AuthController {
         return ResponseEntity.ok(usuario);
     }
 
+    @GetMapping("/email")
+    public ResponseEntity<Usuario> obtenerUsuarioPorCorreo(@RequestParam String correo) {
+        Usuario usuario = authService.obtenerUsuarioPorCorreo(correo);
+        return ResponseEntity.ok(usuario);
+    }
+
 
     @PutMapping("/{id}")
     public ResponseEntity<Usuario> actualizarUsuario(@PathVariable Long id, @RequestBody ActualizarUsuarioDTO dto) {
@@ -56,7 +62,6 @@ public class AuthController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> desactivarUsuario(@PathVariable Long id) {
         authService.desactivarUsuario(id);
-        // (Mentor): Para un DELETE exitoso, devolvemos 204 No Content
         return ResponseEntity.noContent().build();
     }
 }

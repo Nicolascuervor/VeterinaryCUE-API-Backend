@@ -43,7 +43,6 @@ public class GatewayConfig {
                         .filters(f -> f.filter(authFilter))
                         .uri("lb://mascotas-service"))
 
-                // --- RUTAS DE INVENTARIO (Lógica mixta) ---
                 .route("inventario_service_public", r -> r
                         .path("/api/inventario/**")
                         .and()

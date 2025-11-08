@@ -43,17 +43,19 @@ public class MascotaController {
                 : mascotaService.getAllMascotas();
         return ResponseEntity.ok(response);
     }
-/*
+
+
     @GetMapping("/owner/{ownerId}")
     public ResponseEntity<List<MascotaResponseDTO>> getMascotasByOwner(
-            @PathVariable Long ownerId,
-            @RequestParam(required = false) Boolean active) {
-        log.info("GET /api/Mascotas/owner/{} - Obtener mascotas por dueño", ownerId);
-        List<MascotaResponseDTO> response = active != null && active
-                ? mascotaService.getActiveMascotasByOwner(ownerId)
-                : mascotaService.getMascotasByOwner(ownerId);
+            @PathVariable Long ownerId) {
+
+        log.info("GET /api/mascotas/owner/{} - Obtener mascotas por dueño", ownerId);
+
+        // (Mentor): Llamamos al método que ya existe en MascotaService
+        List<MascotaResponseDTO> response = mascotaService.getMascotasByOwner(ownerId);
+
         return ResponseEntity.ok(response);
-    }*/
+    }
 
     @GetMapping("/search")
     public ResponseEntity<List<MascotaResponseDTO>> searchMascotasByName(
