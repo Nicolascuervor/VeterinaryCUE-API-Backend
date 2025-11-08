@@ -26,6 +26,11 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
     public GatewayFilter apply(Config config) {
         return (exchange, chain) -> {
             String authHeader = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
+
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                return chain.filter(exchange);
+            }
+
             if (authHeader == null || !authHeader.startsWith("Bearer ")) {
                 return this.onError(exchange, "No se encontró token JWT válido", HttpStatus.UNAUTHORIZED);
             }
@@ -36,8 +41,12 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
                 return this.onError(exchange, "Token JWT inválido", HttpStatus.UNAUTHORIZED);
             }
 
+            Long usuarioId = jwtUtil.extractUsuarioId(token);
+            ServerWebExchange mutatedExchange = exchange.mutate()
+                    .request(r -> r.header("X-Usuario-Id", String.valueOf(usuarioId)))
+                    .build();
 
-            return chain.filter(exchange);
+            return chain.filter(mutatedExchange);
         };
     }
 
