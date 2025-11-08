@@ -9,45 +9,39 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "pets")
+@Table(name = "mascota")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Pet {
+public class Mascota {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(nullable = false, length = 100)
-    private String name;
+    private String nombre;
 
     @Column(nullable = false, length = 50)
-    private String species;
+    private String especie;
 
     @Column(length = 50)
-    private String breed;
+    private String raza;
 
     @Column(nullable = false)
-    private LocalDate birthDate;
+    private LocalDate fechaNacimiento;
 
     @Column(length = 10)
-    private String gender;
+    private String sexo;
 
     @Column(length = 20)
     private String color;
 
-    private Double weight;
+    private Double peso;
 
-    @Column(nullable = false)
-    private Long ownerId;
-
-    @Column(length = 50)
-    private String microchipNumber;
-
-    @Column(length = 500)
-    private String medicalNotes;
+    @Column(name = "dueño_id", nullable = false)
+    private Long duenoId;
 
     @Column(nullable = false)
     private Boolean active = true;
