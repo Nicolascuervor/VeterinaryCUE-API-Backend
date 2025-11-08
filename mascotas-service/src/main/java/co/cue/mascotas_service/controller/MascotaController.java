@@ -4,8 +4,8 @@ import co.cue.mascotas_service.dto.MascotaRequestDTO;
 import co.cue.mascotas_service.dto.MascotaResponseDTO;
 import co.cue.mascotas_service.service.MascotaService;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,10 +15,10 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/mascotas")
 @Slf4j
+@RequiredArgsConstructor
 public class MascotaController {
 
-    @Autowired
-    private MascotaService mascotaService;
+    private final MascotaService mascotaService;
 
     @PostMapping
     public ResponseEntity<MascotaResponseDTO> createMascota(@Valid @RequestBody MascotaRequestDTO requestDTO) {

@@ -5,7 +5,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 @Data
 @NoArgsConstructor
@@ -21,6 +20,6 @@ public class MascotaResponseDTO {
     private String sexo;
     private String color;
     private Double peso;
-    private Long dueño_id;
+    private Long duenioId;
     private Boolean active;
 }
