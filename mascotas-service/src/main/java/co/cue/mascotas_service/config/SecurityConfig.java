@@ -24,7 +24,7 @@ import java.util.Base64;
 @EnableMethodSecurity
 public class SecurityConfig {
 
-
+    private static final String ADMIN_ROLE = "ADMIN";
     private static final String MASCOTAS_API_PATH = "/api/mascotas/**";
 
     @Value("${jwt.secret.key}")
@@ -52,9 +52,9 @@ public class SecurityConfig {
         http
                 .authorizeHttpRequests(authz -> authz
                         .requestMatchers(HttpMethod.GET, MASCOTAS_API_PATH).authenticated()
-                        .requestMatchers(HttpMethod.POST, MASCOTAS_API_PATH).permitAll()
-                        .requestMatchers(HttpMethod.PUT, MASCOTAS_API_PATH).permitAll()
-                        .requestMatchers(HttpMethod.DELETE, MASCOTAS_API_PATH).permitAll()
+                        .requestMatchers(HttpMethod.POST, MASCOTAS_API_PATH).hasRole(ADMIN_ROLE)
+                        .requestMatchers(HttpMethod.PUT, MASCOTAS_API_PATH).hasRole(ADMIN_ROLE)
+                        .requestMatchers(HttpMethod.DELETE, MASCOTAS_API_PATH).hasRole(ADMIN_ROLE)
                         .anyRequest().authenticated());
         return http.build();
     }
