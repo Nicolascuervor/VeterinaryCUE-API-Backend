@@ -37,6 +37,5 @@ public class MascotaRequestDTO {
     @Positive(message = "El peso debe ser positivo")
     private Double peso;
 
-    @NotNull(message = "El ID del dueño es obligatorio")
-    private Long dueño_id;
+    private Long duenioId;
 }

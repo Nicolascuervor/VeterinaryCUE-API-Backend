@@ -40,7 +40,7 @@ public class Mascota {
 
     private Double peso;
 
-    @Column(name = "dueño_id", nullable = false)
+    @Column(name = "duenioId", nullable = false)
     private Long duenoId;
 
     @Column(nullable = false)
