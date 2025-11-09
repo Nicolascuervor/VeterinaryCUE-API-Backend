@@ -35,6 +35,7 @@
         <module>notification-service</module>
         <module>pedidos-service</module>
         <module>carrito-service</module>
+        <module>agendamiento-service</module>
 
     </modules>
 
