@@ -5,8 +5,9 @@ import co.cue.agendamiento_service.models.entities.dtos.serviciosdtos.requestdto
 import co.cue.agendamiento_service.models.entities.dtos.serviciosdtos.requestdtos.EsteticaRequestDTO;
 
 
-import co.cue.agendamiento_service.models.dtos.response.ServicioResponseDTO;
-import co.cue.agendamiento_service.service.IServicioAdminService;
+import co.cue.agendamiento_service.models.entities.dtos.serviciosdtos.requestdtos.VacunacionRequestDTO;
+import co.cue.agendamiento_service.models.entities.dtos.serviciosdtos.responsedtos.ServicioResponseDTO;
+import co.cue.agendamiento_service.services.IServicioAdminService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,26 +16,28 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * (Arquitecto): Este controlador sigue el patrón que ya usaron en ProductoController.java.
- * Su única responsabilidad es el CRUD de los Tipos de Servicio.
- *
- * (Consultor): Note el @PreAuthorize. La seguridad a nivel de microservicio es
- * vital. Asumimos que (como en sus otros servicios) tenemos Spring Security
- * configurado para leer roles del JWT.
- */
+
 @RestController
 @RequestMapping("/api/agendamiento/servicios-admin")
 @AllArgsConstructor
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasRole('ADMIN')") // Seguridad a nivel de clase
 public class ServicioAdminController {
 
     private final IServicioAdminService servicioAdminService;
+
+    // --- Endpoints GET ---
 
     @GetMapping
     public ResponseEntity<List<ServicioResponseDTO>> listarTodosLosServicios() {
         return ResponseEntity.ok(servicioAdminService.listarServicios());
     }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ServicioResponseDTO> obtenerServicioPorId(@PathVariable Long id) {
+        return ResponseEntity.ok(servicioAdminService.getServicioById(id));
+    }
+
+    // --- Endpoints POST (Creación) ---
 
     @PostMapping("/consulta")
     public ResponseEntity<ServicioResponseDTO> crearServicioConsulta(@RequestBody ConsultaRequestDTO dto) {
@@ -51,5 +54,64 @@ public class ServicioAdminController {
         return new ResponseEntity<>(servicioAdminService.crearEstetica(dto), HttpStatus.CREATED);
     }
 
-    // (Aquí irían los @PutMapping y @DeleteMapping para actualizar/desactivar servicios)
+    /**
+     * (Implementación Faltante - AÑADIDA)
+     */
+    @PostMapping("/vacunacion")
+    public ResponseEntity<ServicioResponseDTO> crearServicioVacunacion(@RequestBody VacunacionRequestDTO dto) {
+        return new ResponseEntity<>(servicioAdminService.crearVacunacion(dto), HttpStatus.CREATED);
+    }
+
+    // --- Endpoints PUT (Actualización) ---
+
+    /**
+     * (Implementación Faltante - AÑADIDA)
+     */
+    @PutMapping("/consulta/{id}")
+    public ResponseEntity<ServicioResponseDTO> actualizarServicioConsulta(
+            @PathVariable Long id, @RequestBody ConsultaRequestDTO dto) {
+        return ResponseEntity.ok(servicioAdminService.actualizarConsulta(id, dto));
+    }
+
+    /**
+     * (Implementación Faltante - AÑADIDA)
+     */
+    @PutMapping("/cirugia/{id}")
+    public ResponseEntity<ServicioResponseDTO> actualizarServicioCirugia(
+            @PathVariable Long id, @RequestBody CirugiaRequestDTO dto) {
+        return ResponseEntity.ok(servicioAdminService.actualizarCirugia(id, dto));
+    }
+
+    /**
+     * (Implementación Faltante - AÑADIDA)
+     */
+    @PutMapping("/estetica/{id}")
+    public ResponseEntity<ServicioResponseDTO> actualizarServicioEstetica(
+            @PathVariable Long id, @RequestBody EsteticaRequestDTO dto) {
+        return ResponseEntity.ok(servicioAdminService.actualizarEstetica(id, dto));
+    }
+
+    /**
+     * (Implementación Faltante - AÑADIDA)
+     */
+    @PutMapping("/vacunacion/{id}")
+    public ResponseEntity<ServicioResponseDTO> actualizarServicioVacunacion(
+            @PathVariable Long id, @RequestBody VacunacionRequestDTO dto) {
+        return ResponseEntity.ok(servicioAdminService.actualizarVacunacion(id, dto));
+    }
+
+
+    // --- Endpoint DELETE (Desactivación) ---
+
+    /**
+     * (Implementación Faltante - AÑADIDA)
+     * (Mentor): Usamos @DeleteMapping para el "Soft Delete".
+     * Devuelve 204 No Content, que es la semántica correcta para
+     * una operación DELETE exitosa que no devuelve cuerpo.
+     */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> desactivarServicio(@PathVariable Long id) {
+        servicioAdminService.desactivarServicio(id);
+        return ResponseEntity.noContent().build();
+    }
 }

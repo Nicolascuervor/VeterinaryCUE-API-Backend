@@ -3,10 +3,11 @@ package co.cue.agendamiento_service.mapper;
 import co.cue.agendamiento_service.models.entities.dtos.serviciosdtos.requestdtos.CirugiaRequestDTO;
 import co.cue.agendamiento_service.models.entities.dtos.serviciosdtos.requestdtos.ConsultaRequestDTO;
 
-import co.cue.agendamiento_service.models.entities.dtos.serviciosdtos.responsedtos.ServicioResponseDTO;
-import co.cue.agendamiento_service.models.entities.servicios.Cirugia;
-import co.cue.agendamiento_service.models.entities.servicios.Consulta;
-import co.cue.agendamiento_service.models.entities.servicios.Servicio;
+import co.cue.agendamiento_service.models.entities.dtos.serviciosdtos.requestdtos.EsteticaRequestDTO;
+import co.cue.agendamiento_service.models.entities.dtos.serviciosdtos.requestdtos.VacunacionRequestDTO;
+import co.cue.agendamiento_service.models.entities.dtos.serviciosdtos.responsedtos.*;
+
+import co.cue.agendamiento_service.models.entities.servicios.*;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -20,30 +21,43 @@ public class ServicioMapper {
         if (entity instanceof Cirugia) {
             return toCirugiaResponseDTO((Cirugia) entity);
         }
-        // (Agregar "instanceof" para Estetica, Vacunacion, etc.)
-
+        if (entity instanceof Estetica) {
+            return toEsteticaResponseDTO((Estetica) entity);
+        }
+        if (entity instanceof Vacunacion) {
+            return toVacunacionResponseDTO((Vacunacion) entity);
+        }
         throw new IllegalArgumentException("Tipo de Servicio no mapeado: " + entity.getClass().getName());
     }
 
-    private ServicioResponseDTO toConsultaResponseDTO(Consulta entity) {
-        ServicioResponseDTO dto = new ServicioResponseDTO();
+    private ConsultaResponseDTO toConsultaResponseDTO(Consulta entity) {
+        ConsultaResponseDTO dto = new ConsultaResponseDTO();
         mapBaseEntityToResponse(entity, dto);
-        dto.setTipoServicio("CONSULTA");
         return dto;
     }
 
-    private ServicioResponseDTO toCirugiaResponseDTO(Cirugia entity) {
-        ServicioResponseDTO dto = new ServicioResponseDTO();
+    private CirugiaResponseDTO toCirugiaResponseDTO(Cirugia entity) {
+        CirugiaResponseDTO dto = new CirugiaResponseDTO();
         mapBaseEntityToResponse(entity, dto);
-        dto.setTipoServicio("CIRUGIA");
-
-        // Mapear campos específicos
-        dto.getDetalles().put("requiereQuirofano", entity.isRequiereQuirofano());
-        dto.getDetalles().put("notasPreoperatorias", entity.getNotasPreoperatorias());
+        dto.setRequiereQuirofano(entity.isRequiereQuirofano());
+        dto.setNotasPreoperatorias(entity.getNotasPreoperatorias());
         return dto;
     }
 
-    // Helper base
+    private EsteticaResponseDTO toEsteticaResponseDTO(Estetica entity) {
+        EsteticaResponseDTO dto = new EsteticaResponseDTO();
+        mapBaseEntityToResponse(entity, dto);
+        dto.setTipoArreglo(entity.getTipoArreglo());
+        return dto;
+    }
+
+    private VacunacionResponseDTO toVacunacionResponseDTO(Vacunacion entity) {
+        VacunacionResponseDTO dto = new VacunacionResponseDTO();
+        mapBaseEntityToResponse(entity, dto);
+        dto.setNombreBiologico(entity.getNombreBiologico());
+        return dto;
+    }
+
     private void mapBaseEntityToResponse(Servicio entity, ServicioResponseDTO dto) {
         dto.setId(entity.getId());
         dto.setNombre(entity.getNombre());
@@ -56,23 +70,32 @@ public class ServicioMapper {
 
     public Consulta toEntity(ConsultaRequestDTO dto) {
         return new Consulta(
-                dto.getNombre(),
-                dto.getDescripcion(),
-                dto.getDuracionPromedioMinutos(),
-                dto.getPrecio()
+                dto.getNombre(), dto.getDescripcion(),
+                dto.getDuracionPromedioMinutos(), dto.getPrecio()
         );
     }
 
     public Cirugia toEntity(CirugiaRequestDTO dto) {
         return new Cirugia(
-                dto.getNombre(),
-                dto.getDescripcion(),
-                dto.getDuracionPromedioMinutos(),
-                dto.getPrecio(),
-                dto.isRequiereQuirofano(),
-                dto.getNotasPreoperatorias()
+                dto.getNombre(), dto.getDescripcion(),
+                dto.getDuracionPromedioMinutos(), dto.getPrecio(),
+                dto.isRequiereQuirofano(), dto.getNotasPreoperatorias()
         );
     }
 
+    public Estetica toEntity(EsteticaRequestDTO dto) {
+        return new Estetica(
+                dto.getNombre(), dto.getDescripcion(),
+                dto.getDuracionPromedioMinutos(), dto.getPrecio(),
+                dto.getTipoArreglo()
+        );
+    }
 
+    public Vacunacion toEntity(VacunacionRequestDTO dto) {
+        return new Vacunacion(
+                dto.getNombre(), dto.getDescripcion(),
+                dto.getDuracionPromedioMinutos(), dto.getPrecio(),
+                dto.getNombreBiologico()
+        );
+    }
 }

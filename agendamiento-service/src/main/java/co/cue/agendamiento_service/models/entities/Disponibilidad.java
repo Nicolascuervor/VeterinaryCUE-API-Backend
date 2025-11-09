@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import java.time.LocalDateTime;
 
-/** Esta entidad es el "Slot" de tiempo. Es la unidad atómica del calendario de un veterinario. Ej: Vet 1, 10-Nov 9:00, 10-Nov 9:30, DISPONIBLE */
+/** Esta entidad es el "Slot" de tiempo. Es la unidad atómica del calendario de un veterinario. Ej. Vet 1, 10-Nov 9:00, 10-Nov 9:30, DISPONIBLE */
 @Entity
 @Table(name = "disponibilidad_veterinarios", indexes = {
         @Index(name = "idx_vet_inicio", columnList = "veterinario_id, fecha_hora_inicio")})

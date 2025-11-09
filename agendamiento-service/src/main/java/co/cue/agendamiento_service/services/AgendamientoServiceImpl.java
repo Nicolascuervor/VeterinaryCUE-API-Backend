@@ -1,5 +1,6 @@
 package co.cue.agendamiento_service.services;
 
+import co.cue.agendamiento_service.mapper.AgendamientoMapper;
 import co.cue.agendamiento_service.models.entities.Disponibilidad;
 import co.cue.agendamiento_service.models.entities.JornadaLaboral;
 import co.cue.agendamiento_service.models.entities.dtos.DisponibilidadResponseDTO;
@@ -10,8 +11,9 @@ import co.cue.agendamiento_service.models.entities.enums.EstadoDisponibilidad;
 import co.cue.agendamiento_service.repository.DisponibilidadRepository;
 import co.cue.agendamiento_service.repository.JornadaLaboralRepository;
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.DayOfWeek;
@@ -20,25 +22,25 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
+@Slf4j
 public class AgendamientoServiceImpl implements IAgendamientoService {
 
     private final JornadaLaboralRepository jornadaRepository;
     private final DisponibilidadRepository disponibilidadRepository;
-    private final AgendamientoMapper mapper; // (Mapper para JornadaDTO y DisponibilidadDTO)
+    private final AgendamientoMapper mapper;
 
     @Override
     @Transactional
     public JornadaLaboralResponseDTO crearActualizarJornada(JornadaLaboralRequestDTO dto) {
-        // (Colega Senior): Lógica "UPSERT" (Update/Insert)
         JornadaLaboral jornada = jornadaRepository
                 .findByVeterinarioIdAndDiaSemana(dto.getVeterinarioId(), dto.getDiaSemana())
-                .orElse(new JornadaLaboral()); // Si no existe, crea una nueva
+                .orElse(new JornadaLaboral());
 
-        // Actualiza los datos
         jornada.setVeterinarioId(dto.getVeterinarioId());
         jornada.setDiaSemana(dto.getDiaSemana());
         jornada.setHoraInicioJornada(dto.getHoraInicioJornada());
@@ -46,77 +48,8 @@ public class AgendamientoServiceImpl implements IAgendamientoService {
         jornada.setHoraInicioDescanso(dto.getHoraInicioDescanso());
         jornada.setHoraFinDescanso(dto.getHoraFinDescanso());
         jornada.setActiva(true);
-
         JornadaLaboral guardada = jornadaRepository.save(jornada);
         return mapper.toJornadaResponseDTO(guardada);
-    }
-
-    @Override
-    @Transactional
-    public void generarSlotsDeDisponibilidad(Long veterinarioId, LocalDate fechaInicio, LocalDate fechaFin, int duracionSlot) {
-
-        // 1. Obtener todas las plantillas (Lunes, Martes, etc.) para este vet
-        List<JornadaLaboral> plantillas = jornadaRepository.findByVeterinarioIdAndActivaTrue(veterinarioId);
-        if (plantillas.isEmpty()) {
-            throw new EntityNotFoundException("No hay jornadas laborales activas configuradas para el veterinario ID: " + veterinarioId);
-        }
-
-        List<Disponibilidad> nuevosSlots = new ArrayList<>();
-
-        // 2. Iterar por CADA DÍA en el rango (ej. 1-Dic al 31-Dic)
-        for (LocalDate fecha = fechaInicio; !fecha.isAfter(fechaFin); fecha = fecha.plusDays(1)) {
-
-            // 3. Buscar la plantilla para ESE día de la semana
-            DayOfWeek dia = fecha.getDayOfWeek();
-            JornadaLaboral jornadaDelDia = plantillas.stream()
-                    .filter(p -> p.getDiaSemana() == dia)
-                    .findFirst().orElse(null);
-
-            if (jornadaDelDia == null) {
-                continue; // No trabaja este día, saltamos al siguiente.
-            }
-
-            // 4. (Arquitecto): Esta es la lógica de "Generador de Slots"
-            LocalTime slotActual = jornadaDelDia.getHoraInicioJornada();
-            LocalTime finJornada = jornadaDelDia.getHoraFinJornada();
-
-            while (slotActual.isBefore(finJornada)) {
-                LocalTime finSlot = slotActual.plusMinutes(duracionSlot);
-
-                // Si el slot termina *después* del fin de la jornada, no se crea
-                if (finSlot.isAfter(finJornada)) {
-                    break;
-                }
-
-                // 5. Validar contra el descanso
-                boolean estaEnDescanso = false;
-                if (jornadaDelDia.getHoraInicioDescanso() != null) {
-                    LocalTime inicioDescanso = jornadaDelDia.getHoraInicioDescanso();
-                    LocalTime finDescanso = jornadaDelDia.getHoraFinDescanso();
-
-                    // Si el slot (ej. 12:30-13:00) CHOCA con el descanso (12:00-13:00)
-                    if (slotActual.isBefore(finDescanso) && finSlot.isAfter(inicioDescanso)) {
-                        estaEnDescanso = true;
-                    }
-                }
-
-                // 6. Si no está en descanso, ¡creamos el slot!
-                if (!estaEnDescanso) {
-                    LocalDateTime inicio = LocalDateTime.of(fecha, slotActual);
-                    LocalDateTime fin = LocalDateTime.of(fecha, finSlot);
-
-                    // (Nota: Aquí faltaría validar que el slot no exista ya)
-                    nuevosSlots.add(new Disponibilidad(veterinarioId, inicio, fin));
-                }
-
-                // Avanzamos al siguiente slot
-                slotActual = finSlot;
-            }
-        }
-
-        // 7. Guardar todos los nuevos slots en la BD en una sola transacción
-        disponibilidadRepository.saveAll(nuevosSlots);
-        log.info("Se generaron {} nuevos slots para el vet ID {}", nuevosSlots.size(), veterinarioId);
     }
 
     @Override
@@ -156,7 +89,6 @@ public class AgendamientoServiceImpl implements IAgendamientoService {
             throw new IllegalStateException("Conflicto de reserva. Uno o más slots ya no estaban disponibles.");
         }
 
-        // Si todo salió bien, buscamos los slots actualizados para devolverlos
         List<Disponibilidad> slotsReservados = disponibilidadRepository.findAllById(requestDTO.getIdsDisponibilidad());
         return slotsReservados.stream()
                 .map(mapper::toDisponibilidadResponseDTO)
@@ -197,4 +129,60 @@ public class AgendamientoServiceImpl implements IAgendamientoService {
         Disponibilidad guardado = disponibilidadRepository.save(slot);
         return mapper.toDisponibilidadResponseDTO(guardado);
     }
+
+    @Override
+    @Transactional
+    public void generarSlotsDeDisponibilidad(Long veterinarioId, LocalDate fechaInicio, LocalDate fechaFin, int duracionSlot) {
+        List<JornadaLaboral> plantillas = jornadaRepository.findByVeterinarioIdAndActivaTrue(veterinarioId);
+        if (plantillas.isEmpty()) {
+            throw new EntityNotFoundException("No hay jornadas laborales activas configuradas para el veterinario ID: " + veterinarioId);
+        }
+        List<Disponibilidad> nuevosSlots = new ArrayList<>();
+        Map<DayOfWeek, JornadaLaboral> mapaJornadas = plantillas.stream()
+                .collect(Collectors.toMap(JornadaLaboral::getDiaSemana, jornada -> jornada));
+        for (LocalDate fecha = fechaInicio; !fecha.isAfter(fechaFin); fecha = fecha.plusDays(1)) {
+            JornadaLaboral jornadaDelDia = mapaJornadas.get(fecha.getDayOfWeek());
+            if (jornadaDelDia == null) {
+                continue;
+            }
+            List<Disponibilidad> slotsDelDia = crearSlotsParaJornada(jornadaDelDia, fecha, duracionSlot, veterinarioId);
+            nuevosSlots.addAll(slotsDelDia);
+        }
+        disponibilidadRepository.saveAll(nuevosSlots);
+        log.info("Se generaron {} nuevos slots para el vet ID {}", nuevosSlots.size(), veterinarioId);
+    }
+
+    private List<Disponibilidad> crearSlotsParaJornada(JornadaLaboral jornada, LocalDate fecha, int duracionSlot, Long veterinarioId) {
+        List<Disponibilidad> slots = new ArrayList<>();
+        LocalTime slotActual = jornada.getHoraInicioJornada();
+        LocalTime finJornada = jornada.getHoraFinJornada();
+        while (slotActual.isBefore(finJornada)) { // +1
+            LocalTime finSlot = slotActual.plusMinutes(duracionSlot);
+            if (finSlot.isAfter(finJornada)) { // +1 (anidado)
+                break;
+            }
+            boolean estaEnDescanso = slotEstaEnDescanso(slotActual, finSlot, jornada);
+            if (!estaEnDescanso) { // +1 (anidado)
+                LocalDateTime inicio = LocalDateTime.of(fecha, slotActual);
+                LocalDateTime fin = LocalDateTime.of(fecha, finSlot);
+                slots.add(new Disponibilidad(veterinarioId, inicio, fin));
+            }
+            slotActual = finSlot;
+        }
+        return slots;
+    }
+
+
+    private boolean slotEstaEnDescanso(LocalTime slotInicio, LocalTime slotFin, JornadaLaboral jornada) {
+        if (jornada.getHoraInicioDescanso() == null) { // +1
+            return false;
+        }
+        LocalTime inicioDescanso = jornada.getHoraInicioDescanso();
+        LocalTime finDescanso = jornada.getHoraFinDescanso();
+        return  slotInicio.isBefore(finDescanso) && slotFin.isAfter(inicioDescanso);
+    }
+
+
+
+
 }

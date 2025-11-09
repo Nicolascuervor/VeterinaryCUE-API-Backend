@@ -13,7 +13,6 @@ import java.util.stream.Collectors;
 @Component
 public class AgendamientoMapper {
 
-    // --- Mapeo de Disponibilidad (Slot) ---
 
     public DisponibilidadResponseDTO toDisponibilidadResponseDTO(Disponibilidad entity) {
         if (entity == null) {

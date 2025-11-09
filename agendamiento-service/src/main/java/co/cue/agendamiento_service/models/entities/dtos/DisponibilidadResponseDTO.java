@@ -14,5 +14,5 @@ public class DisponibilidadResponseDTO {
     private LocalDateTime fechaHoraInicio;
     private LocalDateTime fechaHoraFin;
     private EstadoDisponibilidad estado;
-    private Long citaId; // Será 'null' si está DISPONIBLE
+    private Long citaId;
 }

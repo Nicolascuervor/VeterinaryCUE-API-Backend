@@ -35,7 +35,7 @@ public abstract class Servicio {
     @Column(nullable = false)
     private boolean activo = true;
 
-    public Servicio(String nombre, String descripcion, Integer duracionPromedioMinutos, BigDecimal precio) {
+    protected Servicio(String nombre, String descripcion, Integer duracionPromedioMinutos, BigDecimal precio) {
         this.nombre = nombre;
         this.descripcion = descripcion;
         this.duracionPromedioMinutos = duracionPromedioMinutos;
