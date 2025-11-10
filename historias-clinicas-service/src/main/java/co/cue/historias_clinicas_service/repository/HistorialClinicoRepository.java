@@ -7,6 +7,5 @@ import java.util.List;
 
 public interface HistorialClinicoRepository extends JpaRepository<HistorialClinico,Long> {
     List<HistorialClinico> findByPetId(Long petId);
-    List<HistorialClinico> findByVeterinarioId(Long veterinarioId);
-    List<HistorialClinico> findByNombreMascota(Long veterinarioId);
+    boolean existsByCitaId(Long citaId);
 }

@@ -76,4 +76,17 @@ public class DisponibilidadController {
         agendamientoService.liberarSlotsPorCitaId(citaId);
         return ResponseEntity.ok().build();
     }
+
+
+    @PostMapping("/slots/list")
+    @PreAuthorize("isAuthenticated()") // Protegido - Solo para comunicación entre servicios
+    public ResponseEntity<List<DisponibilidadResponseDTO>> getDisponibilidadByIds(@RequestBody List<Long> ids) {
+        return ResponseEntity.ok(agendamientoService.findDisponibilidadByIds(ids));
+    }
+
+    @GetMapping("/servicio/{servicioId}/veterinarios")
+    @PreAuthorize("isAuthenticated()") // Protegido para llamadas inter-servicio
+    public ResponseEntity<List<Long>> getVeterinariosPorServicio(@PathVariable Long servicioId) {
+        return ResponseEntity.ok(agendamientoService.findVeterinarioIdsByServicioId(servicioId));
+    }
 }

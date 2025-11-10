@@ -22,4 +22,8 @@ public interface IAgendamientoService {
     void liberarSlotsPorCitaId(Long citaId);
 
     DisponibilidadResponseDTO actualizarEstadoSlotManualmente(Long disponibilidadId, EstadoDisponibilidad nuevoEstado);
+
+    List<DisponibilidadResponseDTO> findDisponibilidadByIds(List<Long> ids);
+
+    List<Long> findVeterinarioIdsByServicioId(Long servicioId);
 }

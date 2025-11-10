@@ -1,16 +1,18 @@
 package co.cue.historias_clinicas_service.service;
 
+// ... (imports)
 import co.cue.historias_clinicas_service.dto.HistorialClinicoRequestDTO;
 import co.cue.historias_clinicas_service.dto.HistorialClinicoResponseDTO;
-import co.cue.historias_clinicas_service.entity.HistorialClinico;
+import co.cue.historias_clinicas_service.events.CitaCompletadaEventDTO;
 
 import java.util.List;
 
 public interface IHistorialClinicoService {
 
-    List<HistorialClinico> findByPetId(Long petId);
-    HistorialClinicoResponseDTO findMedicalRecordByPetId(Long petId);
-    HistorialClinicoResponseDTO createHistorialMedico(HistorialClinicoRequestDTO historialClinicoRequestDTO);
-    HistorialClinicoResponseDTO updateHistorialMedico(Long id, HistorialClinicoRequestDTO historialClinicoRequestDTO);
-    void deleteHistorialMedico(Long id);
+    List<HistorialClinicoResponseDTO> findMedicalRecordsByPetId(Long petId, Long usuarioId);
+    HistorialClinicoResponseDTO findMedicalRecordById(Long historialId, Long usuarioId);
+    HistorialClinicoResponseDTO createHistorialMedico(HistorialClinicoRequestDTO requestDTO, Long veterinarioId);
+    HistorialClinicoResponseDTO updateHistorialMedico(Long historialId, HistorialClinicoRequestDTO requestDTO, Long veterinarioId);
+    void deleteHistorialMedico(Long historialId, Long usuarioId);
+    void registrarHistorialDesdeEvento(CitaCompletadaEventDTO event);
 }

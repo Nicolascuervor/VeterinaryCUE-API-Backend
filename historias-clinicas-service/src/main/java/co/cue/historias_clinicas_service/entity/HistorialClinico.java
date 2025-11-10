@@ -28,6 +28,9 @@ public class HistorialClinico {
     @Column(name = "veterinario_id", nullable = false)
     private Long veterinarianId;
 
+    @Column(name = "cita_id", nullable = true, unique = true)
+    private Long citaId;
+
     @Column(nullable = false)
     private LocalDate fecha;
 

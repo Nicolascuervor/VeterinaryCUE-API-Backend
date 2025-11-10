@@ -1,4 +1,4 @@
-package co.cue.citas_service.dto;
+package co.cue.citas_service.dtos;
 
 import co.cue.citas_service.entity.EstadoCita;
 import lombok.Getter;

@@ -1,4 +1,4 @@
-package co.cue.citas_service.dto;
+package co.cue.citas_service.dtos;
 import lombok.Getter;
 import lombok.Setter;
 import java.util.List;

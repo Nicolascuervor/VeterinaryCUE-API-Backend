@@ -1,13 +1,13 @@
-package co.cue.agendamiento_service.config;
+package co.cue.citas_service.config;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod; // <-- Importante
+import org.springframework.http.HttpMethod; // Importante
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer; // <-- Importar el moderno
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
@@ -24,20 +24,21 @@ import java.util.Base64;
 @EnableMethodSecurity
 public class SecurityConfig {
 
-    @Value("${api.endpoints.servicios-admin-path}")
-    private String serviciosAdminPath;
+    // (Mentor): Definimos los roles que usa este servicio
+    private static final String ADMIN_ROLE = "ADMIN";
+    private static final String VETERINARIO_ROLE = "VETERINARIO";
+    private static final String DUENIO_ROLE = "DUEÑO"; // Importado de auth-service
 
-    @Value("${api.endpoints.disponibilidad-path}")
-    private String disponibilidadPath;
+    // (Mentor): Ruta base de CitaController
+    private static final String CITAS_API_PATH = "/api/cita/**";
 
-    private static final String ADMIN = "ADMIN";
-    private static final String VETERINARIO = "VETERINARIO";
-
-
-
-    @Value("${jwt.secret.key}")
+    @Value("${jwt.secret.key}") //
     private String secretKey;
 
+    /**
+     * (Colega Senior): Bean idéntico al esqueleto.
+     * Lee la clave secreta y crea el decodificador de JWT.
+     */
     @Bean
     public JwtDecoder jwtDecoder() {
         byte[] keyBytes = Base64.getDecoder().decode(secretKey);
@@ -45,6 +46,10 @@ public class SecurityConfig {
         return NimbusJwtDecoder.withSecretKey(key).build();
     }
 
+    /**
+     * (Arquitecto): Esta es la lógica de autorización adaptada
+     * a nuestras reglas de negocio para citas-service.
+     */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
@@ -59,22 +64,22 @@ public class SecurityConfig {
 
         http
                 .authorizeHttpRequests(authz -> authz
-                        // (Arquitecto): REGLAS CORREGIDAS
-                        // 1. LEER servicios (GET) es para CUALQUIER usuario autenticado.
-                        .requestMatchers(HttpMethod.GET, serviciosAdminPath + "/**").authenticated()
+                        // GET: Dueños, Vets y Admins pueden leer citas.
+                        .requestMatchers(HttpMethod.GET, CITAS_API_PATH)
+                        .hasAnyRole(DUENIO_ROLE, VETERINARIO_ROLE, ADMIN_ROLE)
 
-                        // 2. ESCRIBIR servicios (POST, PUT, DELETE) es SOLO para ADMIN.
-                        .requestMatchers(HttpMethod.POST, serviciosAdminPath + "/**").hasRole(ADMIN)
-                        .requestMatchers(HttpMethod.PUT, serviciosAdminPath + "/**").hasAnyRole(ADMIN)
-                        .requestMatchers(HttpMethod.DELETE, serviciosAdminPath + "/**").hasRole(ADMIN)
+                        // POST: Dueños, Vets y Admins pueden crear citas.
+                        .requestMatchers(HttpMethod.POST, CITAS_API_PATH)
+                        .hasAnyRole(DUENIO_ROLE, VETERINARIO_ROLE, ADMIN_ROLE)
 
-                        // (Mentor): Mantenemos tus otras reglas específicas
-                        .requestMatchers(HttpMethod.POST, disponibilidadPath + "/generar-slots").hasRole(ADMIN)
-                        .requestMatchers(HttpMethod.POST, disponibilidadPath + "/jornada").hasAnyRole(ADMIN, VETERINARIO)
-                        .requestMatchers(HttpMethod.PATCH, disponibilidadPath + "/slots/**").hasAnyRole(ADMIN, VETERINARIO)
+                        // PUT: Solo Vets y Admins pueden actualizar (completar, añadir info médica).
+                        .requestMatchers(HttpMethod.PUT, CITAS_API_PATH)
+                        .hasAnyRole(VETERINARIO_ROLE, ADMIN_ROLE)
 
-                        // 3. El resto de 'disponibilidad' es para usuarios autenticados.
-                        .requestMatchers(disponibilidadPath + "/**").authenticated()
+                        // DELETE: Dueños, Vets y Admins pueden cancelar (borrar) citas.
+                        .requestMatchers(HttpMethod.DELETE, CITAS_API_PATH)
+                        .hasAnyRole(DUENIO_ROLE, VETERINARIO_ROLE, ADMIN_ROLE)
+
                         .anyRequest().authenticated()
                 );
 
@@ -82,13 +87,16 @@ public class SecurityConfig {
     }
 
 
+    /**
+     * (Colega Senior): Bean idéntico al esqueleto.
+     * Le dice a Spring Security cómo encontrar los roles ("roles")
+     * dentro del token JWT.
+     */
     @Bean
     public JwtAuthenticationConverter jwtAuthenticationConverter() {
         JwtGrantedAuthoritiesConverter grantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();
-
         grantedAuthoritiesConverter.setAuthoritiesClaimName("roles");
-
-        grantedAuthoritiesConverter.setAuthorityPrefix("");
+        grantedAuthoritiesConverter.setAuthorityPrefix(""); // No usamos "ROLE_"
 
         JwtAuthenticationConverter jwtConverter = new JwtAuthenticationConverter();
         jwtConverter.setJwtGrantedAuthoritiesConverter(grantedAuthoritiesConverter);

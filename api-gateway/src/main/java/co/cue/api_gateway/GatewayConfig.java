@@ -56,6 +56,14 @@ public class GatewayConfig {
                         .filters(f -> f.filter(authFilter)) // <-- Protegido
                         .uri("lb://inventario-service"))
 
+                .route("agendamiento_service_route", r -> r.path("/api/agendamiento/**")
+                        .filters(f -> f.filter(authFilter))
+                        .uri("lb://agendamiento-service"))
+
+                .route("historias_clinicas_service_route", r -> r.path("/api/historial-clinico/**")
+                        .filters(f -> f.filter(authFilter))
+                        .uri("lb://historias-clinicas-service"))
+
                 .build();
     }
 }
