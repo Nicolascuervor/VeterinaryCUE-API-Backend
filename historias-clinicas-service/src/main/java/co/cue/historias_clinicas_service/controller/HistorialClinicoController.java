@@ -13,32 +13,56 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/historial-clinico")
 @AllArgsConstructor
-
 public class HistorialClinicoController {
+
     private final IHistorialClinicoService historialClinicoService;
 
-
-    @GetMapping("/{id}")
-    public ResponseEntity<HistorialClinicoResponseDTO> obtenerHistorialClinicoPorId(@PathVariable Long id) {
-        HistorialClinicoResponseDTO historialClinico = historialClinicoService.findMedicalRecordByPetId(id);
-        return ResponseEntity.ok(historialClinico);
+    @GetMapping("/mascota/{petId}")
+    public ResponseEntity<List<HistorialClinicoResponseDTO>> obtenerHistorialesPorMascotaId(
+            @PathVariable Long petId,
+            @RequestHeader(value = "X-Usuario-Id") Long usuarioId) {
+        List<HistorialClinicoResponseDTO> historiales = historialClinicoService.findMedicalRecordsByPetId(petId, usuarioId);
+        return ResponseEntity.ok(historiales);
     }
+
+
+    @GetMapping("/{historialId}")
+    public ResponseEntity<HistorialClinicoResponseDTO> obtenerHistorialClinicoPorId(
+            @PathVariable Long historialId,
+            @RequestHeader(value = "X-Usuario-Id") Long usuarioId) {
+
+        HistorialClinicoResponseDTO historial = historialClinicoService.findMedicalRecordById(historialId, usuarioId);
+        return ResponseEntity.ok(historial);
+    }
+
 
     @PostMapping
-    public ResponseEntity<HistorialClinicoResponseDTO> crearHistorialClinico(@RequestBody HistorialClinicoRequestDTO requestDTO) {
-        HistorialClinicoResponseDTO nuevaHistorialClinico = historialClinicoService.createHistorialMedico(requestDTO);
-        return new ResponseEntity<>(nuevaHistorialClinico, HttpStatus.CREATED);
+    public ResponseEntity<HistorialClinicoResponseDTO> crearHistorialClinico(
+            @RequestBody HistorialClinicoRequestDTO requestDTO,
+            @RequestHeader(value = "X-Usuario-Id") Long veterinarioId) {
+
+        HistorialClinicoResponseDTO nuevoHistorial = historialClinicoService.createHistorialMedico(requestDTO, veterinarioId);
+        return new ResponseEntity<>(nuevoHistorial, HttpStatus.CREATED);
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<HistorialClinicoResponseDTO> actualizarHistorialClinico(@PathVariable Long id, @RequestBody HistorialClinicoRequestDTO requestDTO) {
-        HistorialClinicoResponseDTO actualizada = historialClinicoService.updateHistorialMedico(id, requestDTO);
-        return ResponseEntity.ok(actualizada);
+
+    @PutMapping("/{historialId}")
+    public ResponseEntity<HistorialClinicoResponseDTO> actualizarHistorialClinico(
+            @PathVariable Long historialId,
+            @RequestBody HistorialClinicoRequestDTO requestDTO,
+            @RequestHeader(value = "X-Usuario-Id") Long veterinarioId) {
+
+        HistorialClinicoResponseDTO actualizado = historialClinicoService.updateHistorialMedico(historialId, requestDTO, veterinarioId);
+        return ResponseEntity.ok(actualizado);
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> eliminarHistorialClinico(@PathVariable Long id) {
-        historialClinicoService.deleteHistorialMedico(id);
+
+    @DeleteMapping("/{historialId}")
+    public ResponseEntity<Void> eliminarHistorialClinico(
+            @PathVariable Long historialId,
+            @RequestHeader(value = "X-Usuario-Id") Long usuarioId) {
+
+        historialClinicoService.deleteHistorialMedico(historialId, usuarioId);
         return ResponseEntity.noContent().build();
     }
 }

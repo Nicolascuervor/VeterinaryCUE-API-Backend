@@ -4,6 +4,7 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import lombok.Getter;
 import lombok.Setter;
@@ -49,26 +50,44 @@ public class Cita {
     private EstadoCita estado;
 
 
-    @Column(length = 1000)
-    private String motivoConsulta; // Razón del dueño para la visita
-
-    @Column(length = 500)
-    private String estadoGeneralMascota; // Cómo llegó la mascota (ej. "Apatica, sin apetito")
-
-    @Column(length = 2000)
-    private String observaciones; // Notas libres del veterinario
-
-    @Column(length = 1000)
-    private String diagnostico; // El diagnóstico final del vet
-
     @Column(length = 2000)
     private String tratamiento; // El tratamiento recetado
+
+    @Column(length = 2000)
+    private String observaciones;
+
+    @Column(length = 2000)
+    private String estadoGeneralMascota;
+
+    @Column(length = 2000)
+    private String diagnostico;
+
+    @Column(length = 2000)
+    private String motivoConsulta;
+
+
+
 
     @Column(precision = 5, scale = 2)
     private BigDecimal peso;
 
     @Column(precision = 4, scale = 2)
     private BigDecimal temperatura;
+
+    @Column(name = "frecuencia_cardiaca")
+    private Integer frecuenciaCardiaca;
+
+    @Column(name = "frecuencia_respiratoria")
+    private Integer frecuenciaRespiratoria;
+
+    @Column(name = "examenes_realizados", length = 1000)
+    private String examenesRealizados;
+
+    @Column(name = "medicamentos_recetados", length = 1000)
+    private String medicamentosRecetados;
+
+    @Column(name = "proxima_cita")
+    private LocalDate proximaCita;
 
 
     @CreationTimestamp

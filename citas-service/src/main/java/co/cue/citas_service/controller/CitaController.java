@@ -1,8 +1,8 @@
 package co.cue.citas_service.controller;
 
-import co.cue.citas_service.dto.CitaRequestDTO;
-import co.cue.citas_service.dto.CitaResponseDTO;
-import co.cue.citas_service.dto.CitaUpdateDTO;
+import co.cue.citas_service.dtos.CitaRequestDTO;
+import co.cue.citas_service.dtos.CitaResponseDTO;
+import co.cue.citas_service.dtos.CitaUpdateDTO;
 import co.cue.citas_service.service.ICitaService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -10,7 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/cita")
+@RequestMapping("/api/citas")
 @AllArgsConstructor
 public class CitaController {
     private final ICitaService citaService;
@@ -22,8 +22,10 @@ public class CitaController {
     }
 
     @PostMapping
-    public ResponseEntity<CitaResponseDTO> crearCita(@RequestBody CitaRequestDTO requestDTO) {
-        CitaResponseDTO nuevaCita = citaService.createCita(requestDTO);
+    public ResponseEntity<CitaResponseDTO> crearCita(
+            @RequestBody CitaRequestDTO requestDTO,
+            @RequestHeader(value = "X-Usuario-Id") Long usuarioId) { // <-- ¡LA SOLUCIÓN!
+        CitaResponseDTO nuevaCita = citaService.createCita(requestDTO, usuarioId);
         return new ResponseEntity<>(nuevaCita, HttpStatus.CREATED);
     }
 

@@ -8,8 +8,10 @@ import co.cue.agendamiento_service.models.entities.dtos.JornadaLaboralRequestDTO
 import co.cue.agendamiento_service.models.entities.dtos.JornadaLaboralResponseDTO;
 import co.cue.agendamiento_service.models.entities.dtos.ReservaRequestDTO;
 import co.cue.agendamiento_service.models.entities.enums.EstadoDisponibilidad;
+import co.cue.agendamiento_service.models.entities.servicios.VeterinarioServicio;
 import co.cue.agendamiento_service.repository.DisponibilidadRepository;
 import co.cue.agendamiento_service.repository.JornadaLaboralRepository;
+import co.cue.agendamiento_service.repository.VeterinarioServicioRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.AllArgsConstructor;
@@ -32,6 +34,7 @@ public class AgendamientoServiceImpl implements IAgendamientoService {
 
     private final JornadaLaboralRepository jornadaRepository;
     private final DisponibilidadRepository disponibilidadRepository;
+    private final VeterinarioServicioRepository veterinarioServicioRepository; // <-- AÑADIR ESTA LÍNEA
     private final AgendamientoMapper mapper;
 
     @Override
@@ -180,6 +183,29 @@ public class AgendamientoServiceImpl implements IAgendamientoService {
         LocalTime inicioDescanso = jornada.getHoraInicioDescanso();
         LocalTime finDescanso = jornada.getHoraFinDescanso();
         return  slotInicio.isBefore(finDescanso) && slotFin.isAfter(inicioDescanso);
+    }
+
+    @Override
+    @Transactional(readOnly = true) // Usamos readOnly para optimizar consultas de solo lectura
+    public List<DisponibilidadResponseDTO> findDisponibilidadByIds(List<Long> ids) {
+        log.info("Buscando {} slots de disponibilidad por IDs", ids.size());
+
+        return disponibilidadRepository.findAllById(ids)
+                .stream()
+                .map(mapper::toDisponibilidadResponseDTO) // Reutilizamos el mapper existente
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Long> findVeterinarioIdsByServicioId(Long servicioId) {
+        log.info("Buscando veterinarios para el servicio ID: {}", servicioId);
+
+        List<VeterinarioServicio> relaciones = veterinarioServicioRepository.findByServicioId(servicioId);
+        return relaciones.stream()
+                .map(VeterinarioServicio::getVeterinarioId)
+                .distinct() // Nos aseguramos de no devolver IDs duplicados
+                .collect(Collectors.toList());
     }
 
 
