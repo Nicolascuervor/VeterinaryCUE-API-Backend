@@ -2,9 +2,12 @@ package co.cue.historias_clinicas_service.controller;
 
 import co.cue.historias_clinicas_service.dto.HistorialClinicoRequestDTO;
 import co.cue.historias_clinicas_service.dto.HistorialClinicoResponseDTO;
+import co.cue.historias_clinicas_service.entity.Reporte;
 import co.cue.historias_clinicas_service.service.IHistorialClinicoService;
+import co.cue.historias_clinicas_service.service.ReporteService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,6 +19,7 @@ import java.util.List;
 public class HistorialClinicoController {
 
     private final IHistorialClinicoService historialClinicoService;
+    private final ReporteService reporteService;
 
     @GetMapping("/mascota/{petId}")
     public ResponseEntity<List<HistorialClinicoResponseDTO>> obtenerHistorialesPorMascotaId(
@@ -64,5 +68,17 @@ public class HistorialClinicoController {
 
         historialClinicoService.deleteHistorialMedico(historialId, usuarioId);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping(value = "/{historialId}/reporte", produces = MediaType.TEXT_PLAIN_VALUE)
+    public ResponseEntity<String> obtenerReporteDeHistorial(
+            @PathVariable Long historialId,
+            @RequestHeader(value = "X-Usuario-Id") Long usuarioId) {
+
+        historialClinicoService.findMedicalRecordById(historialId, usuarioId);
+
+        Reporte reporte = reporteService.generarReporteDeHistorial(historialId, usuarioId);
+
+        return ResponseEntity.ok(reporte.toString());
     }
 }
