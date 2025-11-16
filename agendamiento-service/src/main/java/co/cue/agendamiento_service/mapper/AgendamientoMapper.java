@@ -7,7 +7,9 @@ import co.cue.agendamiento_service.models.entities.dtos.JornadaLaboralResponseDT
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.stream.Collectors;
+
+
+import static java.util.stream.Collectors.toList;
 
 
 @Component
@@ -33,7 +35,7 @@ public class AgendamientoMapper {
     public List<DisponibilidadResponseDTO> toDisponibilidadResponseDTOList(List<Disponibilidad> entities) {
         return entities.stream()
                 .map(this::toDisponibilidadResponseDTO)
-                .collect(Collectors.toList());
+                .collect(toList());
     }
 
 
