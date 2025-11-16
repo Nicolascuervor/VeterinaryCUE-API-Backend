@@ -10,13 +10,12 @@ import co.cue.pedidos_service.repository.PedidoRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
-import jdk.jfr.Event;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-
 import java.util.Set;
 import java.util.stream.Collectors;
+import com.fasterxml.jackson.core.JsonProcessingException;
 
 @Service
 @Slf4j
@@ -42,18 +41,14 @@ public class PedidoWebhookService {
         String paymentIntentId;
         String eventType;
         try {
-            // (Mentor): Usamos ObjectMapper para leer el JSON del payload
             JsonNode jsonPayload = objectMapper.readTree(payload);
             eventType = jsonPayload.path("type").asText();
-
-            // (Mentor): Extraemos el ID del objeto de Stripe
             paymentIntentId = jsonPayload.path("data").path("object").path("id").asText();
 
-        } catch (Exception e) {
-            throw new RuntimeException("Error al parsear el payload del Webhook", e);
+        } catch (JsonProcessingException e) {
+            throw new IllegalArgumentException("Error al parsear el payload del Webhook de Stripe: JSON malformado.", e);
         }
 
-        // (Mentor): Verificamos el tipo de evento
         if (!"payment_intent.succeeded".equals(eventType)) {
             log.warn("Evento de Stripe recibido [{}], pero no es 'payment_intent.succeeded'. Ignorando.", eventType);
             return;

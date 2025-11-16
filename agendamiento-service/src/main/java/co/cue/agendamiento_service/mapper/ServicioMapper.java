@@ -15,21 +15,20 @@ public class ServicioMapper {
 
 
     public ServicioResponseDTO toResponseDTO(Servicio entity) {
-        if (entity instanceof Consulta) {
-            return toConsultaResponseDTO((Consulta) entity);
+        if (entity instanceof Consulta consulta) {
+            return toConsultaResponseDTO(consulta);
         }
-        if (entity instanceof Cirugia) {
-            return toCirugiaResponseDTO((Cirugia) entity);
+        if (entity instanceof Cirugia cirugia) {
+            return toCirugiaResponseDTO(cirugia);
         }
-        if (entity instanceof Estetica) {
-            return toEsteticaResponseDTO((Estetica) entity);
+        if (entity instanceof Estetica estetica) {
+            return toEsteticaResponseDTO(estetica);
         }
-        if (entity instanceof Vacunacion) {
-            return toVacunacionResponseDTO((Vacunacion) entity);
+        if (entity instanceof Vacunacion vacunacion) {
+            return toVacunacionResponseDTO(vacunacion);
         }
         throw new IllegalArgumentException("Tipo de Servicio no mapeado: " + entity.getClass().getName());
     }
-
     private ConsultaResponseDTO toConsultaResponseDTO(Consulta entity) {
         ConsultaResponseDTO dto = new ConsultaResponseDTO();
         mapBaseEntityToResponse(entity, dto);

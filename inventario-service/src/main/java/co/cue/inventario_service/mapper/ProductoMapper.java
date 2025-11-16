@@ -9,7 +9,6 @@ import co.cue.inventario_service.models.dtos.responsedtos.*;
 import co.cue.inventario_service.models.entities.*;
 import org.springframework.stereotype.Component;
 
-
 @Component
 public class ProductoMapper {
     public Alimento mapToEntity(AlimentoRequestDTO dto) {
@@ -38,16 +37,15 @@ public class ProductoMapper {
 
 
     public ProductoResponseDTO mapToResponseDTO(Producto entity) {
-        if (entity instanceof Alimento) {
-            return mapToResponseDTO((Alimento) entity);
+        if (entity instanceof Alimento alimento) {
+            return mapToResponseDTO(alimento);
         }
-        if (entity instanceof Medicina) {
-            return mapToResponseDTO((Medicina) entity);
+        if (entity instanceof Medicina medicina) {
+            return mapToResponseDTO(medicina);
         }
-        if (entity instanceof Accesorio) {
-            return mapToResponseDTO((Accesorio) entity);
+        if (entity instanceof Accesorio accesorio) {
+            return mapToResponseDTO(accesorio);
         }
-        // Manejar un caso improbable
         throw new IllegalArgumentException("Tipo de Producto desconocido: " + entity.getClass().getName());
     }
 

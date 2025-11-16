@@ -4,7 +4,7 @@ package co.cue.historias_clinicas_service.dto;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.antlr.v4.runtime.misc.NotNull;
+
 
 import java.math.BigDecimal;
 import java.time.LocalDate;

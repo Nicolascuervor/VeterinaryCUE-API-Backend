@@ -48,16 +48,12 @@ public class SecurityConfig {
         http
                 .authorizeHttpRequests(authz -> authz
 
-                        // (Arquitecto): 1. Permite el Webhook de Stripe (Público)
                         .requestMatchers("/api/pedidos/stripe/webhook").permitAll()
 
-                        // (Arquitecto): 2. Permite el Checkout (para Invitados Y Logueados)
                         .requestMatchers(HttpMethod.POST, "/api/pedidos/checkout").permitAll()
 
-                        // (Arquitecto): 3. Protege CUALQUIER OTRA ruta de pedidos
                         .requestMatchers("/api/pedidos/**").authenticated()
 
-                        // (Mentor): Buena práctica, denegar todo lo demás por defecto
                         .anyRequest().authenticated());
         return http.build();
     }
@@ -65,7 +61,6 @@ public class SecurityConfig {
     @Bean
     public JwtAuthenticationConverter jwtAuthenticationConverter() {
         JwtGrantedAuthoritiesConverter grantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();
-        // (Mentor): Leemos los roles del JWT, igual que en el gateway
         grantedAuthoritiesConverter.setAuthoritiesClaimName("roles");
         grantedAuthoritiesConverter.setAuthorityPrefix("");
         JwtAuthenticationConverter jwtConverter = new JwtAuthenticationConverter();

@@ -17,8 +17,8 @@ public class Veterinario extends Usuario {
     @Column(length = 100)
     private String especialidad;
 
-    public Veterinario(String nombre, String apellido, String correo, String contraseña, String direccion, String telefono, String especialidad) {
-        super(nombre, apellido, correo, contraseña, direccion, telefono, Role.ROLE_VETERINARIO);
+    public Veterinario(String nombre, String apellido, String correo, String contrasenia, String direccion, String telefono, String especialidad) {
+        super(nombre, apellido, correo, contrasenia, direccion, telefono, Role.ROLE_VETERINARIO);
         this.especialidad = especialidad;
     }
 }

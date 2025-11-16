@@ -49,7 +49,7 @@ public class HistorialClinicoServiceImpl implements IHistorialClinicoService {
         return historialClinicoRepository.findByPetId(petId) //
                 .stream()
                 .map(mapper::mapEntityToResponseDTO)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override

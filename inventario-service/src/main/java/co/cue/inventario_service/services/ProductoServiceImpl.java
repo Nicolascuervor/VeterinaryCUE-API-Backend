@@ -33,7 +33,7 @@ public class ProductoServiceImpl implements IProductoService {
         return productoRepository.findAllByActivoTrue()
                 .stream()
                 .map(productoMapper::mapToResponseDTO)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override

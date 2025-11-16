@@ -26,8 +26,8 @@ public class JwtService {
                 .map(GrantedAuthority::getAuthority)
                 .toList();
         claims.put("roles", roleNames);
-        if (userDetails instanceof Usuario) {
-            claims.put("usuarioId", ((Usuario) userDetails).getId());
+        if (userDetails instanceof Usuario usuario) {
+            claims.put("usuarioId", usuario.getId());
         }
         return createToken(claims, userDetails.getUsername());
     }

@@ -8,7 +8,7 @@ import co.cue.auth.strategies.IUsuarioCreationStrategy;
 import org.springframework.stereotype.Component;
 
 @Component
-public class DueñoCreationStrategy implements IUsuarioCreationStrategy {
+public class DuenioCreationStrategy implements IUsuarioCreationStrategy {
 
     @Override
     public Usuario crearUsuario(RegistroUsuarioDTO dto) {
@@ -24,6 +24,6 @@ public class DueñoCreationStrategy implements IUsuarioCreationStrategy {
 
     @Override
     public TipoUsuario getTipo() {
-        return TipoUsuario.DUEÑO;
+        return TipoUsuario.DUENIO;
     }
 }

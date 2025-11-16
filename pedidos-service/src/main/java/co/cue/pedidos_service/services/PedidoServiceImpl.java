@@ -15,8 +15,10 @@ import co.cue.pedidos_service.models.entities.Pedido;
 import co.cue.pedidos_service.models.entities.PedidoItem;
 import co.cue.pedidos_service.models.enums.PedidoEstado;
 import co.cue.pedidos_service.repository.PedidoRepository;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
@@ -26,6 +28,7 @@ import java.util.Set;
 
 @Service
 @AllArgsConstructor
+@Slf4j
 public class PedidoServiceImpl implements IPedidoService {
 
     private final PedidoRepository pedidoRepository;
@@ -37,28 +40,27 @@ public class PedidoServiceImpl implements IPedidoService {
 
     @Override
     @Transactional
+
     public CheckoutResponseDTO iniciarCheckout(Long usuarioId, String sessionId, CheckoutGuestRequestDTO guestDTO) {
 
-
-        // Paso 1: Obtener Datos del Cliente
         UsuarioClienteDTO cliente = obtenerDatosCliente(usuarioId, guestDTO).block();
 
-        // Paso 2: Obtener Carrito
+        if (cliente == null) {
+            log.error("No se pudieron obtener los datos del cliente para el usuarioId: {}", usuarioId);
+            throw new EntityNotFoundException("No se pudieron verificar los datos del cliente.");
+        }
+
         CarritoClienteDTO carrito = carritoClient.findCarrito(usuarioId, sessionId).block();
         if (carrito == null || carrito.getItems() == null || carrito.getItems().isEmpty()) {
             throw new CarritoVacioException("No se puede procesar un pedido con un carrito vacío.");
         }
 
-        // Paso 3: Validar Productos y Stock (La lógica de negocio principal)
         Set<PedidoItem> itemsDelPedido = new HashSet<>();
         BigDecimal totalPedido = BigDecimal.ZERO;
 
-        // Iteramos sobre los items del carrito
         for (ItemCarritoClienteDTO itemCarrito : carrito.getItems()) {
-            // 3a. Llamar a Inventario por CADA producto
             ProductoClienteDTO producto = inventarioClient.findProductoById(itemCarrito.getProductoId()).block();
 
-            // 3b. Validación de Stock (Nuestra regla de negocio "simple y eficiente")
             if (producto == null || !producto.isDisponibleParaVenta()) {
                 throw new StockInsuficienteException("El producto " + itemCarrito.getProductoId() + " no está disponible.");
             }
@@ -68,20 +70,18 @@ public class PedidoServiceImpl implements IPedidoService {
                         ", Disponibles: " + producto.getStockActual());
             }
 
-            // 3c. Crear el PedidoItem (inmutable)
             PedidoItem pedidoItem = new PedidoItem();
             pedidoItem.setProductoId(producto.getId());
             pedidoItem.setCantidad(itemCarrito.getCantidad());
-            pedidoItem.setPrecioUnitario(producto.getPrecio()); // <-- Guardamos el precio "snapshot"
+            pedidoItem.setPrecioUnitario(producto.getPrecio());
 
             BigDecimal subtotal = producto.getPrecio().multiply(new BigDecimal(itemCarrito.getCantidad()));
             pedidoItem.setSubtotalLinea(subtotal);
 
             itemsDelPedido.add(pedidoItem);
-            totalPedido = totalPedido.add(subtotal); // Sumamos al total
+            totalPedido = totalPedido.add(subtotal);
         }
 
-        // Paso 4: Crear el Pedido en estado PENDIENTE
         Pedido pedido = new Pedido();
         pedido.setUsuarioId(usuarioId); // Nulo si es invitado
         pedido.setClienteNombre(cliente.getNombre() + " " + cliente.getApellido());
@@ -89,7 +89,6 @@ public class PedidoServiceImpl implements IPedidoService {
         pedido.setTotalPedido(totalPedido);
         pedido.setEstado(PedidoEstado.PENDIENTE);
 
-        // Asociamos los items al pedido
         for (PedidoItem item : itemsDelPedido) {
             item.setPedido(pedido);
         }
@@ -97,14 +96,12 @@ public class PedidoServiceImpl implements IPedidoService {
 
         Pedido pedidoGuardado = pedidoRepository.save(pedido);
 
-        // Paso 5: Crear Intención de Pago en Stripe
         String clientSecret = stripeService.crearPaymentIntent(totalPedido, pedidoGuardado.getId());
 
-        // Actualizamos nuestro pedido con el ID de Stripe
+
         pedidoGuardado.setStripePaymentIntentId(clientSecret.split("_secret_")[0]); // (Truco para el mock)
         pedidoRepository.save(pedidoGuardado);
 
-        // Paso 6: Devolver el ClientSecret al Frontend
         return new CheckoutResponseDTO(pedidoGuardado.getId(), clientSecret);
     }
 

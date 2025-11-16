@@ -28,7 +28,7 @@ public class SecurityConfig {
     // Spring automáticamente añade el prefijo "ROLE_"
     private static final String ADMIN_ROLE = "ADMIN";
     private static final String VETERINARIO_ROLE = "VETERINARIO";
-    private static final String DUEÑO_ROLE = "DUEÑO";
+    private static final String DUENIO_ROLE = "DUEÑO";
 
     // (Mentor): Definimos la ruta base de nuestro controlador
     private static final String HISTORIAL_API_PATH = "/api/historial-clinico/**";
@@ -71,7 +71,7 @@ public class SecurityConfig {
                         // (Regla 1): Ver historiales (GET) es para Dueños, Vets, y Admins.
                         // La lógica de *cuál* historial puede ver se delega al ServiceImpl.
                         .requestMatchers(HttpMethod.GET, HISTORIAL_API_PATH)
-                        .hasAnyRole(DUEÑO_ROLE, VETERINARIO_ROLE, ADMIN_ROLE)
+                        .hasAnyRole(DUENIO_ROLE, VETERINARIO_ROLE, ADMIN_ROLE)
 
                         // (Regla 2): Crear historiales (POST) es solo para Veterinarios.
                         .requestMatchers(HttpMethod.POST, HISTORIAL_API_PATH)

@@ -71,31 +71,25 @@ public class AgendamientoServiceImpl implements IAgendamientoService {
 
         return slots.stream()
                 .map(mapper::toDisponibilidadResponseDTO)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
     @Transactional
     public List<DisponibilidadResponseDTO> reservarSlots(ReservaRequestDTO requestDTO) {
-
-        // (Colega Senior): Usamos la consulta masiva que creamos en el Repo.
         int filasActualizadas = disponibilidadRepository.reservarSlotsMasivo(
                 requestDTO.getIdsDisponibilidad(),
                 requestDTO.getCitaId(),
                 EstadoDisponibilidad.RESERVADO
         );
-
-        // (Consultor): ¡Validación de Idempotencia!
         if (filasActualizadas != requestDTO.getIdsDisponibilidad().size()) {
-            // Esto significa que alguien intentó reservar slots que YA estaban reservados
-            // o no existían. La transacción se revierte.
             throw new IllegalStateException("Conflicto de reserva. Uno o más slots ya no estaban disponibles.");
         }
 
         List<Disponibilidad> slotsReservados = disponibilidadRepository.findAllById(requestDTO.getIdsDisponibilidad());
         return slotsReservados.stream()
                 .map(mapper::toDisponibilidadResponseDTO)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
@@ -127,7 +121,7 @@ public class AgendamientoServiceImpl implements IAgendamientoService {
                 .orElseThrow(() -> new EntityNotFoundException("Slot de disponibilidad no encontrado: " + disponibilidadId));
 
         slot.setEstado(nuevoEstado);
-        slot.setCitaId(null); // Si se bloquea, se quita cualquier citaId (aunque no debería tener)
+        slot.setCitaId(null);
 
         Disponibilidad guardado = disponibilidadRepository.save(slot);
         return mapper.toDisponibilidadResponseDTO(guardado);
@@ -159,13 +153,13 @@ public class AgendamientoServiceImpl implements IAgendamientoService {
         List<Disponibilidad> slots = new ArrayList<>();
         LocalTime slotActual = jornada.getHoraInicioJornada();
         LocalTime finJornada = jornada.getHoraFinJornada();
-        while (slotActual.isBefore(finJornada)) { // +1
+        while (slotActual.isBefore(finJornada)) {
             LocalTime finSlot = slotActual.plusMinutes(duracionSlot);
-            if (finSlot.isAfter(finJornada)) { // +1 (anidado)
+            if (finSlot.isAfter(finJornada)) {
                 break;
             }
             boolean estaEnDescanso = slotEstaEnDescanso(slotActual, finSlot, jornada);
-            if (!estaEnDescanso) { // +1 (anidado)
+            if (!estaEnDescanso) {
                 LocalDateTime inicio = LocalDateTime.of(fecha, slotActual);
                 LocalDateTime fin = LocalDateTime.of(fecha, finSlot);
                 slots.add(new Disponibilidad(veterinarioId, inicio, fin));
@@ -177,7 +171,7 @@ public class AgendamientoServiceImpl implements IAgendamientoService {
 
 
     private boolean slotEstaEnDescanso(LocalTime slotInicio, LocalTime slotFin, JornadaLaboral jornada) {
-        if (jornada.getHoraInicioDescanso() == null) { // +1
+        if (jornada.getHoraInicioDescanso() == null) {
             return false;
         }
         LocalTime inicioDescanso = jornada.getHoraInicioDescanso();
@@ -186,14 +180,14 @@ public class AgendamientoServiceImpl implements IAgendamientoService {
     }
 
     @Override
-    @Transactional(readOnly = true) // Usamos readOnly para optimizar consultas de solo lectura
+    @Transactional(readOnly = true)
     public List<DisponibilidadResponseDTO> findDisponibilidadByIds(List<Long> ids) {
         log.info("Buscando {} slots de disponibilidad por IDs", ids.size());
 
         return disponibilidadRepository.findAllById(ids)
                 .stream()
                 .map(mapper::toDisponibilidadResponseDTO) // Reutilizamos el mapper existente
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
@@ -204,8 +198,8 @@ public class AgendamientoServiceImpl implements IAgendamientoService {
         List<VeterinarioServicio> relaciones = veterinarioServicioRepository.findByServicioId(servicioId);
         return relaciones.stream()
                 .map(VeterinarioServicio::getVeterinarioId)
-                .distinct() // Nos aseguramos de no devolver IDs duplicados
-                .collect(Collectors.toList());
+                .distinct()
+                .toList();
     }
 
 

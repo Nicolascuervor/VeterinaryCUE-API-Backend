@@ -39,9 +39,7 @@ public class MascotaServiceClient {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         // Verificamos que sea un token JWT
-        if (authentication instanceof JwtAuthenticationToken) {
-            JwtAuthenticationToken jwtAuth = (JwtAuthenticationToken) authentication;
-            // Devolvemos el string puro del token
+        if (authentication instanceof JwtAuthenticationToken jwtAuth) {
             return jwtAuth.getToken().getTokenValue();
         }
 

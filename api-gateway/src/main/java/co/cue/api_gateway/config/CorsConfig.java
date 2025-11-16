@@ -9,11 +9,6 @@ import org.springframework.web.util.pattern.PathPatternParser;
 
 import java.util.List;
 
-/**
- * (Profesor): Esta es la configuración global de CORS para todo el proyecto.
- * Spring Cloud Gateway (que es Reactivo) interceptará todas las peticiones
- * y aplicará estas reglas.
- */
 @Configuration
 public class CorsConfig {
 

@@ -5,9 +5,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
 class CarritoServiceApplicationTests {
-
-	@Test
-	void contextLoads() {
-	}
+    @Test
+    void contextLoads() {
+        //Aun no se implementan pruebas unitarias ni de integración
+    }
 
 }

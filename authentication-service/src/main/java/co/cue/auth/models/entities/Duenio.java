@@ -7,14 +7,14 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 @Entity
-@Table(name = "dueños")
-@DiscriminatorValue("DUEÑO")
+@Table(name = "duenios")
+@DiscriminatorValue("DUENIO")
 @Getter
 @Setter
 @NoArgsConstructor
 
 public class Duenio extends Usuario {
-    public Duenio(String nombre, String apellido, String correo, String contraseña, String direccion, String telefono) {
-        super(nombre, apellido, correo, contraseña, direccion, telefono, Role.ROLE_DUEÑO);
+    public Duenio(String nombre, String apellido, String correo, String contrasenia, String direccion, String telefono) {
+        super(nombre, apellido, correo, contrasenia, direccion, telefono, Role.ROLE_DUENIO);
     }
 }

@@ -14,7 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.persistence.EntityNotFoundException;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
@@ -30,7 +29,7 @@ public class ServicioAdminServiceImpl implements IServicioAdminService {
     public List<ServicioResponseDTO> listarServicios() {
         return servicioRepository.findAllByActivoTrue().stream()
                 .map(mapper::toResponseDTO)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override

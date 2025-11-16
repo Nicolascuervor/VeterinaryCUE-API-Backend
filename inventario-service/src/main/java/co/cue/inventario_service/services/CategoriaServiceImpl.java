@@ -11,7 +11,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
@@ -25,7 +24,7 @@ public class CategoriaServiceImpl implements ICategoriaService {
         return categoriaRepository.findAllByActivoTrue() // Usamos el método del Repo
                 .stream()
                 .map(this::mapToResponseDTO)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override

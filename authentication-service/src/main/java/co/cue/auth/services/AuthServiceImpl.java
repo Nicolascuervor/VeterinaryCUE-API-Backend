@@ -32,14 +32,9 @@ public class AuthServiceImpl implements IAuthService {
     private final UsuarioFactory usuarioFactory;
     private final PasswordEncoder passwordEncoder;
     private IAuthService self;
-
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
-
     private final KafkaProducerService kafkaProducerService; // <-- INYECTAR
-
-
-
 
     @Autowired
     public AuthServiceImpl(UsuarioRepository usuarioRepository,
@@ -137,8 +132,8 @@ public class AuthServiceImpl implements IAuthService {
         usuario.setApellido(dto.getApellido());
         usuario.setDireccion(dto.getDireccion());
         usuario.setTelefono(dto.getTelefono());
-        if (usuario instanceof Veterinario && dto.getEspecialidad() != null) {
-            ((Veterinario) usuario).setEspecialidad(dto.getEspecialidad());
+        if (usuario instanceof Veterinario vet && dto.getEspecialidad() != null) {
+            vet.setEspecialidad(dto.getEspecialidad());
         }
         return usuarioRepository.save(usuario);
     }
