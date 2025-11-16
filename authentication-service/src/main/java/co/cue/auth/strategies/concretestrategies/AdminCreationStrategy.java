@@ -17,7 +17,7 @@ public class AdminCreationStrategy implements IUsuarioCreationStrategy {
                 dto.getNombre(),
                 dto.getApellido(),
                 dto.getCorreo(),
-                dto.getContraseña(),
+                dto.getContrasenia(),
                 dto.getDireccion(),
                 dto.getTelefono()
         );

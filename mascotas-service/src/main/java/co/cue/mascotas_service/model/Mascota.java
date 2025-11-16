@@ -44,6 +44,7 @@ public class Mascota {
     private Long duenoId;
 
     @Column(nullable = false)
+    @Builder.Default
     private Boolean active = true;
 
     @Column(nullable = false, updatable = false)

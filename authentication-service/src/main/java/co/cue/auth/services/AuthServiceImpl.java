@@ -60,8 +60,8 @@ public class AuthServiceImpl implements IAuthService {
         if (usuarioRepository.existsByCorreo(dto.getCorreo())) {
             throw new IllegalArgumentException("El correo " + dto.getCorreo() + " ya está registrado.");
         }
-        String contraseniaHasheada = passwordEncoder.encode(dto.getContraseña());
-        dto.setContraseña(contraseniaHasheada);
+        String contraseniaHasheada = passwordEncoder.encode(dto.getContrasenia());
+        dto.setContrasenia(contraseniaHasheada);
 
         Usuario nuevoUsuario = usuarioFactory.crearUsuario(dto);
 
@@ -93,7 +93,7 @@ public class AuthServiceImpl implements IAuthService {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         dto.getCorreo(),
-                        dto.getContraseña()
+                        dto.getContrasenia()
                 )
         );
         UserDetails usuario = usuarioRepository.findByCorreo(dto.getCorreo())
