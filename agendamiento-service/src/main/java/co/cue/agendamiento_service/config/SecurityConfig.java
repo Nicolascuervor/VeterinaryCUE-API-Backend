@@ -32,6 +32,7 @@ public class SecurityConfig {
 
     private static final String ADMIN = "ADMIN";
     private static final String VETERINARIO = "VETERINARIO";
+    private static final String DUENIO_MASCOTA = "DUENIO";
 
 
 
@@ -64,7 +65,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, serviciosAdminPath + "/**").authenticated()
 
                         // 2. ESCRIBIR servicios (POST, PUT, DELETE) es SOLO para ADMIN.
-                        .requestMatchers(HttpMethod.POST, serviciosAdminPath + "/**").hasRole(ADMIN)
+                        .requestMatchers(HttpMethod.POST, serviciosAdminPath + "/**").hasAnyRole(ADMIN, DUENIO_MASCOTA)
                         .requestMatchers(HttpMethod.PUT, serviciosAdminPath + "/**").hasAnyRole(ADMIN)
                         .requestMatchers(HttpMethod.DELETE, serviciosAdminPath + "/**").hasRole(ADMIN)
 

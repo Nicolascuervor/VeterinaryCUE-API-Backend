@@ -25,7 +25,6 @@ public class MascotaServiceClient {
         return webClientBuilder.build()
                 .get()
                 .uri(url)
-                // (Mentor): ¡SOLUCIÓN! Propagamos el token del usuario actual.
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + getAuthenticatedToken())
                 .retrieve()
                 .onStatus(httpStatus -> httpStatus.value() == HttpStatus.NOT_FOUND.value(),
@@ -35,10 +34,8 @@ public class MascotaServiceClient {
 
 
     private String getAuthenticatedToken() {
-        // Obtenemos el contexto de seguridad de Spring
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        // Verificamos que sea un token JWT
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication instanceof JwtAuthenticationToken jwtAuth) {
             return jwtAuth.getToken().getTokenValue();
         }

@@ -12,9 +12,13 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -23,14 +27,14 @@ import java.util.stream.Collectors;
 @Slf4j
 public class HistorialClinicoServiceImpl implements IHistorialClinicoService {
     private final HistorialClinicoRepository historialClinicoRepository;
-    private final HistorialClinicoMapper mapper; // Inyectamos el Mapper
-    private final MascotaServiceClient mascotaClient; // Inyectamos el Cliente REST
+    private final HistorialClinicoMapper mapper;
+    private final MascotaServiceClient mascotaClient;
     @Override
     @Transactional
     public void registrarHistorialDesdeEvento(CitaCompletadaEventDTO event) {
         if (historialClinicoRepository.existsByCitaId(event.getCitaId())) {
             log.warn("Evento de Cita ID: {} recibido, pero ya existe un historial. Ignorando (Idempotencia).", event.getCitaId());
-            return; // No hacemos nada
+            return;
         }
         log.info("Procesando evento para Cita ID: {}. Creando nuevo registro de historial.", event.getCitaId());
         HistorialClinico nuevoHistorial = mapper.mapEventToEntity(event);
@@ -99,9 +103,6 @@ public class HistorialClinicoServiceImpl implements IHistorialClinicoService {
     public void deleteHistorialMedico(Long historialId, Long usuarioId) {
         log.warn("Usuario {} intentando desactivar historial ID {}", usuarioId, historialId);
         HistorialClinico historial = findEntidadById(historialId);
-
-        // (Arquitecto): Reutilizamos la validación de propiedad.
-        // Un dueño puede borrar sus propios registros (o un Admin/Vet)
         validarPropiedadMascota(historial.getPetId(), usuarioId);
 
         historial.setActivo(false); // Soft Delete
@@ -118,7 +119,15 @@ public class HistorialClinicoServiceImpl implements IHistorialClinicoService {
 
     private void validarPropiedadMascota(Long petId, Long usuarioId) {
         log.debug("Validando propiedad de mascota {} para usuario {}", petId, usuarioId);
-
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
+        boolean isAdminOrVet = authorities.stream()
+                .map(GrantedAuthority::getAuthority)
+                .anyMatch(role -> role.equals("ROLE_ADMIN") || role.equals("ROLE_VETERINARIO"));
+        if (isAdminOrVet) {
+            log.info("Acceso autorizado por ROL (ADMIN/VETERINARIO) para usuario {}", usuarioId);
+            return;
+        }
         MascotaClienteDTO mascota = mascotaClient.findMascotaById(petId)
                 .blockOptional()
                 .orElseThrow(() -> new EntityNotFoundException("Mascota no encontrada: " + petId));
@@ -128,5 +137,7 @@ public class HistorialClinicoServiceImpl implements IHistorialClinicoService {
                     usuarioId, petId, mascota.getDuenioId());
             throw new AccessDeniedException("No tiene permiso para ver este historial clínico.");
         }
+
+        log.info("Acceso autorizado por PROPIEDAD (DUEÑO) para usuario {}", usuarioId);
     }
 }
