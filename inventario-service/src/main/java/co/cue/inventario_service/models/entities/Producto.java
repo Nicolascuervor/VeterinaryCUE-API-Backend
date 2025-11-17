@@ -7,6 +7,8 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
@@ -41,6 +43,25 @@ public abstract class Producto {
 
 
     private boolean disponibleParaVenta;
+
+
+
+    @Column(name = "es_kit")
+    private boolean esKit = false;
+
+    /**
+     * (Arquitecto): Un producto "Kit" puede estar compuesto por
+     * muchos otros productos.
+     */
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "producto_componentes",
+            joinColumns = @JoinColumn(name = "kit_id"),
+            inverseJoinColumns = @JoinColumn(name = "componente_id")
+    )
+    private Set<Producto> componentes = new HashSet<>();
+
+
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "categoria_id", nullable = false)

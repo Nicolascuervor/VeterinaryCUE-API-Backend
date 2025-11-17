@@ -38,13 +38,16 @@ public class ProductoMapper {
 
     public ProductoResponseDTO mapToResponseDTO(Producto entity) {
         if (entity instanceof Alimento alimento) {
-            return mapToResponseDTO(alimento);
+            return mapAlimentoToResponseDTO(alimento);
         }
         if (entity instanceof Medicina medicina) {
-            return mapToResponseDTO(medicina);
+            return mapMedicinaToResponseDTO(medicina);
         }
         if (entity instanceof Accesorio accesorio) {
-            return mapToResponseDTO(accesorio);
+            return mapAccesorioToResponseDTO(accesorio);
+        }
+        if (entity instanceof KitProducto kit) {
+            return mapKitToResponseDTO(kit);
         }
         throw new IllegalArgumentException("Tipo de Producto desconocido: " + entity.getClass().getName());
     }
@@ -75,14 +78,12 @@ public class ProductoMapper {
         dto.setPrecio(entity.getPrecio());
         dto.setStockActual(entity.getStockActual());
         dto.setDisponibleParaVenta(entity.isDisponibleParaVenta());
-        // Mapea la categoría asociada
         if (entity.getCategoria() != null) {
             dto.setCategoria(mapCategoriaDTO(entity.getCategoria()));
         }
     }
 
-    // Mapeadores específicos de Response
-    private AlimentoResponseDTO mapToResponseDTO(Alimento entity) {
+    private AlimentoResponseDTO mapAlimentoToResponseDTO(Alimento entity) { // <-- RENOMBRADO
         AlimentoResponseDTO dto = new AlimentoResponseDTO();
         mapBaseEntityToResponseDTO(entity, dto);
         dto.setTipoMascota(entity.getTipoMascota());
@@ -90,7 +91,7 @@ public class ProductoMapper {
         return dto;
     }
 
-    private MedicinaResponseDTO mapToResponseDTO(Medicina entity) {
+    private MedicinaResponseDTO mapMedicinaToResponseDTO(Medicina entity) { // <-- RENOMBRADO
         MedicinaResponseDTO dto = new MedicinaResponseDTO();
         mapBaseEntityToResponseDTO(entity, dto);
         dto.setComposicion(entity.getComposicion());
@@ -98,11 +99,17 @@ public class ProductoMapper {
         return dto;
     }
 
-    private AccesorioResponseDTO mapToResponseDTO(Accesorio entity) {
+    private AccesorioResponseDTO mapAccesorioToResponseDTO(Accesorio entity) { // <-- RENOMBRADO
         AccesorioResponseDTO dto = new AccesorioResponseDTO();
         mapBaseEntityToResponseDTO(entity, dto);
         dto.setMaterial(entity.getMaterial());
         dto.setTamanio(entity.getTamanio());
         return dto;
     }
+
+    private KitProductoResponseDTO mapKitToResponseDTO(KitProducto entity) { // <-- RENOMBRADO
+        KitProductoResponseDTO dto = new KitProductoResponseDTO();
+        mapBaseEntityToResponseDTO(entity, dto);
+        return dto;
+}
 }
