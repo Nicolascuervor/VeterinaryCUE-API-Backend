@@ -12,6 +12,7 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -84,18 +85,26 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.disable())
+                .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(authz -> authz
+                .oauth2ResourceServer(oauth2 -> oauth2
+                        .jwt(jwt -> jwt
+                                .jwtAuthenticationConverter(jwtAuthenticationConverter())
+                        )
+                )
 
+                .authorizeHttpRequests(authz -> authz
                         // 1. Públicos
                         .requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
 
-                        .requestMatchers(HttpMethod.GET, "/api/auth").hasAnyRole(ADMIN_ROLE, DUENIO_MASCOTA)
+                        // 2. Admin
+                        // (Mentor): Usamos hasRole() ahora que el converter funciona
+                        .requestMatchers(HttpMethod.GET, "/api/auth").hasRole(ADMIN_ROLE)
                         .requestMatchers(HttpMethod.DELETE, "/api/auth/**").hasRole(ADMIN_ROLE)
 
+                        // 3. Autenticados (Dueño, Vet, Admin)
                         .requestMatchers(HttpMethod.GET, "/api/auth/{id}").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/auth/email").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/api/auth/{id}").authenticated()
