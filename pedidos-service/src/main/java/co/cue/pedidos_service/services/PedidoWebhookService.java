@@ -6,9 +6,10 @@ import co.cue.pedidos_service.models.dtos.kafka.PedidoCompletadoEventDTO;
 import co.cue.pedidos_service.models.dtos.kafka.PedidoItemEventDTO;
 import co.cue.pedidos_service.models.entities.Pedido;
 import co.cue.pedidos_service.models.enums.PedidoEstado;
+import co.cue.pedidos_service.pasarela.dtos.EventoPagoDTO;
 import co.cue.pedidos_service.repository.PedidoRepository;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,62 +27,39 @@ public class PedidoWebhookService {
     private final InventarioServiceClient inventarioClient;
     private final CarritoServiceClient carritoClient;
     private final KafkaProducerService kafkaProducer;
-    private final ObjectMapper objectMapper;
 
 
     @Transactional
-    public void handleStripeEvent(String payload, String stripeSignature) {
+    public void procesarPagoExitoso(EventoPagoDTO evento) {
 
-
-        if (!payload.contains("payment_intent.succeeded")) {
-            log.warn("Evento de Stripe recibido, pero no es 'payment_intent.succeeded'. Ignorando.");
-            return;
-        }
-
-        String paymentIntentId;
-        String eventType;
-        try {
-            JsonNode jsonPayload = objectMapper.readTree(payload);
-            eventType = jsonPayload.path("type").asText();
-            paymentIntentId = jsonPayload.path("data").path("object").path("id").asText();
-
-        } catch (JsonProcessingException e) {
-            throw new IllegalArgumentException("Error al parsear el payload del Webhook de Stripe: JSON malformado.", e);
-        }
-
-        if (!"payment_intent.succeeded".equals(eventType)) {
-            log.warn("Evento de Stripe recibido [{}], pero no es 'payment_intent.succeeded'. Ignorando.", eventType);
+        if (!evento.isPagoExitoso()) {
+            log.warn("Evento de Webhook recibido para Pedido ID: {}, pero no fue exitoso. Ignorando.", evento.getPedidoId());
             return;
         }
 
 
-        log.info("Procesando evento 'payment_intent.succeeded' para ID: {}", paymentIntentId);
+        log.info("Procesando evento 'Pago Exitoso' para PaymentIntent ID: {}", evento.getPaymentIntentId());
 
-        // Paso 2. Encontrar el Pedido en nuestra BD
-        Pedido pedido = pedidoRepository.findByStripePaymentIntentId(paymentIntentId)
-                .orElseThrow(() -> new RuntimeException("Pedido no encontrado para PaymentIntent: " + paymentIntentId));
+        // Usamos el ID de la transacción de la pasarela para encontrar el pedido
+        Pedido pedido = pedidoRepository.findByStripePaymentIntentId(evento.getPaymentIntentId())
+                .orElseThrow(() -> new RuntimeException("Pedido no encontrado para PaymentIntent: " + evento.getPaymentIntentId()));
 
-        // Paso 3. Idempotencia: Si ya está completado, no hacer nada.
         if (pedido.getEstado() == PedidoEstado.COMPLETADO) {
             log.warn("El Pedido {} ya estaba completado. Evento duplicado.", pedido.getId());
             return;
         }
 
-        // Paso 4. Actualizar Estado
+        // Actualizar Estado
         pedido.setEstado(PedidoEstado.COMPLETADO);
         pedidoRepository.save(pedido);
 
-        // Iniciamos las llamadas asíncronas a los otros servicios (usando los stubs que creamos).
-
-        // Paso 5. Descontar Stock
+        // Llamadas a otros servicios
         inventarioClient.descontarStock(pedido.getItems()).subscribe();
 
-        // Paso 6. Limpiar Carrito
-        // (Mentor): Buscamos el ID de sesión (si usuarioId es nulo)
-        String sessionId = (pedido.getUsuarioId() == null) ? "SESSION_ID_FALTANTE_EN_PEDIDO" : null; // (Mejora: Guardar sessionId en Pedido si es invitado)
+        String sessionId = (pedido.getUsuarioId() == null) ? "SESSION_ID_FALTANTE_EN_PEDIDO" : null;
         carritoClient.limpiarCarrito(pedido.getUsuarioId(), sessionId).subscribe();
 
-        // Paso 7. Publicar Evento en Kafka (para Facturas)
+        // Se publica Evento en Kafka
         kafkaProducer.enviarEventoPedidoCompletado(
                 mapToKafkaDTO(pedido)
         );

@@ -14,6 +14,7 @@ import co.cue.pedidos_service.models.dtos.responsedtos.CheckoutResponseDTO;
 import co.cue.pedidos_service.models.entities.Pedido;
 import co.cue.pedidos_service.models.entities.PedidoItem;
 import co.cue.pedidos_service.models.enums.PedidoEstado;
+import co.cue.pedidos_service.pasarela.IPasarelaPagoGateway;
 import co.cue.pedidos_service.repository.PedidoRepository;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
@@ -35,7 +36,7 @@ public class PedidoServiceImpl implements IPedidoService {
     private final AuthServiceClient authClient;
     private final CarritoServiceClient carritoClient;
     private final InventarioServiceClient inventarioClient;
-    private final StripeService stripeService;
+    private final IPasarelaPagoGateway pasarelaPagoGateway;
 
 
     @Override
@@ -96,10 +97,14 @@ public class PedidoServiceImpl implements IPedidoService {
 
         Pedido pedidoGuardado = pedidoRepository.save(pedido);
 
-        String clientSecret = stripeService.crearPaymentIntent(totalPedido, pedidoGuardado.getId());
+        String clientSecret = pasarelaPagoGateway.crearIntencionDePago(
+                totalPedido,
+                pedidoGuardado.getId(),
+                "usd"
+        );
 
 
-        pedidoGuardado.setStripePaymentIntentId(clientSecret.split("_secret_")[0]); // (Truco para el mock)
+        pedidoGuardado.setStripePaymentIntentId(clientSecret.split("_secret_")[0]);
         pedidoRepository.save(pedidoGuardado);
 
         return new CheckoutResponseDTO(pedidoGuardado.getId(), clientSecret);

@@ -34,8 +34,6 @@ public class SecurityConfig {
     private static final String VETERINARIO = "VETERINARIO";
     private static final String DUENIO_MASCOTA = "DUENIO";
 
-
-
     @Value("${jwt.secret.key}")
     private String secretKey;
 

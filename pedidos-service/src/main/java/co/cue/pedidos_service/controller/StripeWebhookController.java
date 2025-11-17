@@ -1,5 +1,8 @@
 package co.cue.pedidos_service.controller;
 
+import co.cue.pedidos_service.pasarela.IPasarelaPagoGateway;
+import co.cue.pedidos_service.pasarela.dtos.EventoPagoDTO;
+import co.cue.pedidos_service.pasarela.exceptions.PasarelaPagoException;
 import co.cue.pedidos_service.services.PedidoWebhookService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,8 +15,8 @@ import org.springframework.web.bind.annotation.*;
 @Slf4j
 public class StripeWebhookController {
 
+    private final IPasarelaPagoGateway pasarelaPagoGateway;
     private final PedidoWebhookService webhookService;
-
 
     @PostMapping
     public ResponseEntity<Void> handleStripeWebhook(
@@ -21,15 +24,24 @@ public class StripeWebhookController {
             @RequestHeader("Stripe-Signature") String stripeSignature) {
 
         log.info("Webhook de Stripe recibido.");
+        EventoPagoDTO evento;
 
-        // Delegamos toda la lógica (validación y procesamiento) al servicio de Webhook.
         try {
-            webhookService.handleStripeEvent(payload, stripeSignature);
-        } catch (Exception e) {
-            // Si algo falla, le decimos a Stripe que fue un error (ej. 400) para que lo reintente.
-            log.error("Error procesando Webhook de Stripe: {}", e.getMessage());
+            evento = pasarelaPagoGateway.procesarEventoWebhook(payload, stripeSignature);
+
+        } catch (PasarelaPagoException e) {
+            log.error("Error al procesar Webhook (Adapter): {}", e.getMessage());
             return ResponseEntity.badRequest().build();
         }
+
+        try {
+            webhookService.procesarPagoExitoso(evento);
+
+        } catch (Exception e) {
+            log.error("Error en lógica de negocio post-pago: {}", e.getMessage());
+            return ResponseEntity.internalServerError().build();
+        }
+
 
         return ResponseEntity.ok().build();
     }

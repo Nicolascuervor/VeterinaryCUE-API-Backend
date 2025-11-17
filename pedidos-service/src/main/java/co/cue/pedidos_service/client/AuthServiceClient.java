@@ -6,6 +6,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
+import org.springframework.http.HttpHeaders;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+
 @Component
 @AllArgsConstructor
 public class AuthServiceClient {
@@ -17,9 +22,17 @@ public class AuthServiceClient {
         return webClientBuilder.build()
                 .get()
                 .uri(AUTH_SERVICE_URL + "/api/auth/" + usuarioId)
-                // (Mentor): Necesitaremos propagar el Token JWT del usuario
-                // actual para que auth-service nos autorice. Lo haremos después.
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + getAuthenticatedToken())
                 .retrieve()
                 .bodyToMono(UsuarioClienteDTO.class);
+    }
+
+
+    private String getAuthenticatedToken() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication instanceof JwtAuthenticationToken jwtAuth) {
+            return jwtAuth.getToken().getTokenValue();
+        }
+        throw new IllegalStateException("No se pudo obtener el token JWT del contexto de seguridad");
     }
 }
