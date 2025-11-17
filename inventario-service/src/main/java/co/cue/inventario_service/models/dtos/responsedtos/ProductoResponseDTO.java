@@ -14,7 +14,8 @@ import lombok.Setter;
 @JsonSubTypes({
         @JsonSubTypes.Type(value = AlimentoResponseDTO.class, name = "ALIMENTO"),
         @JsonSubTypes.Type(value = MedicinaResponseDTO.class, name = "MEDICINA"),
-        @JsonSubTypes.Type(value = AccesorioResponseDTO.class, name = "ACCESORIO")
+        @JsonSubTypes.Type(value = AccesorioResponseDTO.class, name = "ACCESORIO"),
+        @JsonSubTypes.Type(value = KitProductoResponseDTO.class, name = "KIT")
 })
 @Getter
 @Setter

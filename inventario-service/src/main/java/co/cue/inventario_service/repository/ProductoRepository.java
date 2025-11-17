@@ -15,6 +15,6 @@ public interface ProductoRepository extends JpaRepository<Producto, Long> {
     List<Producto> findAllByActivoTrue();
 
     List<Producto> findByCategoriaIdAndActivoTrue(Long categoriaId);
-
+    Optional<Producto> findByNombreAndActivoTrue(String nombre);
     boolean existsByNombreAndActivoTrue(String nombre);
 }
