@@ -21,8 +21,6 @@ import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
-
-// --- AÑADIR IMPORTS ---
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.util.Base64;
@@ -34,7 +32,6 @@ public class SecurityConfig {
 
     private final UserDetailsServiceImpl userDetailsService;
     private static final String ADMIN_ROLE = "ADMIN";
-    private static final String DUENIO_MASCOTA = "DUENIO";
     private final String secretKey;
 
 
@@ -96,7 +93,7 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(authz -> authz
                         // 1. Públicos
-                        .requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/register").hasRole(ADMIN_ROLE)
                         .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
 
                         // 2. Admin

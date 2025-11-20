@@ -14,15 +14,12 @@ import lombok.AllArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.util.List;
-import java.util.stream.Collectors;
+
 
 @Service
 @AllArgsConstructor
 public class ProductoServiceImpl implements IProductoService {
-
-    // (Mentor): Inyectamos todos los componentes que necesitamos.
     private final ProductoRepository productoRepository;
     private final CategoriaRepository categoriaRepository;
     private final ProductoMapper productoMapper;
@@ -93,5 +90,45 @@ public class ProductoServiceImpl implements IProductoService {
     private Producto findProductoActivoById(Long id) {
         return productoRepository.findByIdAndActivoTrue(id)
                 .orElseThrow(() -> new EntityNotFoundException("Producto no encontrado o inactivo con ID: " + id));
+    }
+
+    @Override
+    @Transactional
+    public ProductoResponseDTO updateProducto(Long id, ProductoRequestDTO dto) {
+        Producto producto = findProductoActivoById(id);
+
+
+        producto.setNombre(dto.getNombre());
+        producto.setPrecio(dto.getPrecio());
+        producto.setStockActual(dto.getStockActual());
+        producto.setStockMinimo(dto.getStockMinimo());
+        producto.setUbicacion(dto.getUbicacion());
+        producto.setDisponibleParaVenta(dto.isDisponibleParaVenta());
+
+
+        if (dto.getCategoriaId() != null) {
+            Categoria nuevaCategoria = categoriaRepository.findByIdAndActivoTrue(dto.getCategoriaId())
+                    .orElseThrow(() -> new EntityNotFoundException("Categoría no encontrada"));
+            producto.setCategoria(nuevaCategoria);
+        }
+
+        if (producto instanceof Alimento alimento && dto instanceof AlimentoRequestDTO alimentoDTO) {
+            alimento.setTipoMascota(alimentoDTO.getTipoMascota());
+            alimento.setPesoEnKg(alimentoDTO.getPesoEnKg());
+
+        } else if (producto instanceof Medicina medicina && dto instanceof MedicinaRequestDTO medicinaDTO) {
+            medicina.setComposicion(medicinaDTO.getComposicion());
+            medicina.setDosisRecomendada(medicinaDTO.getDosisRecomendada());
+
+        } else if (producto instanceof Accesorio accesorio && dto instanceof AccesorioRequestDTO accesorioDTO) {
+            accesorio.setMaterial(accesorioDTO.getMaterial());
+            accesorio.setTamanio(accesorioDTO.getTamanio());
+
+        } else {
+            throw new IllegalArgumentException("El tipo de producto enviado no coincide con el producto guardado en base de datos.");
+        }
+
+        Producto actualizado = productoRepository.save(producto);
+        return productoMapper.mapToResponseDTO(actualizado);
     }
 }

@@ -12,7 +12,6 @@ public class AdminCreationStrategy implements IUsuarioCreationStrategy {
 
     @Override
     public Usuario crearUsuario(RegistroUsuarioDTO dto) {
-        // (Mentor): Ignoramos 'especialidad' o cualquier otro campo que no aplique.
         return new Admin(
                 dto.getNombre(),
                 dto.getApellido(),

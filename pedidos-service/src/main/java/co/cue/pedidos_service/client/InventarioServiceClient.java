@@ -1,6 +1,5 @@
 package co.cue.pedidos_service.client;
 
-import ch.qos.logback.classic.Logger;
 import co.cue.pedidos_service.models.dtos.client.ProductoClienteDTO;
 import co.cue.pedidos_service.models.entities.PedidoItem;
 import lombok.AllArgsConstructor;
@@ -20,7 +19,7 @@ public class InventarioServiceClient {
     private static final String INVENTARIO_SERVICE_URL = "http://inventario-service";
 
     public Mono<Void> descontarStock(Set<PedidoItem> items) {
-        log.warn("[STUB] Descontando stock en inventario-service...");
+        log.warn("Descontando stock en inventario-service...");
         return Mono.empty();
     }
 

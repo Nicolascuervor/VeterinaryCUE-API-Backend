@@ -21,7 +21,7 @@ public class GatewayConfig {
                 .route("authentication_service_route", r -> r.path("/api/auth/**")
                         .uri("lb://authentication-service"))
 
-                // Pasamos todas las peticiones /api/carrito/** a través de nuestro filtro y luego al 'carrito-service'.
+
                 .route("carrito_service_route", r -> r.path("/api/carrito/**")
                         .filters(f -> f.filter(authFilter)) // <-- Aplicamos el filtro
                         .uri("lb://carrito-service")) // <-- Apunta a Eureka

@@ -17,7 +17,7 @@ public class EmailService {
         log.info("Intentando enviar correo de bienvenida a {}", correo);
         try {
             SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom("no-reply@veterinariacue.com"); 
+            message.setFrom("no-reply@veterinariacue.com");
             message.setTo(correo);
             message.setSubject("¡Bienvenido a Veterinaria CUE!");
             message.setText("Hola " + nombre + ",\n\nTu cuenta ha sido creada exitosamente. " +

@@ -6,6 +6,7 @@ import co.cue.auth.models.dtos.LoginRequestDTO;
 import co.cue.auth.models.dtos.RegistroUsuarioDTO;
 import co.cue.auth.models.entities.Usuario;
 import co.cue.auth.services.IAuthService;
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,7 +23,7 @@ public class AuthController {
 
 
     @PostMapping("/register")
-    public ResponseEntity<Usuario> registrarUsuario(@RequestBody RegistroUsuarioDTO dto) {
+    public ResponseEntity<Usuario> registrarUsuario(@Valid @RequestBody RegistroUsuarioDTO dto) {
         Usuario usuarioRegistrado = authService.registrarUsuario(dto);
         return new ResponseEntity<>(usuarioRegistrado, HttpStatus.CREATED);
     }

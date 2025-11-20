@@ -21,16 +21,14 @@ import java.util.Base64;
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity // (Mentor): Permite usar @PreAuthorize si lo necesitamos a futuro
+@EnableMethodSecurity
 public class SecurityConfig {
 
-    // (Mentor): Definimos los roles que usa este servicio
-    // Spring automáticamente añade el prefijo "ROLE_"
+
     private static final String ADMIN_ROLE = "ADMIN";
     private static final String VETERINARIO_ROLE = "VETERINARIO";
     private static final String DUENIO_ROLE = "DUEÑO";
 
-    // (Mentor): Definimos la ruta base de nuestro controlador
     private static final String HISTORIAL_API_PATH = "/api/historial-clinico/**";
 
     @Value("${jwt.secret.key}") //
@@ -68,20 +66,19 @@ public class SecurityConfig {
 
         http
                 .authorizeHttpRequests(authz -> authz
-                        // (Regla 1): Ver historiales (GET) es para Dueños, Vets, y Admins.
-                        // La lógica de *cuál* historial puede ver se delega al ServiceImpl.
+
                         .requestMatchers(HttpMethod.GET, HISTORIAL_API_PATH)
                         .hasAnyRole(DUENIO_ROLE, VETERINARIO_ROLE, ADMIN_ROLE)
 
-                        // (Regla 2): Crear historiales (POST) es solo para Veterinarios.
+
                         .requestMatchers(HttpMethod.POST, HISTORIAL_API_PATH)
                         .hasRole(VETERINARIO_ROLE)
 
-                        // (Regla 3): Actualizar (PUT) es solo para Veterinarios.
-                        .requestMatchers(HttpMethod.PUT, HISTORIAL_API_PATH)
-                        .hasRole(VETERINARIO_ROLE)
 
-                        // (Regla 4): Borrar (DELETE) es para Vets o Admins.
+                        .requestMatchers(HttpMethod.PUT, HISTORIAL_API_PATH)
+                        .hasAnyRole(VETERINARIO_ROLE, ADMIN_ROLE)
+
+
                         .requestMatchers(HttpMethod.DELETE, HISTORIAL_API_PATH)
                         .hasAnyRole(VETERINARIO_ROLE, ADMIN_ROLE)
 

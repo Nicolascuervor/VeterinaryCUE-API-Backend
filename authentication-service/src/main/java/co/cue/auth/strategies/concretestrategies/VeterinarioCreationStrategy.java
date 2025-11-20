@@ -12,7 +12,6 @@ public class VeterinarioCreationStrategy implements IUsuarioCreationStrategy {
 
     @Override
     public Usuario crearUsuario(RegistroUsuarioDTO dto) {
-        // La misma lógica de validación de antes
         if (dto.getEspecialidad() == null || dto.getEspecialidad().isEmpty()) {
             throw new IllegalArgumentException("La especialidad es requerida para el tipo VETERINARIO");
         }

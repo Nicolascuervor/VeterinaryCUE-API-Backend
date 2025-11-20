@@ -3,6 +3,7 @@ package co.cue.inventario_service.controller;
 import co.cue.inventario_service.models.dtos.requestdtos.AccesorioRequestDTO;
 import co.cue.inventario_service.models.dtos.requestdtos.AlimentoRequestDTO;
 import co.cue.inventario_service.models.dtos.requestdtos.MedicinaRequestDTO;
+import co.cue.inventario_service.models.dtos.requestdtos.ProductoRequestDTO;
 import co.cue.inventario_service.models.dtos.responsedtos.ProductoResponseDTO;
 import co.cue.inventario_service.services.IProductoService;
 import lombok.AllArgsConstructor;
@@ -55,4 +56,15 @@ public class ProductoController {
         productoService.deleteProducto(id);
         return ResponseEntity.noContent().build();
     }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<ProductoResponseDTO> actualizarProducto(
+            @PathVariable Long id,
+            @RequestBody ProductoRequestDTO requestDTO) {
+
+        ProductoResponseDTO actualizado = productoService.updateProducto(id, requestDTO);
+        return ResponseEntity.ok(actualizado);
+    }
+
+
 }

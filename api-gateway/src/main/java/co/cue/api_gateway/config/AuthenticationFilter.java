@@ -60,6 +60,5 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
     }
 
     @SuppressWarnings("java:S2094")
-    public static class Config {
-    }
+    public static class Config { }
 }

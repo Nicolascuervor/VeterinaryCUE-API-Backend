@@ -60,21 +60,21 @@ public class AuthServiceImpl implements IAuthService {
         if (usuarioRepository.existsByCorreo(dto.getCorreo())) {
             throw new IllegalArgumentException("El correo " + dto.getCorreo() + " ya está registrado.");
         }
+
         String contraseniaHasheada = passwordEncoder.encode(dto.getContrasenia());
         dto.setContrasenia(contraseniaHasheada);
 
         Usuario nuevoUsuario = usuarioFactory.crearUsuario(dto);
 
-        // Guardamos el usuario
+
         Usuario usuarioGuardado = usuarioRepository.save(nuevoUsuario);
 
-        //
-        // 1. Construir el Payload genérico
+
         Map<String, String> payload = new HashMap<>();
         payload.put("nombre", usuarioGuardado.getNombre());
         payload.put("correo", usuarioGuardado.getCorreo());
 
-        // 2. Construir la solicitud de notificación genérica
+
         NotificationRequestDTO notificationRequest = new NotificationRequestDTO(
                 NotificationType.EMAIL, // <-- Especificamos la ESTRATEGIA que queremos
                 payload

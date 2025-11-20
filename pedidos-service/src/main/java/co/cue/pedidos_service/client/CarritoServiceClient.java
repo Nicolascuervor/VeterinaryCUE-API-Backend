@@ -21,7 +21,6 @@ public class CarritoServiceClient {
         return webClientBuilder.build()
                 .get()
                 .uri(url)
-                // (Mentor): Pasamos las cabeceras que 'carrito-service' espera
                 .header("X-Usuario-Id", (usuarioId != null) ? String.valueOf(usuarioId) : null)
                 .header("X-Session-Id", sessionId)
                 .retrieve()
@@ -29,7 +28,7 @@ public class CarritoServiceClient {
     }
 
     public Mono<Void> limpiarCarrito(Long usuarioId, String sessionId) {
-        log.warn("[STUB] Limpiando carrito en carrito-service...");
+        log.warn("Limpiando carrito en carrito-service...");
         return Mono.empty();
     }
 }

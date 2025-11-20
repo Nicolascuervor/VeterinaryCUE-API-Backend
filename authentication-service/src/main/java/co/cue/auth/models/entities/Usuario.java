@@ -1,6 +1,7 @@
 package co.cue.auth.models.entities;
 import co.cue.auth.models.enums.Role;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -33,6 +34,7 @@ public class Usuario implements UserDetails{
         private String apellido;
 
         @Column(nullable = false, unique = true, length = 150)
+        @Email(message = "El formato del correo electrónico es inválido (debe contener @ y dominio)")
         private String correo;
 
         @Column(nullable = false)
