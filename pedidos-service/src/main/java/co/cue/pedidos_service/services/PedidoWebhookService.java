@@ -31,13 +31,10 @@ public class PedidoWebhookService {
 
     @Transactional
     public void procesarPagoExitoso(EventoPagoDTO evento) {
-
         if (!evento.isPagoExitoso()) {
             log.warn("Evento de Webhook recibido para Pedido ID: {}, pero no fue exitoso. Ignorando.", evento.getPedidoId());
             return;
         }
-
-
         log.info("Procesando evento 'Pago Exitoso' para PaymentIntent ID: {}", evento.getPaymentIntentId());
 
         // Usamos el ID de la transacción de la pasarela para encontrar el pedido
@@ -49,20 +46,28 @@ public class PedidoWebhookService {
             return;
         }
 
-        // Actualizar Estado
+
+        try {
+            log.info("Intentando descontar stock para {} items...", pedido.getItems().size());
+
+            // Usamos .block() para forzar la espera y capturar errores en el hilo principal
+            inventarioClient.descontarStock(pedido.getItems()).block();
+
+            log.info("Stock descontado correctamente en Inventario.");
+        } catch (Exception e) {
+            log.error("Error CRÍTICO al descontar stock: {}", e.getMessage());
+            throw new RuntimeException("Fallo al descontar inventario", e);
+        }
+
         pedido.setEstado(PedidoEstado.COMPLETADO);
         pedidoRepository.save(pedido);
-
-        // Llamadas a otros servicios
-        inventarioClient.descontarStock(pedido.getItems()).subscribe();
-
         String sessionId = (pedido.getUsuarioId() == null) ? "SESSION_ID_FALTANTE_EN_PEDIDO" : null;
-        carritoClient.limpiarCarrito(pedido.getUsuarioId(), sessionId).subscribe();
-
-        // Se publica Evento en Kafka
-        kafkaProducer.enviarEventoPedidoCompletado(
-                mapToKafkaDTO(pedido)
-        );
+        try {
+            carritoClient.limpiarCarrito(pedido.getUsuarioId(), sessionId).block();
+        } catch (Exception e) {
+            log.warn("No se pudo limpiar el carrito (no crítico): {}", e.getMessage());
+        }
+        kafkaProducer.enviarEventoPedidoCompletado(mapToKafkaDTO(pedido));
 
         log.info("Pedido {} completado y evento enviado a Kafka.", pedido.getId());
     }

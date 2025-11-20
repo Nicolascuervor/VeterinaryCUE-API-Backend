@@ -19,17 +19,12 @@ public class EmailNotificationStrategy implements NotificationStrategy {
     public void enviar(NotificationRequestDTO request) {
         log.info("Ejecutando Estrategia EMAIL...");
         try {
-            // (Mentor): Extraemos los datos que necesitamos del payload genérico.
             String nombre = request.getPayload().get("nombre");
             String correo = request.getPayload().get("correo");
-
-            // Validamos que tengamos los datos necesarios para ESTA estrategia
             if (nombre == null || correo == null) {
                 log.warn("Payload incompleto para Estrategia EMAIL. Faltan 'nombre' o 'correo'.");
                 return;
             }
-
-            // Llamamos al servicio que sabe cómo enviar correos.
             emailService.enviarCorreoBienvenida(nombre, correo);
 
         } catch (Exception e) {
@@ -39,7 +34,6 @@ public class EmailNotificationStrategy implements NotificationStrategy {
 
     @Override
     public NotificationType getTipo() {
-        // Le decimos al Factory que esta clase maneja notificaciones EMAIL
         return NotificationType.EMAIL;
     }
 }

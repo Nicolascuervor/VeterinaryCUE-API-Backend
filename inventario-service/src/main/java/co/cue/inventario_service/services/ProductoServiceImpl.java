@@ -1,10 +1,7 @@
 package co.cue.inventario_service.services;
 
 import co.cue.inventario_service.mapper.ProductoMapper;
-import co.cue.inventario_service.models.dtos.requestdtos.AccesorioRequestDTO;
-import co.cue.inventario_service.models.dtos.requestdtos.AlimentoRequestDTO;
-import co.cue.inventario_service.models.dtos.requestdtos.MedicinaRequestDTO;
-import co.cue.inventario_service.models.dtos.requestdtos.ProductoRequestDTO;
+import co.cue.inventario_service.models.dtos.requestdtos.*;
 import co.cue.inventario_service.models.dtos.responsedtos.ProductoResponseDTO;
 import co.cue.inventario_service.models.entities.*;
 import co.cue.inventario_service.repository.CategoriaRepository;
@@ -130,5 +127,22 @@ public class ProductoServiceImpl implements IProductoService {
 
         Producto actualizado = productoRepository.save(producto);
         return productoMapper.mapToResponseDTO(actualizado);
+    }
+
+    @Override
+    @Transactional
+    public void descontarStock(List<StockReductionDTO> items) {
+        for (StockReductionDTO item : items) {
+            Producto producto = findProductoActivoById(item.getProductoId());
+
+            int nuevoStock = producto.getStockActual() - item.getCantidad();
+
+            if (nuevoStock < 0) {
+                throw new IllegalStateException("Stock insuficiente para el producto: " + producto.getNombre());
+            }
+
+            producto.setStockActual(nuevoStock);
+            productoRepository.save(producto);
+        }
     }
 }

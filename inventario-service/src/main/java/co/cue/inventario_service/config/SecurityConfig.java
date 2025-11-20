@@ -51,6 +51,7 @@ public class SecurityConfig {
 
         http
                 .authorizeHttpRequests(authz -> authz
+                        .requestMatchers(HttpMethod.POST, "/api/inventario/productos/stock/descontar").permitAll()
                         .requestMatchers(HttpMethod.GET, INVENTARIO_API_PATH).permitAll()
                         .requestMatchers(HttpMethod.POST, INVENTARIO_API_PATH).hasRole(ADMIN_ROLE)
                         .requestMatchers(HttpMethod.PUT, INVENTARIO_API_PATH).hasRole(ADMIN_ROLE)

@@ -1,9 +1,6 @@
 package co.cue.inventario_service.controller;
 
-import co.cue.inventario_service.models.dtos.requestdtos.AccesorioRequestDTO;
-import co.cue.inventario_service.models.dtos.requestdtos.AlimentoRequestDTO;
-import co.cue.inventario_service.models.dtos.requestdtos.MedicinaRequestDTO;
-import co.cue.inventario_service.models.dtos.requestdtos.ProductoRequestDTO;
+import co.cue.inventario_service.models.dtos.requestdtos.*;
 import co.cue.inventario_service.models.dtos.responsedtos.ProductoResponseDTO;
 import co.cue.inventario_service.services.IProductoService;
 import lombok.AllArgsConstructor;
@@ -64,6 +61,12 @@ public class ProductoController {
 
         ProductoResponseDTO actualizado = productoService.updateProducto(id, requestDTO);
         return ResponseEntity.ok(actualizado);
+    }
+
+    @PostMapping("/stock/descontar")
+    public ResponseEntity<Void> descontarStock(@RequestBody List<StockReductionDTO> items) {
+        productoService.descontarStock(items);
+        return ResponseEntity.noContent().build();
     }
 
 
