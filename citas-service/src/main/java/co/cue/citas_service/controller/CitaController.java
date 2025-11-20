@@ -5,9 +5,13 @@ import co.cue.citas_service.dtos.CitaResponseDTO;
 import co.cue.citas_service.dtos.CitaUpdateDTO;
 import co.cue.citas_service.service.ICitaService;
 import lombok.AllArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/citas")
@@ -39,6 +43,13 @@ public class CitaController {
     public ResponseEntity<Void> eliminarCita(@PathVariable Long id) {
         citaService.deleteCita(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/del-dia")
+    public ResponseEntity<List<CitaResponseDTO>> obtenerCitasDelDia(
+            @RequestParam("fecha") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha) {
+        List<CitaResponseDTO> citas = citaService.findCitasDelDia(fecha);
+        return ResponseEntity.ok(citas);
     }
     
 }

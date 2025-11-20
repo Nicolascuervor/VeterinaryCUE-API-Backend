@@ -14,11 +14,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.Comparator;
 import java.util.List;
 
-@Service
+
+@Service("citaServiceImpl") // <-- (Arquitecto): Le damos un nombre único
 @AllArgsConstructor
 @Slf4j
 public class CitaServiceImpl implements ICitaService {
@@ -168,5 +171,23 @@ public class CitaServiceImpl implements ICitaService {
     public List<Cita> findCitaByEstado(String estado) {
         EstadoCita estadoEnum = EstadoCita.valueOf(estado.toUpperCase());
         return citaRepository.findAllByEstado(estadoEnum); 
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CitaResponseDTO> findCitasDelDia(LocalDate fecha) {
+        log.info("Buscando citas para la fecha: {}", fecha);
+
+        LocalDateTime inicioDelDia = fecha.atStartOfDay();
+
+        LocalDateTime finDelDia = fecha.atTime(LocalTime.MAX);
+
+        List<Cita> citasDelDia = citaRepository.findAllByFechaHoraInicioBetween(
+                inicioDelDia,
+                finDelDia
+        );
+        return citasDelDia.stream()
+                .map(mapper::mapToResponseDTO)
+                .toList();
     }
 }
