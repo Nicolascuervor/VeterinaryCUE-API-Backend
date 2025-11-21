@@ -22,7 +22,7 @@ public class ServicioAdminServiceImpl implements IServicioAdminService {
     private final ServicioRepository servicioRepository;
     private final ServicioMapper mapper;
 
-    // --- Métodos GET ---
+
 
     @Override
     @Transactional(readOnly = true)
@@ -39,7 +39,7 @@ public class ServicioAdminServiceImpl implements IServicioAdminService {
         return mapper.toResponseDTO(servicio);
     }
 
-    // --- Métodos POST (Creación) ---
+
 
     @Override
     @Transactional
@@ -57,9 +57,7 @@ public class ServicioAdminServiceImpl implements IServicioAdminService {
         return mapper.toResponseDTO(servicioGuardado);
     }
 
-    /**
-     * (Implementación Faltante - AÑADIDA)
-     */
+
     @Override
     @Transactional
     public ServicioResponseDTO crearEstetica(EsteticaRequestDTO dto) {
@@ -68,9 +66,7 @@ public class ServicioAdminServiceImpl implements IServicioAdminService {
         return mapper.toResponseDTO(servicioGuardado);
     }
 
-    /**
-     * (Implementación Faltante - AÑADIDA)
-     */
+
     @Override
     @Transactional
     public ServicioResponseDTO crearVacunacion(VacunacionRequestDTO dto) {
@@ -80,14 +76,9 @@ public class ServicioAdminServiceImpl implements IServicioAdminService {
     }
 
 
-    // --- Métodos PUT (Actualización) ---
 
-    /**
-     * (Mentor): La lógica de actualización siempre sigue 3 pasos:
-     * 1. Obtener la entidad existente.
-     * 2. Validar que sea del tipo correcto (ej. "Consulta").
-     * 3. Mapear los campos del DTO a la entidad y guardar.
-     */
+
+
     @Override
     @Transactional
     public ServicioResponseDTO actualizarConsulta(Long id, ConsultaRequestDTO dto) {
@@ -99,21 +90,18 @@ public class ServicioAdminServiceImpl implements IServicioAdminService {
 
         Consulta consulta = (Consulta) entidad;
 
-        // Mapeamos los campos base
+
         consulta.setNombre(dto.getNombre());
         consulta.setDescripcion(dto.getDescripcion());
         consulta.setPrecio(dto.getPrecio());
         consulta.setDuracionPromedioMinutos(dto.getDuracionPromedioMinutos());
 
-        // (No tiene campos específicos)
 
         Servicio actualizado = servicioRepository.save(consulta);
         return mapper.toResponseDTO(actualizado);
     }
 
-    /**
-     * (Implementación Faltante - AÑADIDA)
-     */
+
     @Override
     @Transactional
     public ServicioResponseDTO actualizarCirugia(Long id, CirugiaRequestDTO dto) {
@@ -125,13 +113,10 @@ public class ServicioAdminServiceImpl implements IServicioAdminService {
 
         Cirugia cirugia = (Cirugia) entidad;
 
-        // Mapeamos los campos base
         cirugia.setNombre(dto.getNombre());
         cirugia.setDescripcion(dto.getDescripcion());
         cirugia.setPrecio(dto.getPrecio());
         cirugia.setDuracionPromedioMinutos(dto.getDuracionPromedioMinutos());
-
-        // Mapeamos los campos específicos de Cirugia
         cirugia.setRequiereQuirofano(dto.isRequiereQuirofano());
         cirugia.setNotasPreoperatorias(dto.getNotasPreoperatorias());
 
@@ -139,9 +124,7 @@ public class ServicioAdminServiceImpl implements IServicioAdminService {
         return mapper.toResponseDTO(actualizado);
     }
 
-    /**
-     * (Implementación Faltante - AÑADIDA)
-     */
+
     @Override
     @Transactional
     public ServicioResponseDTO actualizarEstetica(Long id, EsteticaRequestDTO dto) {
@@ -152,14 +135,12 @@ public class ServicioAdminServiceImpl implements IServicioAdminService {
         }
 
         Estetica estetica = (Estetica) entidad;
-
-        // Mapeamos los campos base
         estetica.setNombre(dto.getNombre());
         estetica.setDescripcion(dto.getDescripcion());
         estetica.setPrecio(dto.getPrecio());
         estetica.setDuracionPromedioMinutos(dto.getDuracionPromedioMinutos());
 
-        // Mapeamos los campos específicos de Estetica
+
         estetica.setTipoArreglo(dto.getTipoArreglo());
 
         Servicio actualizado = servicioRepository.save(estetica);
@@ -176,14 +157,10 @@ public class ServicioAdminServiceImpl implements IServicioAdminService {
         }
 
         Vacunacion vacunacion = (Vacunacion) entidad;
-
-        // Mapeamos los campos base
         vacunacion.setNombre(dto.getNombre());
         vacunacion.setDescripcion(dto.getDescripcion());
         vacunacion.setPrecio(dto.getPrecio());
         vacunacion.setDuracionPromedioMinutos(dto.getDuracionPromedioMinutos());
-
-        // Mapeamos los campos específicos de Vacunacion
         vacunacion.setNombreBiologico(dto.getNombreBiologico());
 
         Servicio actualizado = servicioRepository.save(vacunacion);
@@ -199,11 +176,11 @@ public class ServicioAdminServiceImpl implements IServicioAdminService {
         servicioRepository.save(servicio);
     }
 
-    // --- Método Privado de Búsqueda ---
+
 
     private Servicio findServicioActivoById(Long id) {
         return servicioRepository.findById(id)
-                .filter(Servicio::isActivo) // Filtramos que esté activo
+                .filter(Servicio::isActivo)
                 .orElseThrow(() -> new EntityNotFoundException("Servicio no encontrado o inactivo con ID: " + id));
     }
 }

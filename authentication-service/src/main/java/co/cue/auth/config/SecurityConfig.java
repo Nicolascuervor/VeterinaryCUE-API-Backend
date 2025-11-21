@@ -33,9 +33,6 @@ public class SecurityConfig {
     private final UserDetailsServiceImpl userDetailsService;
     private static final String ADMIN_ROLE = "ADMIN";
     private final String secretKey;
-
-
-    // 3. AÑADIR CONSTRUCTOR MANUAL
     public SecurityConfig(UserDetailsServiceImpl userDetailsService,
                           @Value("${jwt.secret.key}") String secretKey) {
         this.userDetailsService = userDetailsService;
@@ -96,8 +93,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/auth/register").hasRole(ADMIN_ROLE)
                         .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
 
-                        // 2. Admin
-                        // (Mentor): Usamos hasRole() ahora que el converter funciona
+
                         .requestMatchers(HttpMethod.GET, "/api/auth").hasRole(ADMIN_ROLE)
                         .requestMatchers(HttpMethod.DELETE, "/api/auth/**").hasRole(ADMIN_ROLE)
 

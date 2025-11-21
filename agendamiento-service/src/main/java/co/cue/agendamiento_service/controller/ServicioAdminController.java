@@ -20,7 +20,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/agendamiento/servicios-admin")
 @AllArgsConstructor
-@PreAuthorize("hasRole('ADMIN')") // Seguridad a nivel de clase
 public class ServicioAdminController {
 
     private final IServicioAdminService servicioAdminService;

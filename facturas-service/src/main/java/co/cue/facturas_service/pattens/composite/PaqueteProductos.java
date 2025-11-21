@@ -28,19 +28,6 @@ public class PaqueteProductos implements ItemFactura {
         return totalComponentes;
     }
 
-
-    @Override public BigDecimal getPrecioUnitario() {
-        return BigDecimal.ZERO;
-    }
-
-    @Override public Integer getCantidad() {
-        return cantidadKits;
-    }
-
-    @Override public String getNombre() {
-        return nombreKit;
-    }
-
     @Override
     public String generarResumen(int nivel) {
         StringBuilder sb = new StringBuilder();
