@@ -49,8 +49,6 @@ public class PedidoWebhookService {
 
         try {
             log.info("Intentando descontar stock para {} items...", pedido.getItems().size());
-
-            // Usamos .block() para forzar la espera y capturar errores en el hilo principal
             inventarioClient.descontarStock(pedido.getItems()).block();
 
             log.info("Stock descontado correctamente en Inventario.");

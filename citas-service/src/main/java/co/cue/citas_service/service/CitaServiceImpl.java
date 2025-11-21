@@ -7,6 +7,8 @@ import co.cue.citas_service.entity.Cita;
 import co.cue.citas_service.entity.EstadoCita;
 import co.cue.citas_service.events.CitaCompletadaEventDTO;
 import co.cue.citas_service.mapper.CitaMapper;
+import co.cue.citas_service.pattern.state.CitaStateFactory;
+import co.cue.citas_service.pattern.state.ICitaState;
 import co.cue.citas_service.repository.CitaRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.AllArgsConstructor;
@@ -30,6 +32,7 @@ public class CitaServiceImpl implements ICitaService {
     private final AgendamientoServiceClient agendamientoClient;
     private final KafkaProducerService kafkaProducer;
     private final CitaMapper mapper;
+    private final CitaStateFactory stateFactory;
 
     @Override
     @Transactional
@@ -118,19 +121,25 @@ public class CitaServiceImpl implements ICitaService {
     public CitaUpdateDTO updateCita(Long id, CitaUpdateDTO updateDTO) {
         log.info("Actualizando cita ID: {}", id);
         Cita cita = findCitaByIdPrivado(id);
-
-        // (Mentor): Mapeamos los campos usando el Mapper
+        if (updateDTO.getEstado() != null && updateDTO.getEstado() != cita.getEstado()) {
+            log.debug("Intentando transición de estado: {} -> {}", cita.getEstado(), updateDTO.getEstado());
+            ICitaState comportamientoEstadoActual = stateFactory.getState(cita.getEstado());
+            switch (updateDTO.getEstado()) {
+                case CONFIRMADA -> comportamientoEstadoActual.confirmar(cita);
+                case EN_PROGRESO -> comportamientoEstadoActual.iniciar(cita);
+                case FINALIZADA -> comportamientoEstadoActual.finalizar(cita);
+                case CANCELADA -> comportamientoEstadoActual.cancelar(cita);
+                case NO_ASISTIO -> comportamientoEstadoActual.noAsistio(cita);
+                default -> throw new IllegalArgumentException("Transición no soportada hacia: " + updateDTO.getEstado());
+            }
+        }
         mapper.updateEntityFromDTO(updateDTO, cita);
-
-        // (Mentor): Manejamos la lógica de negocio
-        if (updateDTO.getEstado() == EstadoCita.FINALIZADA) {
-            cita.setEstado(EstadoCita.FINALIZADA);
-            log.info("Cita {} marcada como FINALIZADA.", id);
-
+        if (cita.getEstado() == EstadoCita.FINALIZADA) {
+            log.info("Cita {} finalizada. Enviando evento a Kafka.", id);
             CitaCompletadaEventDTO evento = mapper.mapToCitaCompletadaEvent(cita);
             kafkaProducer.enviarCitaCompletada(evento);
         }
-
+        // Guardamos cambios
         Cita citaActualizada = citaRepository.save(cita);
         mapper.updateEntityFromDTO(updateDTO, citaActualizada);
         return updateDTO;

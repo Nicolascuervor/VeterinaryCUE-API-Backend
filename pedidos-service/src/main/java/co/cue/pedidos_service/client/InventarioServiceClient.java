@@ -25,7 +25,7 @@ public class InventarioServiceClient {
         log.info("Enviando solicitud de descuento de stock a inventario-service...");
         List<StockReductionDTO> payload = items.stream()
                 .map(item -> new StockReductionDTO(item.getProductoId(), item.getCantidad()))
-                .collect(Collectors.toList());
+                .toList();
         return webClientBuilder.build()
                 .post()
                 .uri(INVENTARIO_SERVICE_URL + "/api/inventario/productos/stock/descontar")
