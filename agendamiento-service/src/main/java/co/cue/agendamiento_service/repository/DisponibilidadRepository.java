@@ -24,7 +24,6 @@ public interface DisponibilidadRepository extends JpaRepository<Disponibilidad, 
 
     List<Disponibilidad> findByCitaId(Long citaId);
 
-
     @Modifying
     @Query("UPDATE Disponibilidad d SET d.estado = :nuevoEstado, d.citaId = :citaId " +
             "WHERE d.id IN :ids AND d.estado = 'DISPONIBLE'")

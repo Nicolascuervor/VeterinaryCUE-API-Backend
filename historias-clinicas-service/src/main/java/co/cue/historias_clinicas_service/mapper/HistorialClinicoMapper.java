@@ -26,7 +26,7 @@ public class HistorialClinicoMapper {
         entity.setExamenesRealizados(event.getExamenesRealizados());
         entity.setMedicamentosRecetados(event.getMedicamentosRecetados());
         entity.setProximaCita(event.getProximaCita());
-        entity.setActivo(true); // Nace activo
+        entity.setActivo(true);
 
         return entity;
     }

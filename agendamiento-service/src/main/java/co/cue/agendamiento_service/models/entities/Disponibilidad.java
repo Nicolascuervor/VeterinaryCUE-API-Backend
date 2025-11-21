@@ -7,7 +7,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import java.time.LocalDateTime;
 
-/** Esta entidad es el "Slot" de tiempo de un veterinario. Ej. Vet 1, 10-Nov 9:00, 10-Nov 9:30, DISPONIBLE */
 @Entity
 @Table(name = "disponibilidad_veterinarios", indexes = {
         @Index(name = "idx_vet_inicio", columnList = "veterinario_id, fecha_hora_inicio")})
@@ -43,7 +42,7 @@ public class Disponibilidad {
         this.veterinarioId = veterinarioId;
         this.fechaHoraInicio = fechaHoraInicio;
         this.fechaHoraFin = fechaHoraFin;
-        this.estado = EstadoDisponibilidad.DISPONIBLE; // Nace como DISPONIBLE
+        this.estado = EstadoDisponibilidad.DISPONIBLE;
         this.citaId = null;
     }
 }

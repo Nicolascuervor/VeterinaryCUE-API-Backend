@@ -49,10 +49,7 @@ public abstract class Producto {
     @Column(name = "es_kit")
     private boolean esKit = false;
 
-    /**
-     * (Arquitecto): Un producto "Kit" puede estar compuesto por
-     * muchos otros productos.
-     */
+
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "producto_componentes",

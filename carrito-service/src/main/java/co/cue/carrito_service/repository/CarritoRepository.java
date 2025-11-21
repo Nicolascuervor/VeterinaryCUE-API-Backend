@@ -8,8 +8,6 @@ import java.util.Optional;
 
 @Repository
 public interface CarritoRepository extends JpaRepository<Carrito, Long> {
-
-    // Métodos necesarios para buscar el carrito
     Optional<Carrito> findByUsuarioId(Long usuarioId);
     Optional<Carrito> findBySessionId(String sessionId);
 }

@@ -20,7 +20,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
@@ -105,7 +104,7 @@ public class HistorialClinicoServiceImpl implements IHistorialClinicoService {
         HistorialClinico historial = findEntidadById(historialId);
         validarPropiedadMascota(historial.getPetId(), usuarioId);
 
-        historial.setActivo(false); // Soft Delete
+        historial.setActivo(false);
         historialClinicoRepository.save(historial);
         log.info("Historial ID {} desactivado exitosamente.", historialId);
     }

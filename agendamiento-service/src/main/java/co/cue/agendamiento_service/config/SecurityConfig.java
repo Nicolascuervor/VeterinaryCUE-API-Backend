@@ -3,11 +3,11 @@ package co.cue.agendamiento_service.config;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod; // <-- Importante
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer; // <-- Importar el moderno
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
@@ -58,21 +58,17 @@ public class SecurityConfig {
 
         http
                 .authorizeHttpRequests(authz -> authz
-                        // (Arquitecto): REGLAS CORREGIDAS
-                        // 1. LEER servicios (GET) es para CUALQUIER usuario autenticado.
+
                         .requestMatchers(HttpMethod.GET, serviciosAdminPath + "/**").authenticated()
 
-                        // 2. ESCRIBIR servicios (POST, PUT, DELETE) es SOLO para ADMIN.
                         .requestMatchers(HttpMethod.POST, serviciosAdminPath + "/**").hasAnyRole(ADMIN, DUENIO_MASCOTA)
                         .requestMatchers(HttpMethod.PUT, serviciosAdminPath + "/**").hasAnyRole(ADMIN)
                         .requestMatchers(HttpMethod.DELETE, serviciosAdminPath + "/**").hasRole(ADMIN)
 
-                        // (Mentor): Mantenemos tus otras reglas específicas
                         .requestMatchers(HttpMethod.POST, disponibilidadPath + "/generar-slots").hasRole(ADMIN)
                         .requestMatchers(HttpMethod.POST, disponibilidadPath + "/jornada").hasAnyRole(ADMIN, VETERINARIO)
                         .requestMatchers(HttpMethod.PATCH, disponibilidadPath + "/slots/**").hasAnyRole(ADMIN, VETERINARIO)
 
-                        // 3. El resto de 'disponibilidad' es para usuarios autenticados.
                         .requestMatchers(disponibilidadPath + "/**").authenticated()
                         .anyRequest().authenticated()
                 );

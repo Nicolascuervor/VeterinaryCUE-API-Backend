@@ -82,7 +82,7 @@ public class KitService {
 
         nuevoKit.setComponentes(componentes);
 
-        nuevoKit.setCategoria(categoriaKits); // <-- 4. ASIGNAR CATEGORÍA
+        nuevoKit.setCategoria(categoriaKits);
 
         Producto kitGuardado = productoRepository.save(nuevoKit);
 

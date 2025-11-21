@@ -7,8 +7,8 @@ import lombok.Getter;
 import lombok.Setter;
 
 @Entity
-@Table(name = "productos_kit") // (Mentor): Nueva tabla para la herencia JOINED
-@DiscriminatorValue("KIT")     // (Mentor): Nuevo valor para el 'tipo_producto'
+@Table(name = "productos_kit")
+@DiscriminatorValue("KIT")
 @Getter
 @Setter
 public class KitProducto extends Producto {

@@ -1,6 +1,5 @@
 package co.cue.historias_clinicas_service.service;
 
-// ... (imports)
 import co.cue.historias_clinicas_service.dto.HistorialClinicoRequestDTO;
 import co.cue.historias_clinicas_service.dto.HistorialClinicoResponseDTO;
 import co.cue.historias_clinicas_service.events.CitaCompletadaEventDTO;

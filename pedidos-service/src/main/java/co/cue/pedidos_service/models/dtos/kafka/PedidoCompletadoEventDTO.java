@@ -13,7 +13,7 @@ import java.util.Set;
 @Builder
 public class PedidoCompletadoEventDTO {
     private Long pedidoId;
-    private Long usuarioId; // Nulo si fue invitado
+    private Long usuarioId;
     private String clienteNombre;
     private String clienteEmail;
     private BigDecimal totalPedido;

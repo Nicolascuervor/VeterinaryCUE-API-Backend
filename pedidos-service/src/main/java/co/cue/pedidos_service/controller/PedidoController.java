@@ -11,9 +11,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/pedidos")
 @AllArgsConstructor
 public class PedidoController {
-
     private final IPedidoService pedidoService;
-
     @PostMapping("/checkout")
     public ResponseEntity<CheckoutResponseDTO> iniciarCheckout(
             @RequestHeader(value = "X-Usuario-Id", required = false) Long usuarioId,
@@ -25,12 +23,4 @@ public class PedidoController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * (Arquitecto): También necesitaremos un segundo endpoint (público)
-     * para que Stripe nos envíe los "Webhooks" (confirmaciones de pago).
-     * Lo diseñaremos más adelante cuando implementemos la lógica de Stripe.
-     *
-     * @PostMapping("/stripe/webhook")
-     * public ResponseEntity<Void> handleStripeWebhook(...) { ... }
-     */
 }

@@ -12,9 +12,11 @@ public class ReporteDirector {
         builder.construirPieDePagina();
     }
 
+    /* Podriamos implementar
 
      public void construirReporteResumido(IReporteBuilder builder) {
          builder.construirEncabezado();
         builder.construirCuerpo();
      }
+     */
 }

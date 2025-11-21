@@ -12,5 +12,5 @@ import java.math.BigDecimal;
 public class PedidoItemEventDTO {
     private Long productoId;
     private Integer cantidad;
-    private BigDecimal precioUnitario; // El precio snapshot que guardamos
+    private BigDecimal precioUnitario;
 }

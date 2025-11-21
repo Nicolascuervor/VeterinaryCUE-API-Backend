@@ -22,15 +22,15 @@ public class Carrito {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Clave para usuarios registrados. Puede ser nulo si es invitado.
+
     @Column(name = "usuario_id", unique = true, nullable = true)
     private Long usuarioId;
 
-    // Clave para usuarios invitados. Puede ser nulo si está registrado.
+
     @Column(name = "session_id", unique = true, nullable = true)
     private String sessionId;
 
-    // Relación de composición. Si se borra el carrito, se borran sus items.
+
     @OneToMany(mappedBy = "carrito", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private Set<ItemCarrito> items = new HashSet<>();
 

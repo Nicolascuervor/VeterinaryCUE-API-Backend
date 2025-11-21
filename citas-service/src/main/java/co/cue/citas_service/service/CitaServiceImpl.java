@@ -23,7 +23,7 @@ import java.util.Comparator;
 import java.util.List;
 
 
-@Service("citaServiceImpl") // <-- (Arquitecto): Le damos un nombre único
+@Service("citaServiceImpl")
 @AllArgsConstructor
 @Slf4j
 public class CitaServiceImpl implements ICitaService {
@@ -38,8 +38,6 @@ public class CitaServiceImpl implements ICitaService {
     @Transactional
     public CitaResponseDTO createCita(CitaRequestDTO dto, Long usuarioId) {
         log.info("Iniciando creación de cita para servicioId: {}", dto.getServicioId());
-
-        // 1. Obtener datos de los otros servicios
         ServicioClienteDTO servicio = agendamientoClient.getServicioById(dto.getServicioId())
                 .blockOptional()
                 .orElseThrow(() -> new EntityNotFoundException("Servicio no encontrado: " + dto.getServicioId()));
@@ -47,13 +45,12 @@ public class CitaServiceImpl implements ICitaService {
                 .blockOptional()
                 .orElseThrow(() -> new EntityNotFoundException("Slots no encontrados: " + dto.getIdsDisponibilidad()));
 
-        // 2. Validar Lógica de Negocio
+
         validarConsistenciaDeSlots(slots, servicio, dto.getVeterinarianId());
         slots.sort(Comparator.comparing(DisponibilidadClienteDTO::getFechaHoraInicio));
         LocalDateTime fechaHoraInicio = slots.get(0).getFechaHoraInicio();
         LocalDateTime fechaHoraFin = slots.get(slots.size() - 1).getFechaHoraFin();
 
-        // 3. Crear Entidad Cita
         Cita cita = new Cita();
         cita.setDuenioId(usuarioId);
         cita.setPetId(dto.getPetId());
@@ -67,10 +64,10 @@ public class CitaServiceImpl implements ICitaService {
         cita.setMotivoConsulta(dto.getMotivoConsulta());
         cita.setEstadoGeneralMascota(dto.getEstadoGeneralMascota());
 
-        // 4. Guardar Cita
+
         Cita citaGuardada = citaRepository.save(cita);
 
-        // 5. Reservar Slots
+
         ReservaRequestDTO reservaDTO = new ReservaRequestDTO();
         reservaDTO.setCitaId(citaGuardada.getId());
         reservaDTO.setIdsDisponibilidad(dto.getIdsDisponibilidad());
@@ -139,7 +136,7 @@ public class CitaServiceImpl implements ICitaService {
             CitaCompletadaEventDTO evento = mapper.mapToCitaCompletadaEvent(cita);
             kafkaProducer.enviarCitaCompletada(evento);
         }
-        // Guardamos cambios
+
         Cita citaActualizada = citaRepository.save(cita);
         mapper.updateEntityFromDTO(updateDTO, citaActualizada);
         return updateDTO;

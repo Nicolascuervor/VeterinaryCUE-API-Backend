@@ -13,8 +13,8 @@ import org.springframework.stereotype.Component;
 public class KafkaConsumerListener {
     private final IHistorialClinicoService historialClinicoService;
     @KafkaListener(
-            topics = "citas_completadas_topic", // El topic que 'citas-service' está usando
-            groupId = "${spring.kafka.consumer.group-id}" // El ID de 'application.properties'
+            topics = "citas_completadas_topic",
+            groupId = "${spring.kafka.consumer.group-id}"
     )
     public void handleCitaCompletada(CitaCompletadaEventDTO evento) {
 

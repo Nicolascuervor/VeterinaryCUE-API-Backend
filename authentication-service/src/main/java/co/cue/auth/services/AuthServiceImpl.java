@@ -16,8 +16,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import co.cue.auth.models.dtos.ActualizarUsuarioDTO;
-import co.cue.auth.models.entities.Veterinario; // Necesario para 'actualizar'
-import jakarta.persistence.EntityNotFoundException; // Para manejar 'Optional'
+import co.cue.auth.models.entities.Veterinario;
+import jakarta.persistence.EntityNotFoundException;
 
 import java.util.HashMap;
 import java.util.List;
@@ -34,7 +34,7 @@ public class AuthServiceImpl implements IAuthService {
     private IAuthService self;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
-    private final KafkaProducerService kafkaProducerService; // <-- INYECTAR
+    private final KafkaProducerService kafkaProducerService;
 
     @Autowired
     public AuthServiceImpl(UsuarioRepository usuarioRepository,
@@ -76,14 +76,13 @@ public class AuthServiceImpl implements IAuthService {
 
 
         NotificationRequestDTO notificationRequest = new NotificationRequestDTO(
-                NotificationType.EMAIL, // <-- Especificamos la ESTRATEGIA que queremos
+                NotificationType.EMAIL,
                 payload
         );
 
-        // 3. Enviar el evento genérico
         kafkaProducerService.enviarNotificacion(notificationRequest);
 
-        // 4. Devolvemos el usuario que ya guardamos
+
         return usuarioGuardado;
     }
 

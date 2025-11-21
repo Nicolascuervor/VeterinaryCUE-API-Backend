@@ -51,7 +51,7 @@ public class MascotaController {
 
         log.info("GET /api/mascotas/owner/{} - Obtener mascotas por dueño", ownerId);
 
-        // (Mentor): Llamamos al método que ya existe en MascotaService
+
         List<MascotaResponseDTO> response = mascotaService.getMascotasByOwner(ownerId);
 
         return ResponseEntity.ok(response);

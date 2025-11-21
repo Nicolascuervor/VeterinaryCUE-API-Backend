@@ -9,7 +9,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 
 @Service
 @Slf4j
-@AllArgsConstructor // (Mentor): Inyecta el KafkaTemplate
+@AllArgsConstructor
 public class KafkaProducerService {
 
     private final KafkaTemplate<String, Object> kafkaTemplate;

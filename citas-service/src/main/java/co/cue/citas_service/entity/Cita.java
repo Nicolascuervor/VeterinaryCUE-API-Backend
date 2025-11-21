@@ -51,7 +51,7 @@ public class Cita {
 
 
     @Column(length = 2000)
-    private String tratamiento; // El tratamiento recetado
+    private String tratamiento;
 
     @Column(length = 2000)
     private String observaciones;

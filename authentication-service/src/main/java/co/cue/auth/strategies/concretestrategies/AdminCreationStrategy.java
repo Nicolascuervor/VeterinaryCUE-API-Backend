@@ -24,6 +24,6 @@ public class AdminCreationStrategy implements IUsuarioCreationStrategy {
 
     @Override
     public TipoUsuario getTipo() {
-        return TipoUsuario.ADMIN; // <-- Debes añadir ADMIN a tu enum TipoUsuario.java
+        return TipoUsuario.ADMIN;
     }
 }

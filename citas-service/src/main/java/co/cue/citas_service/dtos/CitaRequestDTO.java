@@ -10,6 +10,6 @@ public class CitaRequestDTO {
     private Long veterinarianId;
     private Long servicioId;
     private List<Long> idsDisponibilidad;
-    private String motivoConsulta; // El motivo del dueño
-    private String estadoGeneralMascota; // Cómo llega la mascota (opcional al crear)
+    private String motivoConsulta;
+    private String estadoGeneralMascota;
 }

@@ -15,8 +15,6 @@ import java.util.Set;
 @Setter
 @NoArgsConstructor
 public class FacturaProductos extends Factura {
-
-    //  Relación de composición con las líneas de la factura
     @OneToMany(mappedBy = "factura", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private Set<LineaFactura> lineas = new HashSet<>();
 }

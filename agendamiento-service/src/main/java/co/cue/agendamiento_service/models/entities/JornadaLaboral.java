@@ -49,13 +49,4 @@ public class JornadaLaboral {
     @Column(nullable = false)
     private boolean activa = true;
 
-    public JornadaLaboral(Long veterinarioId, DayOfWeek diaSemana, LocalTime horaInicioJornada, LocalTime horaFinJornada, LocalTime horaInicioDescanso, LocalTime horaFinDescanso) {
-        this.veterinarioId = veterinarioId;
-        this.diaSemana = diaSemana;
-        this.horaInicioJornada = horaInicioJornada;
-        this.horaFinJornada = horaFinJornada;
-        this.horaInicioDescanso = horaInicioDescanso;
-        this.horaFinDescanso = horaFinDescanso;
-        this.activa = true;
-    }
 }

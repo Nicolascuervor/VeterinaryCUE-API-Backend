@@ -17,9 +17,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
@@ -56,7 +54,7 @@ public class ProductoFacturaStrategy implements IFacturaGenerationStrategy {
         factura.setEstadoFactura(EstadoFactura.PAGADA);
         factura.setMetodoPago(MetodoPago.TARJETA_CREDITO);
         factura.setTotal(evento.getTotalPedido());
-        factura.setSubTotal(evento.getTotalPedido()); // Simplificado (sin impuestos por ahora)
+        factura.setSubTotal(evento.getTotalPedido());
         factura.setImpuestos(BigDecimal.ZERO);
         Set<LineaFactura> lineas = evento.getItems().stream()
                 .map(itemDTO -> {
@@ -64,9 +62,8 @@ public class ProductoFacturaStrategy implements IFacturaGenerationStrategy {
                     linea.setProductoId(itemDTO.getProductoId());
                     linea.setCantidad(itemDTO.getCantidad());
                     linea.setPrecioUnitarioVenta(itemDTO.getPrecioUnitario());
-                    // Cálculo del subtotal de línea
                     linea.setSubtotalLinea(itemDTO.getPrecioUnitario().multiply(new BigDecimal(itemDTO.getCantidad())));
-                    linea.setFactura(factura); // Relación bidireccional
+                    linea.setFactura(factura);
                     return linea;
                 }).collect(Collectors.toSet());
         factura.setLineas(lineas);

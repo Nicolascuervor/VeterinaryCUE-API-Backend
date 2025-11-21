@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class EmailNotificationStrategy implements NotificationStrategy {
 
-    private final EmailService emailService; // Reutilizamos el servicio existente
+    private final EmailService emailService;
 
     @Override
     public void enviar(NotificationRequestDTO request) {

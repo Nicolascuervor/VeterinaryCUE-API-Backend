@@ -17,7 +17,7 @@ public class ProductoIndividual implements ItemFactura {
 
     @Override
     public String generarResumen(int nivel) {
-        String indent = "  ".repeat(nivel); // Indentación visual
-        return String.format("%s- %s (x%d): $%s\n", indent, nombre, cantidad, calcularTotal());
+        String indent = "  ".repeat(nivel);
+        return String.format("%s- %s (x%d): $%s%n", indent, nombre, cantidad, calcularTotal());
     }
 }

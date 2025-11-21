@@ -19,7 +19,7 @@ public class CategoriaServiceImpl implements ICategoriaService {
     private final CategoriaRepository categoriaRepository;
 
     @Override
-    @Transactional(readOnly = true) // (Mentor): Optimizamos la consulta (readOnly).
+    @Transactional(readOnly = true)
     public List<CategoriaResponseDTO> listAllActiveCategorias() {
         return categoriaRepository.findAllByActivoTrue() // Usamos el método del Repo
                 .stream()
@@ -37,7 +37,6 @@ public class CategoriaServiceImpl implements ICategoriaService {
     @Override
     @Transactional
     public CategoriaResponseDTO createCategoria(CategoriaRequestDTO requestDTO) {
-        // Regla de Negocio #2: Nombre único
         if (categoriaRepository.existsByNombre(requestDTO.getNombre())) {
             throw new DataIntegrityViolationException("El nombre de categoría '" + requestDTO.getNombre() + "' ya existe.");
         }

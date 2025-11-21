@@ -33,11 +33,11 @@ public class PaqueteProductos implements ItemFactura {
         StringBuilder sb = new StringBuilder();
         String indent = "  ".repeat(nivel);
 
-        sb.append(String.format("%s+ KIT: %s (x%d) [Total: $%s]\n",
+        sb.append(String.format("%s+ KIT: %s (x%d) [Total: $%s]%n",
                 indent, nombreKit, cantidadKits, calcularTotal()));
 
         for (ItemFactura item : componentes) {
-            sb.append(item.generarResumen(nivel + 1)); // Recursividad real
+            sb.append(item.generarResumen(nivel + 1));
         }
         return sb.toString();
     }

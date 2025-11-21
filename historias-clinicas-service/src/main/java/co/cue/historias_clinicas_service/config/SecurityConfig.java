@@ -52,12 +52,10 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // (Mentor): Deshabilitamos CSRF (común en APIs stateless)
+
                 .csrf(AbstractHttpConfigurer::disable)
-                // (Mentor): No creamos sesiones HTTP
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                // (Mentor): Configuramos la validación del token JWT
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> jwt
                                 .jwtAuthenticationConverter(jwtAuthenticationConverter())
@@ -89,11 +87,6 @@ public class SecurityConfig {
     }
 
 
-    /**
-     * (Colega Senior): Bean idéntico al esqueleto.
-     * Le dice a Spring Security cómo encontrar los roles ("roles")
-     * dentro del token JWT.
-     */
     @Bean
     public JwtAuthenticationConverter jwtAuthenticationConverter() {
         JwtGrantedAuthoritiesConverter grantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();

@@ -3,7 +3,7 @@ package co.cue.citas_service.config;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod; // Importante
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -24,21 +24,14 @@ import java.util.Base64;
 @EnableMethodSecurity
 public class SecurityConfig {
 
-    // (Mentor): Definimos los roles que usa este servicio
     private static final String ADMIN_ROLE = "ADMIN";
     private static final String VETERINARIO_ROLE = "VETERINARIO";
-    private static final String DUENIO_ROLE = "DUEÑO"; // Importado de auth-service
-
-    // (Mentor): Ruta base de CitaController
+    private static final String DUENIO_ROLE = "DUEÑO";
     private static final String CITAS_API_PATH = "/api/cita/**";
 
     @Value("${jwt.secret.key}") //
     private String secretKey;
 
-    /**
-     * (Colega Senior): Bean idéntico al esqueleto.
-     * Lee la clave secreta y crea el decodificador de JWT.
-     */
     @Bean
     public JwtDecoder jwtDecoder() {
         byte[] keyBytes = Base64.getDecoder().decode(secretKey);
@@ -46,10 +39,7 @@ public class SecurityConfig {
         return NimbusJwtDecoder.withSecretKey(key).build();
     }
 
-    /**
-     * (Arquitecto): Esta es la lógica de autorización adaptada
-     * a nuestras reglas de negocio para citas-service.
-     */
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
@@ -87,11 +77,6 @@ public class SecurityConfig {
     }
 
 
-    /**
-     * (Colega Senior): Bean idéntico al esqueleto.
-     * Le dice a Spring Security cómo encontrar los roles ("roles")
-     * dentro del token JWT.
-     */
     @Bean
     public JwtAuthenticationConverter jwtAuthenticationConverter() {
         JwtGrantedAuthoritiesConverter grantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();

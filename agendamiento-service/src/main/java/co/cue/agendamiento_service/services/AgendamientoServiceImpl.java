@@ -34,7 +34,7 @@ public class AgendamientoServiceImpl implements IAgendamientoService {
 
     private final JornadaLaboralRepository jornadaRepository;
     private final DisponibilidadRepository disponibilidadRepository;
-    private final VeterinarioServicioRepository veterinarioServicioRepository; // <-- AÑADIR ESTA LÍNEA
+    private final VeterinarioServicioRepository veterinarioServicioRepository;
     private final AgendamientoMapper mapper;
 
     @Override
@@ -58,8 +58,8 @@ public class AgendamientoServiceImpl implements IAgendamientoService {
     @Override
     @Transactional(readOnly = true)
     public List<DisponibilidadResponseDTO> consultarDisponibilidadPorFecha(Long veterinarioId, LocalDate fecha) {
-        LocalDateTime inicioDia = fecha.atStartOfDay(); // 2025-11-10T00:00:00
-        LocalDateTime finDia = fecha.atTime(LocalTime.MAX); // 2025-11-10T23:59:59
+        LocalDateTime inicioDia = fecha.atStartOfDay();
+        LocalDateTime finDia = fecha.atTime(LocalTime.MAX);
 
         List<Disponibilidad> slots = disponibilidadRepository
                 .findByVeterinarioIdAndFechaHoraInicioBetweenAndEstado(
@@ -186,7 +186,7 @@ public class AgendamientoServiceImpl implements IAgendamientoService {
 
         return disponibilidadRepository.findAllById(ids)
                 .stream()
-                .map(mapper::toDisponibilidadResponseDTO) // Reutilizamos el mapper existente
+                .map(mapper::toDisponibilidadResponseDTO)
                 .toList();
     }
 
@@ -194,7 +194,6 @@ public class AgendamientoServiceImpl implements IAgendamientoService {
     @Transactional(readOnly = true)
     public List<Long> findVeterinarioIdsByServicioId(Long servicioId) {
         log.info("Buscando veterinarios para el servicio ID: {}", servicioId);
-
         List<VeterinarioServicio> relaciones = veterinarioServicioRepository.findByServicioId(servicioId);
         return relaciones.stream()
                 .map(VeterinarioServicio::getVeterinarioId)

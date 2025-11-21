@@ -10,7 +10,5 @@ public class ActualizarUsuarioDTO {
     private String apellido;
     private String direccion;
     private String telefono;
-
-    // Si un veterinario puede cambiar su especialidad
     private String especialidad;
 }

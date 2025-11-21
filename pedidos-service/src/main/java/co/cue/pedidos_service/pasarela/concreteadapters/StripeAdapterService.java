@@ -10,6 +10,7 @@ import com.stripe.exception.StripeException;
 import com.stripe.model.Event;
 import com.stripe.model.PaymentIntent;
 import com.stripe.model.StripeObject;
+import com.stripe.net.RequestOptions;
 import com.stripe.net.Webhook;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
@@ -30,24 +31,25 @@ public class StripeAdapterService implements IPasarelaPagoGateway {
     private String webhookSecret;
 
 
-    @PostConstruct
-    public void init() {
-        Stripe.apiKey = secretKey;
-    }
-
     /**
      * Implementación del método para crear un pago.
      */
     @Override
     public String crearIntencionDePago(BigDecimal total, Long pedidoId, String moneda) {
         log.info("ADAPTER: Creando PaymentIntent en Stripe para Pedido ID: {}", pedidoId);
+
         long amountInCents = total.multiply(new BigDecimal(100)).longValue();
         Map<String, Object> params = new HashMap<>();
         params.put("amount", amountInCents);
         params.put("currency", moneda);
         params.put("metadata", Map.of("pedido_id", pedidoId.toString()));
+
+        RequestOptions options = RequestOptions.builder()
+                .setApiKey(secretKey)
+                .build();
+
         try {
-            PaymentIntent paymentIntent = PaymentIntent.create(params);
+            PaymentIntent paymentIntent = PaymentIntent.create(params, options);
             return paymentIntent.getClientSecret();
         } catch (StripeException e) {
             log.error("Error al crear PaymentIntent de Stripe: {}", e.getMessage());
@@ -68,24 +70,25 @@ public class StripeAdapterService implements IPasarelaPagoGateway {
         } catch (SignatureVerificationException e) {
             log.warn("¡Firma de Webhook INVÁLIDA! {}", e.getMessage());
             throw new PasarelaPagoException("Firma de webhook inválida", e);
-        } catch (JsonSyntaxException e) {
-            log.error("Error al parsear payload de Webhook: {}", e.getMessage());
-            throw new PasarelaPagoException("Payload de webhook malformado", e);
+        } catch (Exception e) {
+            log.error("Error inesperado al procesar payload de Webhook: {}", e.getMessage());
+            throw new PasarelaPagoException("Error procesando webhook", e);
         }
 
         StripeObject stripeObject = event.getDataObjectDeserializer()
                 .getObject()
-                .orElseThrow(() -> new PasarelaPagoException("No se encontró 'data.object' en el evento de Stripe"));
+                .orElse(null);
 
         String eventType = event.getType();
         boolean pagoExitoso = false;
         String paymentIntentId = null;
         Long pedidoId = null;
-
         if ("payment_intent.succeeded".equals(eventType)) {
             if (stripeObject instanceof PaymentIntent paymentIntent) {
                 pagoExitoso = true;
                 paymentIntentId = paymentIntent.getId();
+
+                // Recuperamos el ID del pedido que guardamos en los metadatos al crear el pago
                 String pedidoIdStr = paymentIntent.getMetadata().get("pedido_id");
                 if (pedidoIdStr != null) {
                     pedidoId = Long.parseLong(pedidoIdStr);
@@ -95,6 +98,7 @@ public class StripeAdapterService implements IPasarelaPagoGateway {
         } else {
             log.info("ADAPTER: Evento de Stripe recibido [{}], pero no es 'succeeded'. Ignorando.", eventType);
         }
+
         return new EventoPagoDTO(paymentIntentId, eventType, pedidoId, pagoExitoso);
     }
 }

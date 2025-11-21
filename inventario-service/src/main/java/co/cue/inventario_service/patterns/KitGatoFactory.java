@@ -5,8 +5,8 @@ import co.cue.inventario_service.patterns.kitfactory.KitProductoDTO;
 import org.springframework.stereotype.Component;
 import java.util.List;
 
-// (Concrete Factory 1)
-@Component // (Colega Senior): La hacemos un Bean de Spring
+
+@Component
 public class KitGatoFactory implements IKitMascotaFactory {
 
     @Override

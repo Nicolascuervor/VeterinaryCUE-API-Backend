@@ -18,14 +18,12 @@ public class PedidoItem {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // ID del producto en 'inventario-service'.
     @Column(name = "producto_id", nullable = false)
     private Long productoId;
 
     @Column(nullable = false)
     private Integer cantidad;
 
-    // Este es el precio por unidad al momento de comprar.
     @Column(name = "precio_unitario", nullable = false, precision = 10, scale = 2)
     private BigDecimal precioUnitario;
 

@@ -15,14 +15,6 @@ public class CarritoController {
 
     private final ICarritoService carritoService;
 
-    /**
-     * (Arquitecto): Este es el 'cerebro' de la API.
-     * Identifica al cliente (invitado o registrado) y obtiene su carrito.
-     *
-     * @param usuarioId (Header) Inyectado por el API-Gateway si el usuario está logueado.
-     * @param sessionId (Header) Enviado por el Frontend si el usuario es invitado.
-     * @return El carrito (existente o recién creado).
-     */
     @GetMapping
     public ResponseEntity<CarritoResponseDTO> getCarrito(
             @RequestHeader(value = "X-Usuario-Id", required = false) Long usuarioId,
@@ -32,9 +24,7 @@ public class CarritoController {
         return ResponseEntity.ok(carrito);
     }
 
-    /**
-     * Agrega un nuevo item al carrito o actualiza su cantidad si ya existe.
-     */
+
     @PostMapping("/items")
     public ResponseEntity<CarritoResponseDTO> addItemAlCarrito(
             @RequestHeader(value = "X-Usuario-Id", required = false) Long usuarioId,
@@ -70,7 +60,4 @@ public class CarritoController {
         return ResponseEntity.noContent().build();
     }
 
-    // (Mentor): Más adelante, agregaremos un endpoint 'POST /api/carrito/merge'
-    // para manejar la fusión cuando un invitado inicie sesión.
-    // Por ahora, nos enfocamos en el CRUD básico.
 }

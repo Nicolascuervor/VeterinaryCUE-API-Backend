@@ -13,14 +13,11 @@ import org.springframework.stereotype.Component;
 @AllArgsConstructor
 public class KafkaConsumerListener {
 
-
-    // Inyectamos el orquestador
     private final NotificationOrchestratorService orchestratorService;
 
     @KafkaListener(topics = "usuarios_registrados_topic",
             groupId = "notificaciones_bienvenida_group")
 
-    // Escuchamos el DTO genérico
     public void handleNotificationRequest(NotificationRequestDTO event) {
         log.info("Evento de notificación recibido para tipo: {}", event.getTipo());
 

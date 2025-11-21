@@ -50,7 +50,7 @@ public abstract class Factura {
     @Column(nullable = false)
     private MetodoPago metodoPago;
 
-    @Column(name = "usuario_id", nullable = true) // Nulo si fue invitado
+    @Column(name = "usuario_id", nullable = true)
     private Long usuarioId;
 
     @Column(name = "id_origen", nullable = false)

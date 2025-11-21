@@ -28,7 +28,14 @@ public class CarritoServiceClient {
     }
 
     public Mono<Void> limpiarCarrito(Long usuarioId, String sessionId) {
-        log.warn("Limpiando carrito en carrito-service...");
-        return Mono.empty();
+        String url = CARRITO_SERVICE_URL + "/api/carrito";
+
+        return webClientBuilder.build()
+                .delete()
+                .uri(url)
+                .header("X-Usuario-Id", (usuarioId != null) ? String.valueOf(usuarioId) : null)
+                .header("X-Session-Id", sessionId)
+                .retrieve()
+                .bodyToMono(Void.class);
     }
 }

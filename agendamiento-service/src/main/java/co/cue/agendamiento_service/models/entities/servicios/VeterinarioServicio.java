@@ -6,11 +6,11 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-@Entity // (Mentor): ¡Faltaba esto!
+@Entity
 @Table(name = "veterinario_servicios")
-@Getter // (Colega Senior): ¡Esta es la corrección clave!
-@Setter // (Mentor): Buena práctica añadirlo también
-@NoArgsConstructor // (Mentor): Requerido por JPA
+@Getter
+@Setter
+@NoArgsConstructor
 public class VeterinarioServicio {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

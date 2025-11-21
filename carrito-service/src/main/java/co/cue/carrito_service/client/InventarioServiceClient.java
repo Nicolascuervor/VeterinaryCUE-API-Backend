@@ -12,7 +12,6 @@ import reactor.core.publisher.Mono;
 @AllArgsConstructor
 public class InventarioServiceClient {
 
-    // Se Inyecta el Builder que creamos en WebClientConfig
     private final WebClient.Builder webClientBuilder;
 
     /**

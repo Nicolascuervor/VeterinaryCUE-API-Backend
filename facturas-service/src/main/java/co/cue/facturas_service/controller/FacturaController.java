@@ -10,7 +10,6 @@ import java.util.List;
 @RequestMapping("/api/facturas")
 @AllArgsConstructor
 public class FacturaController {
-
     private final FacturaService facturaService;
 
     @GetMapping

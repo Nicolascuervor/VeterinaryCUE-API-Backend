@@ -9,7 +9,7 @@ import java.math.BigDecimal;
 @JsonTypeInfo(
         use = JsonTypeInfo.Id.NAME,
         include = JsonTypeInfo.As.PROPERTY,
-        property = "tipoServicio" // El nombre del campo JSON
+        property = "tipoServicio"
 )
 @JsonSubTypes({
         @JsonSubTypes.Type(value = ConsultaResponseDTO.class, name = "CONSULTA"),

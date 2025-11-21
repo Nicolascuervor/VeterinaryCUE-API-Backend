@@ -25,7 +25,7 @@ public class LineaFactura {
     private Integer cantidad;
 
     @Column(nullable = false, precision = 10, scale = 2)
-    private BigDecimal precioUnitarioVenta; // El precio "snapshot"
+    private BigDecimal precioUnitarioVenta;
 
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal subtotalLinea;

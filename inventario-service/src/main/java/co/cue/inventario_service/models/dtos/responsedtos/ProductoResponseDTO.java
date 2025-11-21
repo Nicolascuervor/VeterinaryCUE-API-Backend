@@ -20,14 +20,10 @@ import lombok.Setter;
 @Getter
 @Setter
 public abstract class ProductoResponseDTO {
-
-    // (Mentor): Campos comunes que todos los JSON de respuesta tendrán.
     private Long id;
     private String nombre;
     private Double precio;
     private Integer stockActual;
     private boolean disponibleParaVenta;
-
-    // (Mentor): Incluimos el DTO de Categoría que ya creamos.
     private CategoriaResponseDTO categoria;
 }

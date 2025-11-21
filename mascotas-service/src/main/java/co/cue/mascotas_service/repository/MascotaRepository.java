@@ -14,8 +14,6 @@ public interface MascotaRepository extends JpaRepository<Mascota, Long> {
     List<Mascota> findByDuenoId(Long duenoId);
 
 
-    List<Mascota> findByEspecie(String species);
-
     List<Mascota> findByActiveTrue();
 
     @Query("SELECT p FROM Mascota p WHERE LOWER(p.nombre) LIKE LOWER(CONCAT('%', :nombre, '%'))")

@@ -64,7 +64,7 @@ public class DisponibilidadController {
 
 
     @PostMapping("/reservar")
-    @PreAuthorize("isAuthenticated()") // Protegido; solo citas-service (u otro servicio) puede llamarlo
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<DisponibilidadResponseDTO>> reservarSlots(@RequestBody ReservaRequestDTO dto) {
         return ResponseEntity.ok(agendamientoService.reservarSlots(dto));
     }
@@ -79,13 +79,13 @@ public class DisponibilidadController {
 
 
     @PostMapping("/slots/list")
-    @PreAuthorize("isAuthenticated()") // Protegido - Solo para comunicación entre servicios
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<DisponibilidadResponseDTO>> getDisponibilidadByIds(@RequestBody List<Long> ids) {
         return ResponseEntity.ok(agendamientoService.findDisponibilidadByIds(ids));
     }
 
     @GetMapping("/servicio/{servicioId}/veterinarios")
-    @PreAuthorize("isAuthenticated()") // Protegido para llamadas inter-servicio
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<Long>> getVeterinariosPorServicio(@PathVariable Long servicioId) {
         return ResponseEntity.ok(agendamientoService.findVeterinarioIdsByServicioId(servicioId));
     }

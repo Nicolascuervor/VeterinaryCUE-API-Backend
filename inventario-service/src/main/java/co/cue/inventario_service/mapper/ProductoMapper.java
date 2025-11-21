@@ -61,7 +61,7 @@ public class ProductoMapper {
         return dto;
     }
 
-    // Mapeador de campos comunes (Request -> Entidad)
+
     private void mapBaseRequestToEntity(ProductoRequestDTO dto, Producto entity) {
         entity.setNombre(dto.getNombre());
         entity.setPrecio(dto.getPrecio());
@@ -71,7 +71,7 @@ public class ProductoMapper {
         entity.setDisponibleParaVenta(dto.isDisponibleParaVenta());
     }
 
-    // Mapeador de campos comunes (Entidad -> Response)
+
     private void mapBaseEntityToResponseDTO(Producto entity, ProductoResponseDTO dto) {
         dto.setId(entity.getId());
         dto.setNombre(entity.getNombre());
@@ -83,7 +83,7 @@ public class ProductoMapper {
         }
     }
 
-    private AlimentoResponseDTO mapAlimentoToResponseDTO(Alimento entity) { // <-- RENOMBRADO
+    private AlimentoResponseDTO mapAlimentoToResponseDTO(Alimento entity) {
         AlimentoResponseDTO dto = new AlimentoResponseDTO();
         mapBaseEntityToResponseDTO(entity, dto);
         dto.setTipoMascota(entity.getTipoMascota());
@@ -91,7 +91,7 @@ public class ProductoMapper {
         return dto;
     }
 
-    private MedicinaResponseDTO mapMedicinaToResponseDTO(Medicina entity) { // <-- RENOMBRADO
+    private MedicinaResponseDTO mapMedicinaToResponseDTO(Medicina entity) {
         MedicinaResponseDTO dto = new MedicinaResponseDTO();
         mapBaseEntityToResponseDTO(entity, dto);
         dto.setComposicion(entity.getComposicion());
@@ -99,7 +99,7 @@ public class ProductoMapper {
         return dto;
     }
 
-    private AccesorioResponseDTO mapAccesorioToResponseDTO(Accesorio entity) { // <-- RENOMBRADO
+    private AccesorioResponseDTO mapAccesorioToResponseDTO(Accesorio entity) {
         AccesorioResponseDTO dto = new AccesorioResponseDTO();
         mapBaseEntityToResponseDTO(entity, dto);
         dto.setMaterial(entity.getMaterial());
@@ -107,7 +107,7 @@ public class ProductoMapper {
         return dto;
     }
 
-    private KitProductoResponseDTO mapKitToResponseDTO(KitProducto entity) { // <-- RENOMBRADO
+    private KitProductoResponseDTO mapKitToResponseDTO(KitProducto entity) {
         KitProductoResponseDTO dto = new KitProductoResponseDTO();
         mapBaseEntityToResponseDTO(entity, dto);
         return dto;

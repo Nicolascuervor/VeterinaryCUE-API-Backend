@@ -29,7 +29,7 @@ public class FacturaStrategyOrchestrator {
 
 
     public void procesarGeneracionFactura(PedidoCompletadoEventDTO evento) {
-        TipoFactura tipo = TipoFactura.PRODUCTOS; // Lo definimos estáticamente por ahora
+        TipoFactura tipo = TipoFactura.PRODUCTOS;
 
         IFacturaGenerationStrategy strategy = strategyMap.get(tipo);
 

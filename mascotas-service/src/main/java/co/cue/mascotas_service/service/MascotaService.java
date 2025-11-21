@@ -24,7 +24,6 @@ public class MascotaService {
     public MascotaResponseDTO createMascota(MascotaRequestDTO requestDTO) {
         log.info("Creando nueva mascota: {}", requestDTO.getNombre());
 
-
         Mascota mascota = Mascota.builder()
                 .nombre(requestDTO.getNombre())
                 .especie(requestDTO.getEspecie())

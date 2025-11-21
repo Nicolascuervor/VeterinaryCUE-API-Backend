@@ -77,38 +77,38 @@ public class Usuario implements UserDetails{
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        // (Colega Senior): Le decimos a Spring que el "rol" es nuestro campo 'userRole'
         return List.of(new SimpleGrantedAuthority(userRole.name()));
     }
 
     @Override
     public String getPassword() {
-        return this.contrasenia; // Le decimos que el 'password' es nuestro campo 'contraseña'
+        return this.contrasenia;
     }
 
     @Override
     public String getUsername() {
-        return this.correo; // Le decimos que el 'username' es nuestro campo 'correo'
+        return this.correo;
     }
 
     @Override
     public boolean isAccountNonExpired() {
-        return true; // No manejamos expiración de cuentas
+        return true;
+
     }
 
     @Override
     public boolean isAccountNonLocked() {
-        return true; // No manejamos bloqueo de cuentas
+        return true;
     }
 
     @Override
     public boolean isCredentialsNonExpired() {
-        return true; // No manejamos expiración de credenciales
+        return true;
     }
 
     @Override
     public boolean isEnabled() {
-        return this.activo; // (¡CRÍTICO!) Le decimos que 'activo' es nuestro Soft Delete
+        return this.activo;
     }
 
 }

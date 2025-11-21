@@ -4,7 +4,6 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 
-// Lo que devolvemos por CADA item en el carrito.
 @Getter
 @Setter
 @AllArgsConstructor

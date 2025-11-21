@@ -2,25 +2,23 @@ package co.cue.pedidos_service.services;
 
 import co.cue.pedidos_service.client.CarritoServiceClient;
 import co.cue.pedidos_service.client.InventarioServiceClient;
+import co.cue.pedidos_service.exceptions.PedidoProcesamientoException;
 import co.cue.pedidos_service.models.dtos.kafka.PedidoCompletadoEventDTO;
 import co.cue.pedidos_service.models.dtos.kafka.PedidoItemEventDTO;
 import co.cue.pedidos_service.models.entities.Pedido;
 import co.cue.pedidos_service.models.enums.PedidoEstado;
 import co.cue.pedidos_service.pasarela.dtos.EventoPagoDTO;
 import co.cue.pedidos_service.repository.PedidoRepository;
-import com.fasterxml.jackson.databind.JsonNode;
-
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import java.util.Set;
 import java.util.stream.Collectors;
-import com.fasterxml.jackson.core.JsonProcessingException;
 
 @Service
 @Slf4j
-@RequiredArgsConstructor // (Colega Senior): Reemplaza @AllArgsConstructor
+@RequiredArgsConstructor
 public class PedidoWebhookService {
 
     private final PedidoRepository pedidoRepository;
@@ -37,7 +35,6 @@ public class PedidoWebhookService {
         }
         log.info("Procesando evento 'Pago Exitoso' para PaymentIntent ID: {}", evento.getPaymentIntentId());
 
-        // Usamos el ID de la transacción de la pasarela para encontrar el pedido
         Pedido pedido = pedidoRepository.findByStripePaymentIntentId(evento.getPaymentIntentId())
                 .orElseThrow(() -> new RuntimeException("Pedido no encontrado para PaymentIntent: " + evento.getPaymentIntentId()));
 
@@ -50,11 +47,10 @@ public class PedidoWebhookService {
         try {
             log.info("Intentando descontar stock para {} items...", pedido.getItems().size());
             inventarioClient.descontarStock(pedido.getItems()).block();
-
             log.info("Stock descontado correctamente en Inventario.");
         } catch (Exception e) {
             log.error("Error CRÍTICO al descontar stock: {}", e.getMessage());
-            throw new RuntimeException("Fallo al descontar inventario", e);
+            throw new PedidoProcesamientoException("Fallo al descontar inventario en el proceso post-pago", e);
         }
 
         pedido.setEstado(PedidoEstado.COMPLETADO);
@@ -70,9 +66,7 @@ public class PedidoWebhookService {
         log.info("Pedido {} completado y evento enviado a Kafka.", pedido.getId());
     }
 
-    /**
-     * Helper para mapear la Entidad Pedido al DTO de Kafka.
-     */
+
     private PedidoCompletadoEventDTO mapToKafkaDTO(Pedido pedido) {
         Set<PedidoItemEventDTO> itemsDTO = pedido.getItems().stream()
                 .map(item -> PedidoItemEventDTO.builder()

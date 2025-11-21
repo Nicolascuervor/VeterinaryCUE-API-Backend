@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 
-import java.math.BigDecimal; // (Profesor): ¡Importante! Usamos BigDecimal para dinero.
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
@@ -23,8 +23,6 @@ public class Pedido {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-
-    // Si permitimos compras de invitados, este podría ser nulo.
     @Column(name = "usuario_id", nullable = true)
     private Long usuarioId;
 
@@ -37,16 +35,14 @@ public class Pedido {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private PedidoEstado estado = PedidoEstado.PENDIENTE; // Estado inicial
+    private PedidoEstado estado = PedidoEstado.PENDIENTE;
 
-    // El ID de la transacción en la pasarela de pago (Stripe).
     @Column(name = "stripe_payment_intent_id", length = 100)
     private String stripePaymentIntentId;
 
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal totalPedido;
 
-    // Relación de composición
     @OneToMany(mappedBy = "pedido", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private Set<PedidoItem> items = new HashSet<>();
 

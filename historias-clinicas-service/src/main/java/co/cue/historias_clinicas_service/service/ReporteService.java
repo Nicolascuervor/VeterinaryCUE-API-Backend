@@ -14,13 +14,10 @@ import org.springframework.transaction.annotation.Transactional;
 @AllArgsConstructor
 public class ReporteService {
 
-    // 1. El Director que sabe los pasos
     private final ReporteDirector reporteDirector;
 
-    // 2. El Builder específico que usaremos
     private final HistorialClinicoReporteBuilder reporteBuilder;
 
-    // 3. El Repositorio para obtener los datos
     private final HistorialClinicoRepository historialRepository;
 
     @Transactional(readOnly = true)

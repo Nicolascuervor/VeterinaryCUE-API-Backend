@@ -7,11 +7,8 @@ import org.springframework.stereotype.Service;
 import co.cue.facturas_service.models.entities.Factura;
 import co.cue.facturas_service.models.entities.FacturaProductos;
 import jakarta.persistence.EntityNotFoundException;
-
 import org.springframework.transaction.annotation.Transactional;
-
 import java.util.List;
-import java.util.stream.Collectors;
 @Service
 @AllArgsConstructor
 public class FacturaService {
@@ -52,7 +49,7 @@ public class FacturaService {
                 lDto.setPrecioUnitario(l.getPrecioUnitarioVenta());
                 lDto.setSubtotal(l.getSubtotalLinea());
                 return lDto;
-            }).collect(Collectors.toList()));
+            }).toList());
         }
         return dto;
     }

@@ -84,7 +84,7 @@ public class PedidoServiceImpl implements IPedidoService {
         }
 
         Pedido pedido = new Pedido();
-        pedido.setUsuarioId(usuarioId); // Nulo si es invitado
+        pedido.setUsuarioId(usuarioId);
         pedido.setClienteNombre(cliente.getNombre() + " " + cliente.getApellido());
         pedido.setClienteEmail(cliente.getCorreo());
         pedido.setTotalPedido(totalPedido);
@@ -110,22 +110,17 @@ public class PedidoServiceImpl implements IPedidoService {
         return new CheckoutResponseDTO(pedidoGuardado.getId(), clientSecret);
     }
 
-    /**
-     * Helper para obtener los datos del cliente, sea de Auth-service o del DTO de invitado.
-     */
+
     private Mono<UsuarioClienteDTO> obtenerDatosCliente(Long usuarioId, CheckoutGuestRequestDTO guestDTO) {
         if (usuarioId != null) {
-            // Caso 1: Usuario Logueado
             return authClient.findUsuarioById(usuarioId);
         } else if (guestDTO != null && guestDTO.getClienteEmail() != null) {
-            // Caso 2: Usuario Invitado
             UsuarioClienteDTO dto = new UsuarioClienteDTO();
             dto.setNombre(guestDTO.getClienteNombre());
             dto.setApellido(""); // Invitado no tiene apellido separado
             dto.setCorreo(guestDTO.getClienteEmail());
             return Mono.just(dto);
         } else {
-            // Caso 3: Error
             return Mono.error(new IllegalArgumentException("Datos del cliente (usuarioId o guestDTO) son requeridos."));
         }
     }
