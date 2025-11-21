@@ -8,6 +8,8 @@ import co.cue.facturas_service.models.enums.EstadoFactura;
 import co.cue.facturas_service.models.enums.MetodoPago;
 import co.cue.facturas_service.models.enums.NotificationType;
 import co.cue.facturas_service.models.enums.TipoFactura;
+import co.cue.facturas_service.pattens.composite.FacturaCompositeBuilder;
+import co.cue.facturas_service.pattens.composite.ItemFactura;
 import co.cue.facturas_service.repository.FacturaRepository;
 import co.cue.facturas_service.services.KafkaNotificationProducer;
 import co.cue.facturas_service.strategies.IFacturaGenerationStrategy;
@@ -20,6 +22,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -31,74 +34,67 @@ public class ProductoFacturaStrategy implements IFacturaGenerationStrategy {
 
     private final FacturaRepository facturaRepository;
     private final KafkaNotificationProducer notificationProducer;
+    private final FacturaCompositeBuilder compositeBuilder;
 
 
     @Override
     @Transactional
     public void generarFactura(Object eventPayload) {
-
         PedidoCompletadoEventDTO evento = (PedidoCompletadoEventDTO) eventPayload;
-        log.info("Estrategia PRODUCTOS: Generando factura para Pedido ID: {}", evento.getPedidoId());
+        log.info("Estrategia PRODUCTOS: Procesando Pedido ID: {}", evento.getPedidoId());
 
         if (facturaRepository.existsByIdOrigenAndTipoFactura(evento.getPedidoId(), getTipo())) {
-            log.warn("Ya existe una factura para el Pedido ID: {}. Ignorando evento.", evento.getPedidoId());
+            log.warn("Factura ya existe para Pedido ID: {}. Omitiendo.", evento.getPedidoId());
             return;
         }
+        FacturaProductos factura = new FacturaProductos();
+        factura.setIdOrigen(evento.getPedidoId());
+        factura.setUsuarioId(evento.getUsuarioId());
 
+        factura.setNumFactura("F-PROD-" + evento.getPedidoId() + "-" + System.currentTimeMillis());
+        factura.setFechaEmision(evento.getFechaCreacion().toLocalDate());
+        factura.setEstadoFactura(EstadoFactura.PAGADA);
+        factura.setMetodoPago(MetodoPago.TARJETA_CREDITO);
+        factura.setTotal(evento.getTotalPedido());
+        factura.setSubTotal(evento.getTotalPedido()); // Simplificado (sin impuestos por ahora)
+        factura.setImpuestos(BigDecimal.ZERO);
         Set<LineaFactura> lineas = evento.getItems().stream()
                 .map(itemDTO -> {
                     LineaFactura linea = new LineaFactura();
                     linea.setProductoId(itemDTO.getProductoId());
                     linea.setCantidad(itemDTO.getCantidad());
                     linea.setPrecioUnitarioVenta(itemDTO.getPrecioUnitario());
-                    linea.setSubtotalLinea(
-                            itemDTO.getPrecioUnitario().multiply(new BigDecimal(itemDTO.getCantidad()))
-                    );
+                    // Cálculo del subtotal de línea
+                    linea.setSubtotalLinea(itemDTO.getPrecioUnitario().multiply(new BigDecimal(itemDTO.getCantidad())));
+                    linea.setFactura(factura); // Relación bidireccional
                     return linea;
                 }).collect(Collectors.toSet());
-
-
-        FacturaProductos factura = new FacturaProductos();
-        factura.setIdOrigen(evento.getPedidoId());
-        factura.setUsuarioId(evento.getUsuarioId());
-
-
-        factura.setNumFactura("F-PROD-" + evento.getPedidoId());
-
-        factura.setFechaEmision(evento.getFechaCreacion().toLocalDate());
-        factura.setEstadoFactura(EstadoFactura.PAGADA);
-        factura.setMetodoPago(MetodoPago.TARJETA_CREDITO); // Asumimos Stripe
-
-        factura.setTotal(evento.getTotalPedido());
-        factura.setSubTotal(evento.getTotalPedido());
-        factura.setImpuestos(BigDecimal.ZERO);
-
-        // --- 3. Asociar y Guardar ---
-        for (LineaFactura linea : lineas) {
-            linea.setFactura(factura); // Asociamos la línea al padre
-        }
         factura.setLineas(lineas);
-
         facturaRepository.save(factura);
-        log.info("Factura {} creada exitosamente.", factura.getNumFactura());
-        enviarNotificacionFactura(evento, factura);
+        log.info("Factura {} guardada exitosamente en BD.", factura.getNumFactura());
+        List<ItemFactura> estructuraFactura = compositeBuilder.construirEstructura(evento.getItems());
+        StringBuilder detalleCorreo = new StringBuilder();
+        for (ItemFactura item : estructuraFactura) {
+            detalleCorreo.append(item.generarResumen(0));
+        }
+        enviarNotificacionFactura(evento, factura, detalleCorreo.toString());
     }
 
-    private void enviarNotificacionFactura(PedidoCompletadoEventDTO evento, FacturaProductos factura) {
+    private void enviarNotificacionFactura(PedidoCompletadoEventDTO evento, FacturaProductos factura, String detalleItems) {
         Map<String, String> payload = new HashMap<>();
         payload.put("clienteNombre", evento.getClienteNombre());
         payload.put("clienteEmail", evento.getClienteEmail());
         payload.put("numFactura", factura.getNumFactura());
         payload.put("total", factura.getTotal().toString());
         payload.put("fecha", factura.getFechaEmision().format(DateTimeFormatter.ISO_DATE));
-
+        payload.put("detalleItems", detalleItems);
         NotificationRequestDTO notificacion = new NotificationRequestDTO(
                 NotificationType.FACTURA,
                 payload
         );
 
-        // Enviamos
         notificationProducer.enviarNotificacion(notificacion);
+        log.info("Evento de notificación enviado para factura {}", factura.getNumFactura());
     }
 
     @Override
