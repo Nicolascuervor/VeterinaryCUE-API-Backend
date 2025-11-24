@@ -94,7 +94,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
 
 
-                        .requestMatchers(HttpMethod.GET, "/api/auth").hasRole(ADMIN_ROLE)
+                        .requestMatchers(HttpMethod.GET, "/api/auth/active/users").hasRole(ADMIN_ROLE)
                         .requestMatchers(HttpMethod.DELETE, "/api/auth/**").hasRole(ADMIN_ROLE)
 
                         // 3. Autenticados (Dueño, Vet, Admin)

@@ -17,7 +17,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/auth")
 @AllArgsConstructor
-@CrossOrigin(origins = "http://127.0.0.1:5500/")
+@CrossOrigin(origins = {"http://localhost:3000", "http://127.0.0.1:5500"})
 public class AuthController {
     private final IAuthService authService;
 
@@ -34,7 +34,7 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping
+    @GetMapping("/active/users")
     public ResponseEntity<List<Usuario>> obtenerUsuariosActivos() {
         List<Usuario> usuarios = authService.obtenerUsuariosActivos();
         return ResponseEntity.ok(usuarios);
