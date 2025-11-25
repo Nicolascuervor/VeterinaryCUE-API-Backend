@@ -19,7 +19,9 @@ import java.util.List;
 public class MascotaService {
 
     private final MascotaRepository mascotaRepository;
-
+    // ------------------------------------------------------------
+    //                      CREATE
+    // ------------------------------------------------------------
     @Transactional
     public MascotaResponseDTO createMascota(MascotaRequestDTO requestDTO) {
         log.info("Creando nueva mascota: {}", requestDTO.getNombre());
@@ -41,14 +43,18 @@ public class MascotaService {
 
         return mapToResponseDTO(savedMascota);
     }
-
+    // ------------------------------------------------------------
+    //                      GET BY ID
+    // ------------------------------------------------------------
     public MascotaResponseDTO getMascotaById(Long id) {
         log.info("Buscando mascota con ID: {}", id);
         Mascota mascota = mascotaRepository.findById(id)
                 .orElseThrow(() -> new MascotaNotFoundException(id));
         return mapToResponseDTO(mascota);
     }
-
+    // ------------------------------------------------------------
+    //                    GET ALL
+    // ------------------------------------------------------------
     @Transactional(readOnly = true)
     public List<MascotaResponseDTO> getAllMascotas() {
         log.info("Obteniendo todas las mascotas");
@@ -56,7 +62,9 @@ public class MascotaService {
                 .map(this::mapToResponseDTO)
                 .toList();
     }
-
+    // ------------------------------------------------------------
+    //                  GET ACTIVE ONLY
+    // ------------------------------------------------------------
     @Transactional(readOnly = true)
     public List<MascotaResponseDTO> getActiveMascotas() {
         log.info("Obteniendo mascotas activas");
@@ -64,7 +72,9 @@ public class MascotaService {
                 .map(this::mapToResponseDTO)
                 .toList();
     }
-
+    // ------------------------------------------------------------
+    //               GET BY OWNER (DUENIO)
+    // ------------------------------------------------------------
     @Transactional(readOnly = true)
     public List<MascotaResponseDTO> getMascotasByOwner(Long ownerId) {
         log.info("Obteniendo mascotas del dueño con ID: {}", ownerId);
@@ -73,7 +83,9 @@ public class MascotaService {
                 .toList();
     }
 
-
+    // ------------------------------------------------------------
+    //                SEARCH BY NAME
+    // ------------------------------------------------------------
     @Transactional(readOnly = true)
     public List<MascotaResponseDTO> searchMascotasByName(String name) {
         log.info("Buscando mascotas con nombre: {}", name);
@@ -81,7 +93,9 @@ public class MascotaService {
                 .map(this::mapToResponseDTO)
                 .toList();
     }
-
+    // ------------------------------------------------------------
+    //                     UPDATE
+    // ------------------------------------------------------------
     @Transactional
     public MascotaResponseDTO updateMascota(Long id, MascotaRequestDTO requestDTO) {
         log.info("Actualizando mascota con ID: {}", id);
@@ -104,7 +118,9 @@ public class MascotaService {
 
         return mapToResponseDTO(updatedMascota);
     }
-
+    // ------------------------------------------------------------
+    //               LOGICAL DELETE (ACTIVE = FALSE)
+    // ------------------------------------------------------------
     @Transactional
     public void deactivateMascota(Long id) {
         log.info("Desactivando mascota con ID: {}", id);
@@ -114,7 +130,9 @@ public class MascotaService {
         mascotaRepository.save(mascota);
         log.info("Mascota desactivada exitosamente");
     }
-
+    // ------------------------------------------------------------
+    //                   HARD DELETE
+    // ------------------------------------------------------------
     @Transactional
     public void deleteMascota(Long id) {
         log.info("Eliminando mascota con ID: {}", id);
@@ -124,6 +142,9 @@ public class MascotaService {
         log.info("Mascota eliminada exitosamente");
     }
 
+    // ------------------------------------------------------------
+    //                 MAPPER (ENTITY → DTO)
+    // ------------------------------------------------------------
     private MascotaResponseDTO mapToResponseDTO(Mascota mascota) {
         return MascotaResponseDTO.builder()
                 .id(mascota.getId())
@@ -141,6 +162,9 @@ public class MascotaService {
 
     }
 
+    // ------------------------------------------------------------
+    //                     AGE CALCULATOR
+    // ------------------------------------------------------------
     private Integer calculateAge(LocalDate birthDate) {
         if (birthDate == null) return null;
         return Period.between(birthDate, LocalDate.now()).getYears();

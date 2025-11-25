@@ -23,15 +23,21 @@ import java.util.Base64;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
+// Configura la seguridad del servicio, habilitando control por roles y validación JWT.
 public class SecurityConfig {
 
+
+    // Rol requerido para operaciones administrativas.
     private static final String ADMIN_ROLE = "ADMIN";
+    // Ruta protegida del módulo de mascotas.
     private static final String MASCOTAS_API_PATH = "/api/mascotas/**";
 
     @Value("${jwt.secret.key}")
+    // Llave secreta usada para validar los tokens JWT.
     private String secretKey;
 
     @Bean
+    // Decodifica y valida los tokens JWT usando la clave secreta configurada.
     public JwtDecoder jwtDecoder() {
         byte[] keyBytes = Base64.getDecoder().decode(secretKey);
         SecretKey key = new SecretKeySpec(keyBytes, "HmacSHA256");
@@ -39,11 +45,15 @@ public class SecurityConfig {
     }
 
     @Bean
+    // Define las reglas de seguridad HTTP para el servicio.
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+                // Desactiva CSRF ya que la API es stateless.
                 .csrf(AbstractHttpConfigurer::disable)
+                // Define que no habrá sesiones, todo se maneja por JWT.
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                // Habilita el servidor de recursos basado en JWT.
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> jwt
                                 .jwtAuthenticationConverter(jwtAuthenticationConverter())
@@ -51,20 +61,25 @@ public class SecurityConfig {
                 );
 
         http
+                // Define permisos por tipo de petición y rol.
                 .authorizeHttpRequests(authz -> authz
                         .requestMatchers(HttpMethod.GET, MASCOTAS_API_PATH).authenticated()
                         .requestMatchers(HttpMethod.POST, MASCOTAS_API_PATH).hasRole(ADMIN_ROLE)
                         .requestMatchers(HttpMethod.PUT, MASCOTAS_API_PATH).hasRole(ADMIN_ROLE)
                         .requestMatchers(HttpMethod.DELETE, MASCOTAS_API_PATH).hasRole(ADMIN_ROLE)
+                        // Cualquier otra ruta requiere autenticación.
                         .anyRequest().authenticated());
         return http.build();
     }
 
 
     @Bean
+    // Convierte los roles contenidos en el JWT en autoridades para Spring Security.
     public JwtAuthenticationConverter jwtAuthenticationConverter() {
         JwtGrantedAuthoritiesConverter grantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();
+        // Indica el campo donde vienen los roles.
         grantedAuthoritiesConverter.setAuthoritiesClaimName("roles");
+        // No agrega prefijos como "ROLE_".
         grantedAuthoritiesConverter.setAuthorityPrefix("");
         JwtAuthenticationConverter jwtConverter = new JwtAuthenticationConverter();
         jwtConverter.setJwtGrantedAuthoritiesConverter(grantedAuthoritiesConverter);

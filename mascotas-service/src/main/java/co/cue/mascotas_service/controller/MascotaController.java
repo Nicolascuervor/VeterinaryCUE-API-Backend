@@ -16,11 +16,13 @@ import java.util.List;
 @RequestMapping("/api/mascotas")
 @Slf4j
 @RequiredArgsConstructor
+// Controlador encargado de manejar todas las operaciones relacionadas con mascotas.
 public class MascotaController {
-
+    // Servicio encargado de la lógica de negocio para mascotas.
     private final MascotaService mascotaService;
 
     @PostMapping
+    // Crea una nueva mascota en el sistema.
     public ResponseEntity<MascotaResponseDTO> createMascota(@Valid @RequestBody MascotaRequestDTO requestDTO) {
         log.info("POST /api/Mascotas - Crear nueva mascota");
         MascotaResponseDTO response = mascotaService.createMascota(requestDTO);
@@ -28,6 +30,7 @@ public class MascotaController {
     }
 
     @GetMapping("/{id}")
+    // Obtiene una mascota por su ID.
     public ResponseEntity<MascotaResponseDTO> getMascotaById(@PathVariable Long id) {
         log.info("GET /api/Mascotas/{} - Obtener mascota por ID", id);
         MascotaResponseDTO response = mascotaService.getMascotaById(id);
@@ -35,6 +38,7 @@ public class MascotaController {
     }
 
     @GetMapping
+    // Obtiene todas las mascotas o solo las activas si se pasa el parámetro 'active=true'.
     public ResponseEntity<List<MascotaResponseDTO>> getAllMascotas(
             @RequestParam(required = false) Boolean active) {
         log.info("GET /api/Mascotas - Obtener todas las mascotas");
@@ -46,6 +50,7 @@ public class MascotaController {
 
 
     @GetMapping("/owner/{ownerId}")
+    // Obtiene todas las mascotas asociadas a un dueño específico.
     public ResponseEntity<List<MascotaResponseDTO>> getMascotasByOwner(
             @PathVariable Long ownerId) {
 
@@ -58,6 +63,7 @@ public class MascotaController {
     }
 
     @GetMapping("/search")
+    // Busca mascotas por coincidencia de nombre.
     public ResponseEntity<List<MascotaResponseDTO>> searchMascotasByName(
             @RequestParam String name) {
         log.info("GET /api/Mascotas/search?name={}", name);
@@ -66,6 +72,7 @@ public class MascotaController {
     }
 
     @PutMapping("/{id}")
+    // Actualiza completamente la información de una mascota.
     public ResponseEntity<MascotaResponseDTO> updateMascota(
             @PathVariable Long id,
             @Valid @RequestBody MascotaRequestDTO requestDTO) {
@@ -75,6 +82,7 @@ public class MascotaController {
     }
 
     @PatchMapping("/{id}/deactivate")
+    // Desactiva una mascota sin eliminarla del sistema.
     public ResponseEntity<Void> deactivateMascota(@PathVariable Long id) {
         log.info("PATCH /api/Mascotas/{}/deactivate - Desactivar mascota", id);
         mascotaService.deactivateMascota(id);
@@ -82,6 +90,7 @@ public class MascotaController {
     }
 
     @DeleteMapping("/{id}")
+    // Elimina lógicamente una mascota del sistema.
     public ResponseEntity<Void> deleteMascota(@PathVariable Long id) {
         log.info("DELETE /api/Mascotas/{} - Eliminar mascota", id);
         mascotaService.deleteMascota(id);
