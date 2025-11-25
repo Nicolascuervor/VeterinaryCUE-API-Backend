@@ -9,27 +9,59 @@ import org.springframework.web.util.pattern.PathPatternParser;
 
 import java.util.List;
 
+
+/**
+ * Configuración global de CORS (Cross-Origin Resource Sharing) para el API Gateway.
+ * Esta clase define las políticas de seguridad que permiten o restringen las solicitudes HTTP
+ * provenientes de orígenes diferentes al del servidor (ej. frontend en React o Angular).
+ * Al configurar CORS en el Gateway, centralizamos esta política para todos los microservicios,
+ * evitando tener que configurarlo individualmente en cada uno.
+ */
 @Configuration
 public class CorsConfig {
 
+    /**
+     * Crea y registra un filtro web de CORS para el manejo reactivo (WebFlux).
+     * Este bean intercepta todas las solicitudes entrantes y verifica si cumplen con las
+     * reglas definidas (orígenes, métodos, encabezados). Si la solicitud es válida,
+     * agrega los encabezados CORS necesarios a la respuesta; de lo contrario, el navegador
+     * bloqueará la respuesta.
+     */
     @Bean
     public CorsWebFilter corsWebFilter() {
 
+        // Instancia de la configuración de CORS donde definiremos las reglas.
         CorsConfiguration config = new CorsConfiguration();
 
+        // Configuración de Orígenes Permitidos
+        // Definimos qué dominios (Frontends) tienen permiso para llamar a nuestra API.
+        // Usamos setAllowedOriginPatterns en lugar de setAllowedOrigins para mayor flexibilidad
+        // con subdominios o esquemas, y para evitar conflictos cuando allowCredentials es true.
         config.setAllowedOriginPatterns(List.of(
-                "http://localhost:5500",
-                "http://127.0.0.1:5500",
-                "http://localhost:3000",
-                "*://*"
+                "http://localhost:5500",      // Entorno de desarrollo frontend local (ej. Live Server)
+                "http://127.0.0.1:5500",      // Variante IP del entorno local
+                "http://localhost:3000",      // Puerto estándar para React/Next.js
+                "*://*"                       // Permite cualquier esquema y dominio. Solo permitido para desarrollo, posteriormente debe restringirse en producción.
         ));
 
+        // Configuración de Métodos y Cabeceras
+        // Permitimos todos los HTTP (GET, POST, PUT, DELETE, OPTIONS, etc.)
         config.addAllowedMethod("*");
+
+        // Permitimos todas las cabeceras personalizadas (ej. Authorization, X-Usuario-Id, Content-Type)
         config.addAllowedHeader("*");
+
+        // Credenciales
+        // Permitimos el envío de cookies y credenciales de autenticación.
+        // Esto es necesario si el frontend necesita enviar cookies de sesión o tokens en cookies seguras.
         config.setAllowCredentials(true);
 
+        // Registro de la Configuración
+        // Asociamos la configuración creada a rutas específicas URL.
+        // Usamos UrlBasedCorsConfigurationSource con PathPatternParser para un matcheo eficiente en WebFlux.
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource(new PathPatternParser());
 
+        // Aplicamos esta configuración a TODAS las rutas del sistema ("/**").
         source.registerCorsConfiguration("/**", config);
 
         return new CorsWebFilter(source);
