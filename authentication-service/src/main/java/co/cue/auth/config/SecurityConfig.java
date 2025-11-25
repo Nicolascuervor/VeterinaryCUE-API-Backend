@@ -25,26 +25,50 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.util.Base64;
 
+
+/**
+ * Configuración central de seguridad para el servicio de Autenticación.
+ * Esta clase define los componentes fundamentales de Spring Security:
+ * Codificación de contraseñas.
+ * Gestión de autenticación.
+ * Validación de tokens JWT para endpoints protegidos.
+ * Reglas de autorización HTTP (quién puede acceder a qué ruta).
+ */
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity(prePostEnabled = true)
+@EnableMethodSecurity(prePostEnabled = true) // Habilita anotaciones como @PreAuthorize en métodos
 public class SecurityConfig {
 
     private final UserDetailsServiceImpl userDetailsService;
     private static final String ADMIN_ROLE = "ADMIN";
     private final String secretKey;
+
+    /**
+     * Constructor para inyección de dependencias y propiedades.
+     */
     public SecurityConfig(UserDetailsServiceImpl userDetailsService,
                           @Value("${jwt.secret.key}") String secretKey) {
         this.userDetailsService = userDetailsService;
         this.secretKey = secretKey;
     }
 
+    /**
+     * Define el codificador de contraseñas de la aplicación.
+     * Utilizamos BCrypt, que es el estándar actual de la industria. Aplica un hash seguro
+     * con "salt" aleatorio, haciendo que las contraseñas sean irreversibles y seguras
+     * contra ataques de diccionario o tablas arcoíris.
+     */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-
+    /**
+     * Configura el proveedor de autenticación (AuthenticationProvider).
+     * Este componente es el encargado de verificar la identidad del usuario.
+     * Conecta el UserDetailsServiceImpl para buscar el usuario con el
+     * PasswordEncoder para verificar la contraseña ingresada.
+     */
     @Bean
     public AuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
@@ -53,11 +77,22 @@ public class SecurityConfig {
         return authProvider;
     }
 
+    /**
+     * Expone el AuthenticationManager como un Bean.
+     * El AuthenticationManager es el coordinador principal que delega la validación
+     * al AuthenticationProvider adecuado. Lo necesitamos inyectar en el controlador
+     * de Login para procesar las credenciales.
+     */
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
 
+    /**
+     * Configura el decodificador de JWT.
+     * Crea un decodificador capaz de validar la firma de los tokens entrantes
+     * utilizando la misma clave secreta simétrica (HMAC) con la que fueron firmados.
+     */
     @Bean
     public JwtDecoder jwtDecoder() {
         byte[] keyBytes = Base64.getDecoder().decode(secretKey);
@@ -65,47 +100,67 @@ public class SecurityConfig {
         return NimbusJwtDecoder.withSecretKey(key).build();
     }
 
+    /**
+     * Configura el convertidor de autenticación JWT.
+     * Este bean extrae los roles (authorities) del token JWT y los convierte en objetos
+     * que Spring Security entiende. Por defecto, Spring espera el prefijo "ROLE_",
+     * pero aquí lo configuramos para que acepte los roles tal cual vienen en el token (prefijo vacío).
+     */
     @Bean
     public JwtAuthenticationConverter jwtAuthenticationConverter() {
         JwtGrantedAuthoritiesConverter grantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();
-        grantedAuthoritiesConverter.setAuthoritiesClaimName("roles");
-        grantedAuthoritiesConverter.setAuthorityPrefix("");
+        grantedAuthoritiesConverter.setAuthoritiesClaimName("roles"); // Nombre del campo en el JSON del token
+        grantedAuthoritiesConverter.setAuthorityPrefix(""); // Sin prefijo adicional
 
         JwtAuthenticationConverter jwtConverter = new JwtAuthenticationConverter();
         jwtConverter.setJwtGrantedAuthoritiesConverter(grantedAuthoritiesConverter);
         return jwtConverter;
     }
 
+    /**
+     * Define la cadena de filtros de seguridad (SecurityFilterChain).
+     * Aquí se establecen las reglas de alto nivel para las peticiones HTTP:
+     * 1. Deshabilitar CSRF (no necesario para API stateless).
+     * 2. Establecer política de sesión STATELESS (sin cookies de sesión, cada petición es independiente).
+     * 3. Configurar el servidor de recursos OAuth2/JWT.
+     * 4. Definir la matriz de autorización (rutas públicas y privadas).
+     */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+                // Deshabilitamos CSRF porque usamos JWT y no cookies de sesión de navegador
                 .csrf(AbstractHttpConfigurer::disable)
+
+                // Configuramos la gestión de sesiones como STATELESS
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
+                // Configuramos este servicio como un Resource Server que acepta JWT
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> jwt
                                 .jwtAuthenticationConverter(jwtAuthenticationConverter())
                         )
                 )
 
+                // Reglas de Autorización por Ruta
                 .authorizeHttpRequests(authz -> authz
-                        // 1. Públicos
-                        .requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
+                        // Rutas Públicas de Registro inicial y Login
+                        .requestMatchers(HttpMethod.POST, "/api/auth/register").hasRole(ADMIN_ROLE)
                         .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
 
-
+                        //Rutas Administrativas (Solo ADMIN)
                         .requestMatchers(HttpMethod.GET, "/api/auth/active/users").hasRole(ADMIN_ROLE)
                         .requestMatchers(HttpMethod.DELETE, "/api/auth/**").hasRole(ADMIN_ROLE)
 
-                        // 3. Autenticados (Dueño, Vet, Admin)
+                        // Rutas Autenticadas (Perfil propio)
+                        // Cualquier usuario autenticado (Dueño, Vet, Admin) puede ver/editar su perfil
                         .requestMatchers(HttpMethod.GET, "/api/auth/{id}").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/auth/email").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/api/auth/{id}").authenticated()
 
+                        // Política de "Cierre por Defecto": Cualquier otra petición se rechaza.
                         .anyRequest().denyAll());
 
         return http.build();
     }
-
-
 }
