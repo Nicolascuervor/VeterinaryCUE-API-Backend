@@ -90,7 +90,7 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(authz -> authz
                         // 1. Públicos
-                        .requestMatchers(HttpMethod.POST, "/api/auth/register").hasRole(ADMIN_ROLE)
+                        .requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
 
 

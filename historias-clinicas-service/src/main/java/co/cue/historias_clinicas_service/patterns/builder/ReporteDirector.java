@@ -4,19 +4,9 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class ReporteDirector {
-
-
     public void construirReporteCompleto(IReporteBuilder builder) {
         builder.construirEncabezado();
         builder.construirCuerpo();
         builder.construirPieDePagina();
     }
-
-    /* Podriamos implementar
-
-     public void construirReporteResumido(IReporteBuilder builder) {
-         builder.construirEncabezado();
-        builder.construirCuerpo();
-     }
-     */
 }
