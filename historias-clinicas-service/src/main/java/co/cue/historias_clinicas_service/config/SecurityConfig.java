@@ -38,6 +38,10 @@ public class SecurityConfig {
      * (Colega Senior): Bean idéntico al esqueleto.
      * Lee la clave secreta y crea el decodificador de JWT.
      */
+
+    /**
+     * Decodifica el JWT usando una clave secreta HMAC.
+     */
     @Bean
     public JwtDecoder jwtDecoder() {
         byte[] keyBytes = Base64.getDecoder().decode(secretKey);
@@ -48,6 +52,10 @@ public class SecurityConfig {
     /**
      * (Arquitecto): Esta es la lógica de autorización adaptada
      * a nuestras reglas de negocio.
+     */
+
+    /**
+     * Configuración general de seguridad para el servicio.
      */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -65,27 +73,31 @@ public class SecurityConfig {
         http
                 .authorizeHttpRequests(authz -> authz
 
+                        // GET → disponible para Dueño, Veterinario y Admin
                         .requestMatchers(HttpMethod.GET, HISTORIAL_API_PATH)
                         .hasAnyRole(DUENIO_ROLE, VETERINARIO_ROLE, ADMIN_ROLE)
 
-
+                        // POST → solo Veterinario (crea registros)
                         .requestMatchers(HttpMethod.POST, HISTORIAL_API_PATH)
                         .hasRole(VETERINARIO_ROLE)
 
-
+                        // PUT → Veterinario y Admin
                         .requestMatchers(HttpMethod.PUT, HISTORIAL_API_PATH)
                         .hasAnyRole(VETERINARIO_ROLE, ADMIN_ROLE)
 
-
+                        // DELETE → Veterinario y Admin
                         .requestMatchers(HttpMethod.DELETE, HISTORIAL_API_PATH)
                         .hasAnyRole(VETERINARIO_ROLE, ADMIN_ROLE)
 
                         // (Regla 5): Cualquier otra petición debe estar, al menos, autenticada.
+                        // Cualquier otra request requiere autenticación
                         .anyRequest().authenticated());
 
         return http.build();
     }
-
+    /**
+     * Convierte el claim "roles" del JWT en autoridades de Spring Security.
+     */
 
     @Bean
     public JwtAuthenticationConverter jwtAuthenticationConverter() {

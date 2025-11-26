@@ -7,6 +7,13 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 @Configuration
 public class WebClientConfig {
+
+    /**
+     * Builder de WebClient con balanceo de carga habilitado.
+     * Permite llamar a otros microservicios usando su nombre lógico
+     * registrado en Eureka (por ejemplo: "http://mascotas-service").
+     */
+
     @Bean
     @LoadBalanced
     public WebClient.Builder webClientBuilder() {

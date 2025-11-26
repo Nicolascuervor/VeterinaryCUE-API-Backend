@@ -16,7 +16,7 @@ public class HistorialClinicoReporteBuilder implements IReporteBuilder {
         this.reporte = new Reporte();
     }
 
-
+    // Asigna el historial clínico y reinicia el reporte
     public void setHistorial(HistorialClinico historial) {
         this.historial = historial;
         this.reporte = new Reporte();
@@ -39,6 +39,7 @@ public class HistorialClinicoReporteBuilder implements IReporteBuilder {
 
     @Override
     public void construirPieDePagina() {
+        // Se usa un bloque de texto (text block) para evitar problemas de comillas
         reporte.setPieDePagina( """
         <html>
             <body>
