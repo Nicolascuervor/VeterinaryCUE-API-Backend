@@ -21,6 +21,10 @@ public class HistorialClinicoController {
     private final IHistorialClinicoService historialClinicoService;
     private final ReporteService reporteService;
 
+    /**
+     * Obtener todos los historiales de una mascota validando permisos según el usuario.
+     */
+
     @GetMapping("/mascota/{petId}")
     public ResponseEntity<List<HistorialClinicoResponseDTO>> obtenerHistorialesPorMascotaId(
             @PathVariable Long petId,
@@ -28,8 +32,9 @@ public class HistorialClinicoController {
         List<HistorialClinicoResponseDTO> historiales = historialClinicoService.findMedicalRecordsByPetId(petId, usuarioId);
         return ResponseEntity.ok(historiales);
     }
-
-
+    /**
+     * Obtener un historial clínico específico.
+     */
     @GetMapping("/{historialId}")
     public ResponseEntity<HistorialClinicoResponseDTO> obtenerHistorialClinicoPorId(
             @PathVariable Long historialId,
@@ -39,6 +44,9 @@ public class HistorialClinicoController {
         return ResponseEntity.ok(historial);
     }
 
+    /**
+     * Crear un historial clínico (solo veterinarios).
+     */
 
     @PostMapping
     public ResponseEntity<HistorialClinicoResponseDTO> crearHistorialClinico(
@@ -49,7 +57,9 @@ public class HistorialClinicoController {
         return new ResponseEntity<>(nuevoHistorial, HttpStatus.CREATED);
     }
 
-
+    /**
+     * Actualizar historial clínico (veterinario/administrador).
+     */
     @PutMapping("/{historialId}")
     public ResponseEntity<HistorialClinicoResponseDTO> actualizarHistorialClinico(
             @PathVariable Long historialId,
@@ -60,7 +70,9 @@ public class HistorialClinicoController {
         return ResponseEntity.ok(actualizado);
     }
 
-
+    /**
+     * Eliminar historial clínico.
+     */
     @DeleteMapping("/{historialId}")
     public ResponseEntity<Void> eliminarHistorialClinico(
             @PathVariable Long historialId,
@@ -69,7 +81,9 @@ public class HistorialClinicoController {
         historialClinicoService.deleteHistorialMedico(historialId, usuarioId);
         return ResponseEntity.noContent().build();
     }
-
+    /**
+     * Generar reporte en texto plano.
+     */
     @GetMapping(value = "/{historialId}/reporte", produces = MediaType.TEXT_PLAIN_VALUE)
     public ResponseEntity<String> obtenerReporteDeHistorial(
             @PathVariable Long historialId,
