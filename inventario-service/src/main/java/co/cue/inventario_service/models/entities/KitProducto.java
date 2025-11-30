@@ -14,6 +14,8 @@ import lombok.Setter;
 public class KitProducto extends Producto {
     public KitProducto() {
         super(); // Llama al constructor de Producto
+
+        // Indicamos que este producto es un kit
         this.setEsKit(true);
     }
 }

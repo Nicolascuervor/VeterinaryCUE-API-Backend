@@ -19,38 +19,22 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.util.Base64;
 
-
-/**
- * Configuración de seguridad para el microservicio de Inventario.
- * Define las reglas de control de acceso (Autorización) y el mecanismo de
- * validación de credenciales (Autenticación vía JWT).
- * Política de Seguridad del Inventario:
- * 1. Lectura Pública: El catálogo de productos debe ser visible para todos (invitados).
- * 2. Escritura Restringida: Solo administradores pueden crear, editar o eliminar productos.
- * 3. Operaciones Internas: Endpoints críticos para la operativa del sistema (descontar stock).
- */
-@Configuration
-@EnableWebSecurity
-@EnableMethodSecurity
+@Configuration // Indica que esta es una clase de configuración de Spring
+@EnableWebSecurity // Habilita la seguridad web
+@EnableMethodSecurity  // Permite usar anotaciones como @PreAuthorize
 public class SecurityConfig {
 
+    // Rol que se requiere para operaciones administrativas
     private static final String ADMIN_ROLE = "ADMIN";
-    // Patrón base para las rutas de la API de inventario
+
+    // Ruta base de la API de inventario
     private static final String INVENTARIO_API_PATH = "/api/inventario/**";
 
-    /**
-     * Clave secreta compartida para la validación de la firma de los tokens JWT.
-     * Debe coincidir con la utilizada en el authentication-service para firmar.
-     */
+    // Se inyecta la llave secreta del JWT desde application.properties
     @Value("${jwt.secret.key}")
     private String secretKey;
 
-    /**
-     * Configura el decodificador de JWT.
-     * Crea una instancia capaz de verificar la integridad y autenticidad del token
-     * utilizando el algoritmo HMAC-SHA256 y la clave secreta configurada.
-     * Esto permite al microservicio validar tokens localmente sin llamar al auth-service.
-     */
+    // Decoder para verificar y decodificar los JWT usando la llave secreta
     @Bean
     public JwtDecoder jwtDecoder() {
         byte[] keyBytes = Base64.getDecoder().decode(secretKey);
@@ -58,57 +42,36 @@ public class SecurityConfig {
         return NimbusJwtDecoder.withSecretKey(key).build();
     }
 
-    /**
-     * Define la cadena de filtros de seguridad (SecurityFilterChain).
-     * Establece las reglas de autorización HTTP específicas para este dominio.
-     * - Deshabilita CSRF (no necesario para API REST stateless).
-     * - Configura la gestión de sesiones como STATELESS (sin cookies).
-     * - Habilita el servidor de recursos OAuth2 para procesar JWTs.
-     */
+    // Configuración principal de seguridad
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+                // Desactiva CSRF porque se usa autenticación con tokens (stateless)
                 .csrf(csrf -> csrf.disable())
+
+                // Define que no habrá sesiones, cada request es independiente
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                // Configura este servicio como servidor de recursos protegido con JWT
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> jwt
-                                .jwtAuthenticationConverter(jwtAuthenticationConverter()) // Aplicamos nuestro conversor de roles
+                                .jwtAuthenticationConverter(jwtAuthenticationConverter()) // Aplicamos nuestro conversor
                         )
                 );
 
         http
+                // Reglas de autorización para cada endpoint según método HTTP
                 .authorizeHttpRequests(authz -> authz
-                        // Reglas de Operaciones Internas
-                        // Permite el acceso al endpoint de descuento de stock sin autenticación de usuario final.
-                        // Nota de Arquitectura: Este endpoint es llamado por 'pedidos-service' (S2S).
-                        // En un entorno productivo, esto debería protegerse por red (VPC interna)
-                        // o mediante autenticación mTLS/Service Token, no dejarse 100% público.
                         .requestMatchers(HttpMethod.POST, "/api/inventario/productos/stock/descontar").permitAll()
-
-                        // --- Reglas de Lectura (Catálogo Público) ---
-                        // Cualquier usuario (autenticado o anónimo) puede ver productos y categorías.
-                        // Fundamental para que la tienda sea navegable sin login previo.
                         .requestMatchers(HttpMethod.GET, INVENTARIO_API_PATH).permitAll()
-
-                        // --- Reglas de Escritura (Gestión Administrativa) ---
-                        // Solo los usuarios con rol ADMIN pueden modificar el inventario.
                         .requestMatchers(HttpMethod.POST, INVENTARIO_API_PATH).hasRole(ADMIN_ROLE)
                         .requestMatchers(HttpMethod.PUT, INVENTARIO_API_PATH).hasRole(ADMIN_ROLE)
                         .requestMatchers(HttpMethod.DELETE, INVENTARIO_API_PATH).hasRole(ADMIN_ROLE)
-
-                        // Cierre por defecto: Cualquier otra petición requiere autenticación válida.
                         .anyRequest().authenticated());
         return http.build();
     }
 
-    /**
-     * Personaliza la conversión de los claims del JWT a autoridades de Spring Security.
-     * Extrae la lista de roles del claim "roles" y los convierte en objetos GrantedAuthority.
-     * Configura el prefijo de autoridad como cadena vacía ("") para que coincida con
-     * los nombres de roles definidos en nuestro sistema (ej. "ADMIN" en lugar de "ROLE_ADMIN"),
-     * facilitando el uso de las expresiones hasRole().
-     */
+    // Configura cómo se obtienen los roles desde el token JWT
     @Bean
     public JwtAuthenticationConverter jwtAuthenticationConverter() {
         JwtGrantedAuthoritiesConverter grantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();

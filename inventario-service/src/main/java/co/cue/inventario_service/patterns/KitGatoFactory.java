@@ -9,15 +9,17 @@ import java.util.List;
 @Component
 public class KitGatoFactory implements IKitMascotaFactory {
 
+    // Retorna el tipo de mascota que esta fábrica maneja: "GATO"
     @Override
     public String getTipoMascota() {
         return "GATO";
     }
 
+    // Crea un kit de bienvenida específico para gatos con productos predeterminados
     @Override
     public KitMascotaDTO crearKitBienvenida() {
         return new KitMascotaDTO(
-                "Kit de Bienvenida para Gato",
+                "Kit de Bienvenida para Gato", // Nombre del kit
                 0.10, // 10% de descuento
                 List.of(
                         new KitProductoDTO("Juguete Raton", 1),

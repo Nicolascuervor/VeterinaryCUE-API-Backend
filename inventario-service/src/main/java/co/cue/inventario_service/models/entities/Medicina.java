@@ -14,7 +14,10 @@ import lombok.Setter;
 @Setter
 public class Medicina extends Producto {
 
+    // Describe la composición química o ingredientes del medicamento
     @Column(length = 500)
     private String composicion;
+
+    // Indica la dosis recomendada para su uso
     private String dosisRecomendada;
 }

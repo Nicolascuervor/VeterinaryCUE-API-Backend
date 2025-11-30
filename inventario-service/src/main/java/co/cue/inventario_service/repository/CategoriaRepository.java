@@ -9,8 +9,17 @@ import java.util.Optional;
 
 @Repository
 public interface CategoriaRepository extends JpaRepository<Categoria, Long> {
+
+    // Busca una categoría por ID siempre y cuando esté activa (activo = true)
     Optional<Categoria> findByIdAndActivoTrue(Long id);
+
+
+    // Lista todas las categorías que están activas en la base de datos
     List<Categoria> findAllByActivoTrue();
+
+    // Busca una categoría por su nombre
     Optional<Categoria> findByNombre(String nombre);
+
+    // Verifica si existe una categoría registrada con un nombre específico
     boolean existsByNombre(String nombre);
 }
