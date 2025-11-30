@@ -20,6 +20,9 @@ networks:
   veterinaria-net:
     driver: bridge
 
+  dokploy-network:
+    external: true
+
 services:
   db-veterinaria:
     image: mysql:8.0
@@ -103,6 +106,7 @@ services:
         condition: service_healthy
     networks:
       - veterinaria-net
+      - dokploy-network
 
   # ==========================================
   # MICROSERVICIOS DE NEGOCIO
@@ -284,3 +288,5 @@ services:
 
 volumes:
   mysql_data_v2:
+
+
