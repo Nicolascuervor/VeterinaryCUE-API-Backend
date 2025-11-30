@@ -5,4 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface ItemCarritoRepository extends JpaRepository<ItemCarrito, Long> {}
+// Repositorio para la entidad ItemCarrito
+public interface ItemCarritoRepository extends JpaRepository<ItemCarrito, Long> {
+    // JpaRepository ya provee métodos CRUD básicos
+}

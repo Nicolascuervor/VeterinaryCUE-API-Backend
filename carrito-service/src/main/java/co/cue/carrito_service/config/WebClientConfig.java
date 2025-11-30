@@ -6,7 +6,10 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.reactive.function.client.WebClient;
 
 @Configuration
+// Configuración de WebClient para llamadas a otros microservicios
 public class WebClientConfig {
+
+    // Bean de WebClient con balanceo de carga
     @Bean
     @LoadBalanced
     public WebClient.Builder webClientBuilder() {

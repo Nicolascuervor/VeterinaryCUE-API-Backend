@@ -11,10 +11,13 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/carrito")
 @AllArgsConstructor
+// Controlador que maneja las solicitudes HTTP para el carrito de compras
 public class CarritoController {
 
+    // Servicio de carrito inyectado
     private final ICarritoService carritoService;
 
+    // Obtener el carrito del usuario o de la sesión
     @GetMapping
     public ResponseEntity<CarritoResponseDTO> getCarrito(
             @RequestHeader(value = "X-Usuario-Id", required = false) Long usuarioId,
@@ -24,7 +27,7 @@ public class CarritoController {
         return ResponseEntity.ok(carrito);
     }
 
-
+    // Agregar un item al carrito
     @PostMapping("/items")
     public ResponseEntity<CarritoResponseDTO> addItemAlCarrito(
             @RequestHeader(value = "X-Usuario-Id", required = false) Long usuarioId,
