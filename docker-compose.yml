@@ -129,7 +129,7 @@ services:
     networks:
       - veterinaria-net
     volumes:
-      - ./uploads_data:/app/uploads
+      - auth_uploads_volume:/app/uploads
 
   mascotas-service:
     build:
@@ -290,5 +290,6 @@ services:
 
 volumes:
   mysql_data_v2:
+  auth_uploads_volume:
 
 
