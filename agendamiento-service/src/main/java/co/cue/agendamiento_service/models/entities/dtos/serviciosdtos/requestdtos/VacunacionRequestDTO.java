@@ -2,8 +2,8 @@ package co.cue.agendamiento_service.models.entities.dtos.serviciosdtos.requestdt
 import lombok.Getter;
 import lombok.Setter;
 
-@Getter
-@Setter
-public class VacunacionRequestDTO extends ServicioRequestDTO{
-    private String nombreBiologico;
+@Getter  // Genera automáticamente los métodos get para todos los campos de la clase
+@Setter  // Genera automáticamente los métodos set para todos los campos de la clase
+public class VacunacionRequestDTO extends ServicioRequestDTO{    // DTO para solicitudes de creación/actualización de Vacunación, hereda los campos comunes de ServicioRequestDTO
+    private String nombreBiologico;      // Nombre del biológico o vacuna que se aplicará
 }
