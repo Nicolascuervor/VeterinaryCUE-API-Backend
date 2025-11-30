@@ -4,7 +4,17 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
 import lombok.Setter;
-
+/**
+ * DTO base para representar la información común de cualquier tipo de producto
+ * dentro del inventario. Utiliza anotaciones de Jackson para manejar
+ * la serialización/deserialización polimórfica según el tipo de producto.
+ *
+ * Los tipos soportados son:
+ * - ALIMENTO → AlimentoResponseDTO
+ * - MEDICINA → MedicinaResponseDTO
+ * - ACCESORIO → AccesorioResponseDTO
+ * - KIT → KitProductoResponseDTO
+ */
 
 @JsonTypeInfo(
         use = JsonTypeInfo.Id.NAME,
@@ -20,10 +30,22 @@ import lombok.Setter;
 @Getter
 @Setter
 public abstract class ProductoResponseDTO {
+
+    /** Identificador único del producto. */
     private Long id;
+
+    /** Nombre del producto. */
     private String nombre;
+
+    /** Precio actual del producto. */
     private Double precio;
+
+    /** Cantidad disponible en inventario. */
     private Integer stockActual;
+
+    /** Indica si el producto puede ser vendido. */
     private boolean disponibleParaVenta;
+
+    /** Datos de la categoría a la que pertenece el producto. */
     private CategoriaResponseDTO categoria;
 }
