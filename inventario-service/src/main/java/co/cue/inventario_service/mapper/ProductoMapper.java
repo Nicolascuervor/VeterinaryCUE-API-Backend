@@ -8,9 +8,24 @@ import co.cue.inventario_service.models.dtos.requestdtos.ProductoRequestDTO;
 import co.cue.inventario_service.models.dtos.responsedtos.*;
 import co.cue.inventario_service.models.entities.*;
 import org.springframework.stereotype.Component;
-
+/**
+ * Componente encargado de la transformación de datos (Mapping) entre DTOs y Entidades de Producto.
+ * Esta clase aísla la lógica de conversión, permitiendo que los Servicios se enfoquen
+ * en la lógica de negocio y los Controladores en la comunicación HTTP.
+ * Su responsabilidad principal es manejar el polimorfismo del inventario:
+ * Sabe cómo convertir solicitudes específicas (ej. crear un Alimento) en la entidad correcta
+ * y cómo transformar una entidad genérica Producto recuperada de la BD en su DTO específico
+ * correspondiente para la respuesta.
+ */
 @Component
 public class ProductoMapper {
+
+    /**
+     * Convierte un DTO de solicitud de Alimento en su entidad correspondiente.
+     * Inicializa una entidad Alimento vacía, llena los campos base (nombre, precio, stock)
+     * utilizando el método compartido y luego asigna los atributos específicos
+     * de este tipo de producto (tipo mascota, peso).
+     */
     public Alimento mapToEntity(AlimentoRequestDTO dto) {
         Alimento entity = new Alimento();
         mapBaseRequestToEntity(dto, entity);
@@ -19,6 +34,11 @@ public class ProductoMapper {
         return entity;
     }
 
+    /**
+     * Convierte un DTO de solicitud de Medicina en su entidad correspondiente.
+     * Similar al anterior, pero asigna los campos específicos de medicina
+     * (composición, dosis recomendada).
+     */
     public Medicina mapToEntity(MedicinaRequestDTO dto) {
         Medicina entity = new Medicina();
         mapBaseRequestToEntity(dto, entity);
@@ -27,6 +47,10 @@ public class ProductoMapper {
         return entity;
     }
 
+    /**
+     * Convierte un DTO de solicitud de Accesorio en su entidad correspondiente.
+     * Asigna campos específicos como material y tamaño.
+     */
     public Accesorio mapToEntity(AccesorioRequestDTO dto) {
         Accesorio entity = new Accesorio();
         mapBaseRequestToEntity(dto, entity);
@@ -35,8 +59,16 @@ public class ProductoMapper {
         return entity;
     }
 
-
+    /**
+     * Método polimórfico para convertir cualquier Entidad Producto a su DTO de respuesta.
+     * Este método es crítico para las consultas generales (listar todo el inventario).
+     * Inspecciona el tipo real de la instancia (usando instanceof) y delega la conversión
+     * al método especializado correspondiente. Esto asegura que el cliente reciba
+     * el objeto JSON con todos los campos específicos, no solo los genéricos.
+     */
     public ProductoResponseDTO mapToResponseDTO(Producto entity) {
+        // Java 16+ Pattern Matching for instanceof simplificaría esto,
+        // pero mantenemos la estructura clásica para claridad educativa.
         if (entity instanceof Alimento alimento) {
             return mapAlimentoToResponseDTO(alimento);
         }
@@ -52,7 +84,11 @@ public class ProductoMapper {
         throw new IllegalArgumentException("Tipo de Producto desconocido: " + entity.getClass().getName());
     }
 
-
+    /**
+     * Convierte una entidad Categoria a su DTO simple.
+     * Se usa para anidar la información de la categoría dentro de la respuesta del producto,
+     * evitando ciclos infinitos o exponer demasiada información de la relación.
+     */
     private CategoriaResponseDTO mapCategoriaDTO(Categoria entity) {
         CategoriaResponseDTO dto = new CategoriaResponseDTO();
         dto.setId(entity.getId());
@@ -61,7 +97,11 @@ public class ProductoMapper {
         return dto;
     }
 
-
+    /**
+     * Método auxiliar para mapear los atributos comunes desde el Request hacia la Entidad.
+     * Aplica el principio DRY (Don't Repeat Yourself). Todos los productos, sin importar
+     * su tipo, comparten estos campos (nombre, precio, stock, ubicación).
+     */
     private void mapBaseRequestToEntity(ProductoRequestDTO dto, Producto entity) {
         entity.setNombre(dto.getNombre());
         entity.setPrecio(dto.getPrecio());
@@ -71,7 +111,10 @@ public class ProductoMapper {
         entity.setDisponibleParaVenta(dto.isDisponibleParaVenta());
     }
 
-
+    /**
+     * Método auxiliar para mapear los atributos comunes desde la Entidad hacia el Response.
+     * Transfiere los datos base y resuelve la relación con la Categoría si existe.
+     */
     private void mapBaseEntityToResponseDTO(Producto entity, ProductoResponseDTO dto) {
         dto.setId(entity.getId());
         dto.setNombre(entity.getNombre());
@@ -82,6 +125,9 @@ public class ProductoMapper {
             dto.setCategoria(mapCategoriaDTO(entity.getCategoria()));
         }
     }
+
+    // --- Métodos Privados de Mapeo Específico ---
+    // Estos métodos completan el mapeo llenando los campos exclusivos de cada subclase.
 
     private AlimentoResponseDTO mapAlimentoToResponseDTO(Alimento entity) {
         AlimentoResponseDTO dto = new AlimentoResponseDTO();
@@ -110,6 +156,7 @@ public class ProductoMapper {
     private KitProductoResponseDTO mapKitToResponseDTO(KitProducto entity) {
         KitProductoResponseDTO dto = new KitProductoResponseDTO();
         mapBaseEntityToResponseDTO(entity, dto);
+        // (Nota): Los kits podrían requerir mapear sus componentes internos aquí si se desea.
         return dto;
-}
+    }
 }

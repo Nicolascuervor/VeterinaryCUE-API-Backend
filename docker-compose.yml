@@ -1,43 +1,286 @@
+version: '3.8'
+
+x-common-env: &common-env
+  # 1. Base de Datos
+  SPRING_DATASOURCE_USERNAME: ${DB_USER}
+  SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+
+  # 2. Eureka (Discovery)
+  EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+  EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
+
+  # 3. Kafka (Messaging) - [CORREGIDO AQUÍ]
+  # Usamos SPRING_KAFKA_... para que Spring Boot lo reconozca y sobrescriba al .properties
+  SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+
+  # 4. Seguridad
+  JWT_SECRET: ${JWT_SECRET}
+
+networks:
+  veterinaria-net:
+    driver: bridge
+
 services:
   db-veterinaria:
     image: mysql:8.0
-    container_name: db-veterinaria-mysql
-    restart: unless-stopped
+    container_name: db-veterinaria
+    restart: always
     ports:
       - "${DB_HOST_PORT}:3306"
     environment:
-      # Lee las credenciales del archivo .env
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
-      MYSQL_USER: ${DB_USER}
-      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: 'auth_service'
     volumes:
+      - mysql_data:/var/lib/mysql
       - ./init-scripts:/docker-entrypoint-initdb.d
-
+    networks:
+      - veterinaria-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.4.0
     container_name: zookeeper
-    ports:
-      - "2181:2181"
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - veterinaria-net
 
-    # Añadimos el Broker de Kafka, que depende de Zookeeper
   kafka:
-      image: confluentinc/cp-kafka:7.4.0
-      container_name: kafka-broker
-      ports:
-        # Exponemos el puerto 9092 para que Spring Boot se conecte
-        - "9092:9092"
-      depends_on:
-        - zookeeper # <-- Le dice a Docker que inicie Zookeeper primero
-      environment:
-        KAFKA_BROKER_ID: 1
-        KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181' # <-- Se conecta al servicio Zookeeper
-        KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
-        KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
-        KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-        # Las siguientes líneas son para transacciones
-        KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-        KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    networks:
+      - veterinaria-net
+    healthcheck:
+      test: nc -z localhost 9092 || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ==========================================
+  # CORE SERVICES
+  # ==========================================
+  eureka-server:
+    build:
+      context: .
+      dockerfile: eureka-server/Dockerfile
+    container_name: eureka-server
+    ports:
+      - "8761:8761"
+    networks:
+      - veterinaria-net
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://localhost:8761/actuator/health"]
+      interval: 30s
+      retries: 3
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: api-gateway/Dockerfile
+    container_name: api-gateway
+    ports:
+      - "8070:8070"
+    environment:
+      <<: *common-env
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - veterinaria-net
+
+  # ==========================================
+  # MICROSERVICIOS DE NEGOCIO
+  # ==========================================
+  authentication-service:
+    build:
+      context: .
+      dockerfile: authentication-service/Dockerfile
+    container_name: authentication-service
+    environment:
+      <<: *common-env
+      SPRING_DATASOURCE_URL: jdbc:mysql://db-veterinaria:3306/auth_service?allowPublicKeyRetrieval=true&useSSL=false
+    depends_on:
+      db-veterinaria:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - veterinaria-net
+
+  mascotas-service:
+    build:
+      context: .
+      dockerfile: mascotas-service/Dockerfile
+    container_name: mascotas-service
+    environment:
+      <<: *common-env
+      SPRING_DATASOURCE_URL: jdbc:mysql://db-veterinaria:3306/mascotas_service?allowPublicKeyRetrieval=true&useSSL=false
+    depends_on:
+      db-veterinaria:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - veterinaria-net
+
+  citas-service:
+    build:
+      context: .
+      dockerfile: citas-service/Dockerfile
+    container_name: citas-service
+    environment:
+      <<: *common-env
+      SPRING_DATASOURCE_URL: jdbc:mysql://db-veterinaria:3306/citas_service?allowPublicKeyRetrieval=true&useSSL=false
+    depends_on:
+      db-veterinaria:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - veterinaria-net
+
+  inventario-service:
+    build:
+      context: .
+      dockerfile: inventario-service/Dockerfile
+    container_name: inventario-service
+    environment:
+      <<: *common-env
+      SPRING_DATASOURCE_URL: jdbc:mysql://db-veterinaria:3306/inventario_service?allowPublicKeyRetrieval=true&useSSL=false
+    depends_on:
+      db-veterinaria:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - veterinaria-net
+
+  facturas-service:
+    build:
+      context: .
+      dockerfile: facturas-service/Dockerfile
+    container_name: facturas-service
+    environment:
+      <<: *common-env
+      SPRING_DATASOURCE_URL: jdbc:mysql://db-veterinaria:3306/facturas_service?allowPublicKeyRetrieval=true&useSSL=false
+    depends_on:
+      db-veterinaria:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - veterinaria-net
+
+  historias-clinicas-service:
+    build:
+      context: .
+      dockerfile: historias-clinicas-service/Dockerfile
+    container_name: historias-clinicas-service
+    environment:
+      <<: *common-env
+      SPRING_DATASOURCE_URL: jdbc:mysql://db-veterinaria:3306/historias_clinicas_service?allowPublicKeyRetrieval=true&useSSL=false
+    depends_on:
+      db-veterinaria:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - veterinaria-net
+
+  agendamiento-service:
+    build:
+      context: .
+      dockerfile: agendamiento-service/Dockerfile
+    container_name: agendamiento-service
+    environment:
+      <<: *common-env
+      SPRING_DATASOURCE_URL: jdbc:mysql://db-veterinaria:3306/agendamiento_service?allowPublicKeyRetrieval=true&useSSL=false
+    depends_on:
+      db-veterinaria:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - veterinaria-net
+
+  pedidos-service:
+    build:
+      context: .
+      dockerfile: pedidos-service/Dockerfile
+    container_name: pedidos-service
+    environment:
+      <<: *common-env
+      SPRING_DATASOURCE_URL: jdbc:mysql://db-veterinaria:3306/pedidos_service?allowPublicKeyRetrieval=true&useSSL=false
+      STRIPE_API_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+    ports:
+      - "64800:64800"
+    depends_on:
+      db-veterinaria:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - veterinaria-net
+
+  carrito-service:
+    build:
+      context: .
+      dockerfile: carrito-service/Dockerfile
+    container_name: carrito-service
+    environment:
+      <<: *common-env
+      SPRING_DATASOURCE_URL: jdbc:mysql://db-veterinaria:3306/carrito_service?allowPublicKeyRetrieval=true&useSSL=false
+    depends_on:
+      db-veterinaria:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - veterinaria-net
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: notification-service/Dockerfile
+    container_name: notification-service
+    environment:
+      <<: *common-env
+      EMAIL_USER: ${EMAIL_USER}
+      EMAIL_PASSWORD: ${EMAIL_PASSWORD}
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - veterinaria-net
+
+volumes:
+  mysql_data:

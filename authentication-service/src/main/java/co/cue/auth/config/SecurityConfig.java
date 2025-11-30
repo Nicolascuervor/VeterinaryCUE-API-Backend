@@ -145,7 +145,7 @@ public class SecurityConfig {
                 // Reglas de Autorización por Ruta
                 .authorizeHttpRequests(authz -> authz
                         // Rutas Públicas de Registro inicial y Login
-                        .requestMatchers(HttpMethod.POST, "/api/auth/register").hasRole(ADMIN_ROLE)
+                        .requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
 
                         //Rutas Administrativas (Solo ADMIN)
