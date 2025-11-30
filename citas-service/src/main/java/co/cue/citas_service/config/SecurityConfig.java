@@ -24,14 +24,19 @@ import java.util.Base64;
 @EnableMethodSecurity
 public class SecurityConfig {
 
+    // Roles permitidos en el sistema
     private static final String ADMIN_ROLE = "ADMIN";
     private static final String VETERINARIO_ROLE = "VETERINARIO";
     private static final String DUENIO_ROLE = "DUEÑO";
+
+    // Ruta base del API de citas
     private static final String CITAS_API_PATH = "/api/cita/**";
 
+    // Llave secreta para validar los JWT
     @Value("${jwt.secret.key}") //
     private String secretKey;
 
+    // Decodificador JWT usando la llave secreta
     @Bean
     public JwtDecoder jwtDecoder() {
         byte[] keyBytes = Base64.getDecoder().decode(secretKey);
@@ -39,13 +44,18 @@ public class SecurityConfig {
         return NimbusJwtDecoder.withSecretKey(key).build();
     }
 
-
+    // Configuración principal de seguridad
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+                // Desactiva CSRF porque usamos autenticación stateless
                 .csrf(AbstractHttpConfigurer::disable)
+
+                // No se guardan sesiones, cada petición se autentica con JWT
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
+                // Indica que este servicio actuará como Resource Server con JWT
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> jwt
                                 .jwtAuthenticationConverter(jwtAuthenticationConverter())

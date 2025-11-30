@@ -6,13 +6,13 @@ import lombok.Setter;
 
 import java.time.LocalDateTime;
 
-@Getter
-@Setter
-public class DisponibilidadResponseDTO {
-    private Long id;
-    private Long veterinarioId;
-    private LocalDateTime fechaHoraInicio;
-    private LocalDateTime fechaHoraFin;
-    private EstadoDisponibilidad estado;
-    private Long citaId;
+@Getter   // Genera automáticamente los métodos get para todos los campos
+@Setter    // Genera automáticamente los métodos set para todos los campos
+public class DisponibilidadResponseDTO {     // DTO de respuesta para información de disponibilidad de un slot
+    private Long id;                         // Identificador único del slot de disponibilidad
+    private Long veterinarioId;              // ID del veterinario asociado al slot
+    private LocalDateTime fechaHoraInicio;   // Fecha y hora de inicio del slot
+    private LocalDateTime fechaHoraFin;      // Fecha y hora de fin del slot
+    private EstadoDisponibilidad estado;     // Estado actual del slot (disponible, reservado, etc.)
+    private Long citaId;                     // ID de la cita asociada al slot (si está reservado)
 }

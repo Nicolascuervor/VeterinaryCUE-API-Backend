@@ -13,6 +13,7 @@ import java.util.Map;
 @AllArgsConstructor
 public class CitaStateFactory {
 
+    // Instancias de los diferentes estados concretos
     private final EstadoEspera estadoEspera;
     private final EstadoConfirmada estadoConfirmada;
     private final EstadoEnProgreso estadoEnProgreso;
@@ -20,8 +21,10 @@ public class CitaStateFactory {
     private final EstadoCancelada estadoCancelada;
     private final EstadoNoAsistio estadoNoAsistio;
 
+    // Mapa que relaciona EstadoCita con su implementación de ICitaState
     private final Map<EstadoCita, ICitaState> stateMap = new EnumMap<>(EstadoCita.class);
 
+    // Inicializa el mapa de estados después de construir el bean
     @PostConstruct
     public void init() {
         stateMap.put(EstadoCita.ESPERA, estadoEspera);
@@ -32,6 +35,7 @@ public class CitaStateFactory {
         stateMap.put(EstadoCita.NO_ASISTIO, estadoNoAsistio);
     }
 
+    // Devuelve la implementación de ICitaState correspondiente a un EstadoCita
     public ICitaState getState(EstadoCita estado) {
         ICitaState state = stateMap.get(estado);
         if (state == null) {

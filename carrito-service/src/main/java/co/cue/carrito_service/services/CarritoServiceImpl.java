@@ -26,6 +26,7 @@ public class CarritoServiceImpl implements ICarritoService {
 
     @Override
     @Transactional
+    // Obtiene o crea un carrito para un usuario o sesión
     public CarritoResponseDTO getOrCreateCarrito(Long usuarioId, String sessionId) {
         Carrito carrito = findOrCreateCarrito(usuarioId, sessionId);
         return carritoMapper.toCarritoResponseDTO(carrito);
@@ -33,7 +34,9 @@ public class CarritoServiceImpl implements ICarritoService {
 
     @Override
     @Transactional
+    // Añade un item al carrito, si ya existe incrementa la cantidad
     public CarritoResponseDTO addItem(Long usuarioId, String sessionId, AddItemRequestDTO itemDTO) {
+        // Valida que el producto exista en inventario
         inventarioServiceClient.findProductoById(itemDTO.getProductoId());
         Carrito carrito = findOrCreateCarrito(usuarioId, sessionId);
         Optional<ItemCarrito> itemExistenteOpt = carrito.getItems().stream()
@@ -41,10 +44,12 @@ public class CarritoServiceImpl implements ICarritoService {
                 .findFirst();
 
         if (itemExistenteOpt.isPresent()) {
+            // Si el item ya está, incrementa la cantidad
             ItemCarrito itemExistente = itemExistenteOpt.get();
             itemExistente.setCantidad(itemExistente.getCantidad() + itemDTO.getCantidad());
             itemCarritoRepository.save(itemExistente);
         } else {
+            // Si no está, crea un nuevo item
             ItemCarrito nuevoItem = new ItemCarrito();
             nuevoItem.setProductoId(itemDTO.getProductoId());
             nuevoItem.setCantidad(itemDTO.getCantidad());
@@ -57,6 +62,7 @@ public class CarritoServiceImpl implements ICarritoService {
 
     @Override
     @Transactional
+    // Remueve un item del carrito por productoId
     public CarritoResponseDTO removeItem(Long usuarioId, String sessionId, Long productoId) {
         Carrito carrito = findCarrito(usuarioId, sessionId);
         boolean removed = carrito.getItems().removeIf(
@@ -71,13 +77,14 @@ public class CarritoServiceImpl implements ICarritoService {
 
     @Override
     @Transactional
+    // Vacía todos los items del carrito
     public void clearCarrito(Long usuarioId, String sessionId) {
         Carrito carrito = findCarrito(usuarioId, sessionId);
         carrito.getItems().clear();
         carritoRepository.save(carrito);
     }
 
-
+    // Busca un carrito existente por usuario o sesión
     private Carrito findCarrito(Long usuarioId, String sessionId) {
         if (usuarioId != null) {
             return carritoRepository.findByUsuarioId(usuarioId)
@@ -90,7 +97,7 @@ public class CarritoServiceImpl implements ICarritoService {
         throw new IllegalArgumentException("Se requiere un usuarioId o sessionId.");
     }
 
-
+    // Busca un carrito o crea uno nuevo si no existe
     private Carrito findOrCreateCarrito(Long usuarioId, String sessionId) {
         if (usuarioId != null) {
             // Busca por Usuario. Si no existe, crea uno nuevo para ese usuario.
@@ -103,7 +110,7 @@ public class CarritoServiceImpl implements ICarritoService {
         }
         throw new IllegalArgumentException("Se requiere un usuarioId o sessionId para obtener o crear un carrito.");
     }
-
+    // Crea un carrito nuevo
     private Carrito createNuevoCarrito(Long usuarioId, String sessionId) {
         Carrito nuevoCarrito = new Carrito();
         if (usuarioId != null) {

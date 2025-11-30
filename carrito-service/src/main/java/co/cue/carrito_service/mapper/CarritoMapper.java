@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 import java.util.stream.Collectors;
 
 @Component
+// Mapper para convertir entidades de carrito e items a sus respectivos DTOs
 public class CarritoMapper {
 
     /**
@@ -21,6 +22,7 @@ public class CarritoMapper {
         dto.setSessionId(carrito.getSessionId());
         dto.setUpdatedAt(carrito.getUpdatedAt());
 
+        // Convierte todos los items del carrito a sus DTOs
         dto.setItems(
                 carrito.getItems().stream()
                         .map(this::toItemResponseDTO)

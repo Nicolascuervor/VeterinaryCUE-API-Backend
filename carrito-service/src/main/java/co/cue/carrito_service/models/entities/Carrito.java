@@ -16,28 +16,32 @@ import java.util.Set;
 @Getter
 @Setter
 @NoArgsConstructor
+// Entidad que representa un carrito de compras
 public class Carrito {
 
+    // ID del carrito
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-
+    // ID del usuario propietario (opcional)
     @Column(name = "usuario_id", unique = true, nullable = true)
     private Long usuarioId;
 
-
+    // ID de la sesión si es un carrito anónimo
     @Column(name = "session_id", unique = true, nullable = true)
     private String sessionId;
 
-
+    // Conjunto de items asociados al carrito
     @OneToMany(mappedBy = "carrito", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private Set<ItemCarrito> items = new HashSet<>();
 
+    // Fecha de creación del carrito
     @CreationTimestamp
     @Column(nullable = false)
     private LocalDateTime createAt;
 
+    // Fecha de última actualización del carrito
     @UpdateTimestamp
     @Column(nullable = false)
     private LocalDateTime updatedAt;

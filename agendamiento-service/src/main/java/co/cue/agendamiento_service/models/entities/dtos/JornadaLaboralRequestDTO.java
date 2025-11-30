@@ -5,13 +5,13 @@ import lombok.Setter;
 import java.time.DayOfWeek;
 import java.time.LocalTime;
 
-@Getter
-@Setter
-public class JornadaLaboralRequestDTO {
-    private Long veterinarioId;
-    private DayOfWeek diaSemana;
-    private LocalTime horaInicioJornada;
-    private LocalTime horaFinJornada;
-    private LocalTime horaInicioDescanso;
-    private LocalTime horaFinDescanso;
+@Getter   // Genera automáticamente los métodos get para todos los campos
+@Setter   // Genera automáticamente los métodos set para todos los campos
+public class JornadaLaboralRequestDTO {     // DTO de solicitud para crear o actualizar la jornada laboral de un veterinario
+    private Long veterinarioId;             // ID del veterinario al que pertenece la jornada
+    private DayOfWeek diaSemana;            // Día de la semana correspondiente a la jornada (Lunes, Martes, etc.)
+    private LocalTime horaInicioJornada;   // Hora de inicio de la jornada laboral
+    private LocalTime horaFinJornada;      // Hora de fin de la jornada laboral
+    private LocalTime horaInicioDescanso;  // Hora de inicio del periodo de descanso dentro de la jornada
+    private LocalTime horaFinDescanso;     // Hora de fin del periodo de descanso dentro de la jornada
 }

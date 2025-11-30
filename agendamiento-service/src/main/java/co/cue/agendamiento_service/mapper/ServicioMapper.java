@@ -10,67 +10,75 @@ import co.cue.agendamiento_service.models.entities.dtos.serviciosdtos.responsedt
 import co.cue.agendamiento_service.models.entities.servicios.*;
 import org.springframework.stereotype.Component;
 
-@Component
+@Component // Marca la clase como un componente Spring para que pueda ser inyectada en otros beans.
 public class ServicioMapper {
 
-
+//MAPEO DE ENTIDAD A DTO
     public ServicioResponseDTO toResponseDTO(Servicio entity) {
+        // Verifica el tipo de servicio y delega al método correspondiente
         if (entity instanceof Consulta consulta) {
-            return toConsultaResponseDTO(consulta);
+            return toConsultaResponseDTO(consulta); // Mapea una Consulta
         }
         if (entity instanceof Cirugia cirugia) {
-            return toCirugiaResponseDTO(cirugia);
+            return toCirugiaResponseDTO(cirugia);    // Mapea una Cirugía
         }
         if (entity instanceof Estetica estetica) {
-            return toEsteticaResponseDTO(estetica);
+            return toEsteticaResponseDTO(estetica);  // Mapea un Servicio de Estética
         }
         if (entity instanceof Vacunacion vacunacion) {
-            return toVacunacionResponseDTO(vacunacion);
+            return toVacunacionResponseDTO(vacunacion); // Mapea un Servicio de Vacunación
         }
+        // Si el tipo no está contemplado, lanza excepción
         throw new IllegalArgumentException("Tipo de Servicio no mapeado: " + entity.getClass().getName());
     }
+
+
+    //MÉTODOS PRIVADOS PARA CADA TIPO
     private ConsultaResponseDTO toConsultaResponseDTO(Consulta entity) {
-        ConsultaResponseDTO dto = new ConsultaResponseDTO();
-        mapBaseEntityToResponse(entity, dto);
-        return dto;
+        ConsultaResponseDTO dto = new ConsultaResponseDTO();  // Crea un DTO específico para Consulta
+        mapBaseEntityToResponse(entity, dto);   // Mapea los campos comunes de Servicio
+        return dto;     // Retorna el DTO mapeado
     }
 
     private CirugiaResponseDTO toCirugiaResponseDTO(Cirugia entity) {
-        CirugiaResponseDTO dto = new CirugiaResponseDTO();
-        mapBaseEntityToResponse(entity, dto);
-        dto.setRequiereQuirofano(entity.isRequiereQuirofano());
-        dto.setNotasPreoperatorias(entity.getNotasPreoperatorias());
+        CirugiaResponseDTO dto = new CirugiaResponseDTO();    // Crea DTO específico para Cirugía
+        mapBaseEntityToResponse(entity, dto);    // Mapea los campos comunes de Servicio
+        dto.setRequiereQuirofano(entity.isRequiereQuirofano());  // Mapea si requiere quirófano
+        dto.setNotasPreoperatorias(entity.getNotasPreoperatorias());   // Mapea las notas preoperatorias
         return dto;
     }
 
     private EsteticaResponseDTO toEsteticaResponseDTO(Estetica entity) {
-        EsteticaResponseDTO dto = new EsteticaResponseDTO();
-        mapBaseEntityToResponse(entity, dto);
-        dto.setTipoArreglo(entity.getTipoArreglo());
+        EsteticaResponseDTO dto = new EsteticaResponseDTO();  // DTO para Estética
+        mapBaseEntityToResponse(entity, dto);                  // Campos comunes
+        dto.setTipoArreglo(entity.getTipoArreglo());           // Mapea el tipo de arreglo estético
         return dto;
     }
 
     private VacunacionResponseDTO toVacunacionResponseDTO(Vacunacion entity) {
-        VacunacionResponseDTO dto = new VacunacionResponseDTO();
-        mapBaseEntityToResponse(entity, dto);
-        dto.setNombreBiologico(entity.getNombreBiologico());
+        VacunacionResponseDTO dto = new VacunacionResponseDTO();  // DTO para Vacunación
+        mapBaseEntityToResponse(entity, dto);                      // Campos comunes
+        dto.setNombreBiologico(entity.getNombreBiologico());      // Mapea el nombre del biológico
         return dto;
     }
 
+
+
+    //MÉTODO PRIVADO PARA CAMPOS COMUNES
     private void mapBaseEntityToResponse(Servicio entity, ServicioResponseDTO dto) {
-        dto.setId(entity.getId());
-        dto.setNombre(entity.getNombre());
-        dto.setDescripcion(entity.getDescripcion());
-        dto.setDuracionPromedioMinutos(entity.getDuracionPromedioMinutos());
-        dto.setPrecio(entity.getPrecio());
-        dto.setActivo(entity.isActivo());
+        dto.setId(entity.getId());   // ID del servicio
+        dto.setNombre(entity.getNombre());   // Nombre del servicio
+        dto.setDescripcion(entity.getDescripcion());  // Descripción
+        dto.setDuracionPromedioMinutos(entity.getDuracionPromedioMinutos());  // Duración promedio en minutos
+        dto.setPrecio(entity.getPrecio());  // Precio
+        dto.setActivo(entity.isActivo());   // Estado de activación del servicio
     }
 
-
+//MAPEO DE DTO A ENTIDAD
     public Consulta toEntity(ConsultaRequestDTO dto) {
         return new Consulta(
-                dto.getNombre(), dto.getDescripcion(),
-                dto.getDuracionPromedioMinutos(), dto.getPrecio()
+                dto.getNombre(), dto.getDescripcion(),  // Nombre y descripción
+                dto.getDuracionPromedioMinutos(), dto.getPrecio()  //Duración y precio
         );
     }
 
@@ -78,7 +86,7 @@ public class ServicioMapper {
         return new Cirugia(
                 dto.getNombre(), dto.getDescripcion(),
                 dto.getDuracionPromedioMinutos(), dto.getPrecio(),
-                dto.isRequiereQuirofano(), dto.getNotasPreoperatorias()
+                dto.isRequiereQuirofano(), dto.getNotasPreoperatorias() // Campos específicos de cirugía
         );
     }
 
@@ -86,7 +94,7 @@ public class ServicioMapper {
         return new Estetica(
                 dto.getNombre(), dto.getDescripcion(),
                 dto.getDuracionPromedioMinutos(), dto.getPrecio(),
-                dto.getTipoArreglo()
+                dto.getTipoArreglo()    // Campo específico de estética
         );
     }
 
@@ -94,7 +102,7 @@ public class ServicioMapper {
         return new Vacunacion(
                 dto.getNombre(), dto.getDescripcion(),
                 dto.getDuracionPromedioMinutos(), dto.getPrecio(),
-                dto.getNombreBiologico()
+                dto.getNombreBiologico()   // Campo específico de vacunación
         );
     }
 }
