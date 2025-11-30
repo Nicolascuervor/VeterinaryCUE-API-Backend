@@ -7,14 +7,15 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-@RestController
-@RequestMapping("/api/inventario/kits")
-@AllArgsConstructor
+@RestController // Expone endpoints REST para los kits
+@RequestMapping("/api/inventario/kits") // Ruta base para las operaciones de kits
+@AllArgsConstructor // Genera un constructor con los atributos final
 public class KitController {
 
+    // Servicio encargado de ensamblar kits de bienvenida
     private final KitService kitService;
 
-
+    // POST: Crea un kit de bienvenida según el tipo de mascota solicitado
     @PostMapping("/bienvenida/{tipoMascota}")
     public ResponseEntity<ProductoResponseDTO> crearKitBienvenida(
             @PathVariable String tipoMascota) {

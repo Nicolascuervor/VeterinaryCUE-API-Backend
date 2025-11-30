@@ -7,6 +7,10 @@ import lombok.Setter;
 @Getter
 @Setter
 public class CategoriaRequestDTO {
+
+    // Nombre de la categoría
     private String nombre;
+
+    // Descripción de la categoría
     private String descripcion;
 }
