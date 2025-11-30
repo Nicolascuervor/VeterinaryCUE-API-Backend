@@ -70,5 +70,5 @@ public interface IAuthService {
     AuthResponseDTO login(LoginRequestDTO dto);
 
 
-    String subirFotoPerfil(Long id, MultipartFile file) throws Exception;
+    String subirFotoPerfil(Long id, MultipartFile file);
 }

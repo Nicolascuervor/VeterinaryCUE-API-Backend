@@ -1,4 +1,5 @@
 package co.cue.auth.services;
+import co.cue.auth.config.FileStorageException;
 import co.cue.auth.models.dtos.AuthResponseDTO;
 import co.cue.auth.models.dtos.LoginRequestDTO;
 import co.cue.auth.models.dtos.RegistroUsuarioDTO;
@@ -51,6 +52,7 @@ public class AuthServiceImpl implements IAuthService {
     private final UsuarioFactory usuarioFactory;
     private final PasswordEncoder passwordEncoder;
     private final Path rootLocation = Paths.get("uploads");
+    private static final String USUARIO_NO_ENCONTRADO_MSG = "Usuario no encontrado con ID: ";
 
     // Referencia al propio proxy del servicio (Self-Injection).
     // Se usa para llamar métodos internos (como obtenerUsuarioPorId) asegurando que
@@ -152,12 +154,15 @@ public class AuthServiceImpl implements IAuthService {
         );
 
         // Si llegamos aquí, la autenticación fue exitosa. Recuperamos al usuario completo.
-        UserDetails usuario = usuarioRepository.findByCorreo(dto.getCorreo())
+        Usuario usuario = usuarioRepository.findByCorreo(dto.getCorreo())
                 .orElseThrow(() -> new EntityNotFoundException("Usuario no encontrado"));
 
         // Generamos el token firmado.
         String token = jwtService.generateToken(usuario);
-        return new AuthResponseDTO(token);
+        return AuthResponseDTO.builder()
+                .token(token)
+                .foto(usuario.getFoto())
+                .build();
     }
 
     @Override
@@ -177,7 +182,7 @@ public class AuthServiceImpl implements IAuthService {
     @Transactional(readOnly = true)
     public Usuario obtenerUsuarioPorId(Long id) {
         return usuarioRepository.findByIdAndActivoTrue(id)
-                .orElseThrow(() -> new EntityNotFoundException("Usuario no encontrado con ID: " + id));
+                .orElseThrow(() -> new EntityNotFoundException(USUARIO_NO_ENCONTRADO_MSG + id));
     }
 
     /**
@@ -186,7 +191,6 @@ public class AuthServiceImpl implements IAuthService {
     @Override
     @Transactional
     public Usuario actualizarUsuario(Long id, ActualizarUsuarioDTO dto) {
-        // Usamos 'self' para invocar el método transacciónal de búsqueda.
         Usuario usuario = self.obtenerUsuarioPorId(id);
 
         // Actualizamos campos comunes
@@ -194,10 +198,9 @@ public class AuthServiceImpl implements IAuthService {
         usuario.setApellido(dto.getApellido());
         usuario.setDireccion(dto.getDireccion());
         usuario.setTelefono(dto.getTelefono());
-
-        // Lógica Polimórfica
-        // Verificamos si es una instancia de Veterinario para actualizar campos específicos.
-        // Utilizamos 'Pattern Matching for instanceof' (Java 16+) para evitar el cast explícito.
+        if (dto.getFoto() != null) {
+            usuario.setFoto(dto.getFoto());
+        }
         if (usuario instanceof Veterinario vet && dto.getEspecialidad() != null) {
             vet.setEspecialidad(dto.getEspecialidad());
         }
@@ -214,19 +217,20 @@ public class AuthServiceImpl implements IAuthService {
     @Override
     @Transactional
     public void desactivarUsuario(Long id) {
-        // Buscamos incluso si ya está inactivo, para evitar errores de "No encontrado" si se reintenta.
         Usuario usuario = usuarioRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Usuario no encontrado con ID: " + id));
-
+                .orElseThrow(() -> new EntityNotFoundException(USUARIO_NO_ENCONTRADO_MSG + id));
         usuario.setActivo(false);
         usuarioRepository.save(usuario);
     }
 
+    // Reemplaza el método subirFotoPerfil completo por este:
     @Override
-    public String subirFotoPerfil(Long id, MultipartFile file) throws Exception {
+    @Transactional // Buena práctica: asegurar consistencia DB
+    public String subirFotoPerfil(Long id, MultipartFile file) {
         // A. Validaciones básicas
         if (file.isEmpty()) {
-            throw new RuntimeException("El archivo está vacío");
+            // [CORRECCIÓN SONAR]: Usamos IllegalArgumentException en lugar de RuntimeException
+            throw new IllegalArgumentException("No se puede subir un archivo vacío");
         }
 
         // B. Crear directorio si no existe
@@ -235,33 +239,33 @@ public class AuthServiceImpl implements IAuthService {
                 Files.createDirectories(rootLocation);
             }
         } catch (Exception e) {
-            throw new RuntimeException("No se pudo inicializar la carpeta de uploads");
+            // [CORRECCIÓN SONAR]: Excepción específica de almacenamiento
+            throw new FileStorageException("No se pudo inicializar la carpeta de uploads", e);
         }
 
-        // C. Generar nombre único (ej: 123e4567-e89b...png)
-        String filename = UUID.randomUUID().toString() + "_" + file.getOriginalFilename();
+        // C. Generar nombre único
+        String filename = UUID.randomUUID().toString() + "_" + file.getOriginalFilename().replace(" ", "_");
         Path destinationFile = this.rootLocation.resolve(Paths.get(filename))
                 .normalize().toAbsolutePath();
 
-        // D. Guardar el archivo (Sobrescribir si existe conflicto de nombre UUID raro)
+        // D. Guardar el archivo
         try {
             Files.copy(file.getInputStream(), destinationFile, StandardCopyOption.REPLACE_EXISTING);
         } catch (Exception e) {
-            throw new RuntimeException("Fallo al guardar el archivo: " + e.getMessage());
+            // [CORRECCIÓN SONAR]: Excepción específica con causa raíz
+            throw new FileStorageException("Fallo al guardar el archivo físico", e);
         }
 
         // E. Actualizar la Entidad Usuario
         Usuario usuario = usuarioRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new EntityNotFoundException(USUARIO_NO_ENCONTRADO_MSG + id));
 
-        // Construimos la URL relativa o absoluta (Para local usamos relativa)
-        // OJO: Esto asume que tu backend sirve archivos estáticos (Ver Paso 3)
-        // Guardamos la URL completa para facilitar al frontend
-        String fileUrl = "https://api.veterinariacue.com/uploads/" + filename;
+        // Construimos la URL relativa
+        String relativePath = "/api/auth/uploads/" + filename;
 
-        usuario.setFoto(fileUrl);
+        usuario.setFoto(relativePath);
         usuarioRepository.save(usuario);
 
-        return fileUrl;
+        return relativePath;
     }
 }

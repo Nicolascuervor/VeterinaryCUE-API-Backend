@@ -57,7 +57,6 @@ public class StripeWebhookController {
             return ResponseEntity.internalServerError().build();
         }
 
-// Si todo salió bien, responde 200 OK para indicar que el webhook fue recibido correctamente
         return ResponseEntity.ok().build();
     }
 }

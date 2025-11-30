@@ -68,4 +68,9 @@ public class GlobalExceptionHandler extends RuntimeException {
                 errors.put(error.getField(), error.getDefaultMessage()));
         return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);
     }
+
+    @ExceptionHandler(FileStorageException.class)
+    public ResponseEntity<String> handleFileStorageException(FileStorageException ex) {
+        return new ResponseEntity<>(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+    }
 }

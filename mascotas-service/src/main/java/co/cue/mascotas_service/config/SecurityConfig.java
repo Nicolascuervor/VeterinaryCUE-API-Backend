@@ -50,7 +50,6 @@ public class SecurityConfig {
         http
                 // Desactiva CSRF ya que la API es stateless.
                 .csrf(AbstractHttpConfigurer::disable)
-                // Define que no habrá sesiones, todo se maneja por JWT.
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 // Habilita el servidor de recursos basado en JWT.
