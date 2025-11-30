@@ -28,16 +28,28 @@ import java.util.List;
 @Slf4j
 public class CitaServiceImpl implements ICitaService {
 
+    // Repositorio de citas
     private final CitaRepository citaRepository;
+
+    // Cliente para comunicarse con el servicio de agendamiento
     private final AgendamientoServiceClient agendamientoClient;
+
+    // Servicio para enviar eventos a Kafka
     private final KafkaProducerService kafkaProducer;
+
+    // Mapper para convertir entre entidades y DTOs
     private final CitaMapper mapper;
+
+    // Factory para obtener el comportamiento de cada estado
     private final CitaStateFactory stateFactory;
 
+    // Crear nueva cita
     @Override
     @Transactional
     public CitaResponseDTO createCita(CitaRequestDTO dto, Long usuarioId) {
         log.info("Iniciando creación de cita para servicioId: {}", dto.getServicioId());
+
+        // Obtener datos del servicio y disponibilidad de slots
         ServicioClienteDTO servicio = agendamientoClient.getServicioById(dto.getServicioId())
                 .blockOptional()
                 .orElseThrow(() -> new EntityNotFoundException("Servicio no encontrado: " + dto.getServicioId()));
@@ -45,12 +57,15 @@ public class CitaServiceImpl implements ICitaService {
                 .blockOptional()
                 .orElseThrow(() -> new EntityNotFoundException("Slots no encontrados: " + dto.getIdsDisponibilidad()));
 
-
+        // Validar slots
         validarConsistenciaDeSlots(slots, servicio, dto.getVeterinarianId());
+
+        // Ordenar slots y determinar inicio y fin
         slots.sort(Comparator.comparing(DisponibilidadClienteDTO::getFechaHoraInicio));
         LocalDateTime fechaHoraInicio = slots.get(0).getFechaHoraInicio();
         LocalDateTime fechaHoraFin = slots.get(slots.size() - 1).getFechaHoraFin();
 
+        // Crear entidad Cita
         Cita cita = new Cita();
         cita.setDuenioId(usuarioId);
         cita.setPetId(dto.getPetId());
@@ -64,10 +79,10 @@ public class CitaServiceImpl implements ICitaService {
         cita.setMotivoConsulta(dto.getMotivoConsulta());
         cita.setEstadoGeneralMascota(dto.getEstadoGeneralMascota());
 
-
+        // Guardar cita
         Cita citaGuardada = citaRepository.save(cita);
 
-
+        // Reservar slots en el servicio de agendamiento
         ReservaRequestDTO reservaDTO = new ReservaRequestDTO();
         reservaDTO.setCitaId(citaGuardada.getId());
         reservaDTO.setIdsDisponibilidad(dto.getIdsDisponibilidad());
@@ -83,6 +98,7 @@ public class CitaServiceImpl implements ICitaService {
         return mapper.mapToResponseDTO(citaGuardada);
     }
 
+    // Validar que los slots sean consistentes y consecutivos
     private void validarConsistenciaDeSlots(List<DisponibilidadClienteDTO> slots, ServicioClienteDTO servicio, Long vetIdRequest) {
         if (slots == null || slots.isEmpty()) {
             throw new IllegalArgumentException("La lista de slots no puede estar vacía.");
@@ -112,12 +128,14 @@ public class CitaServiceImpl implements ICitaService {
         log.info("Validación de slots exitosa.");
     }
 
-
+    // Actualizar cita
     @Override
     @Transactional
     public CitaUpdateDTO updateCita(Long id, CitaUpdateDTO updateDTO) {
         log.info("Actualizando cita ID: {}", id);
         Cita cita = findCitaByIdPrivado(id);
+
+        // Manejar transición de estado usando patrón State
         if (updateDTO.getEstado() != null && updateDTO.getEstado() != cita.getEstado()) {
             log.debug("Intentando transición de estado: {} -> {}", cita.getEstado(), updateDTO.getEstado());
             ICitaState comportamientoEstadoActual = stateFactory.getState(cita.getEstado());
@@ -130,27 +148,32 @@ public class CitaServiceImpl implements ICitaService {
                 default -> throw new IllegalArgumentException("Transición no soportada hacia: " + updateDTO.getEstado());
             }
         }
+        // Actualizar campos de la cita
         mapper.updateEntityFromDTO(updateDTO, cita);
+
+        // Enviar evento si la cita se finalizó
         if (cita.getEstado() == EstadoCita.FINALIZADA) {
             log.info("Cita {} finalizada. Enviando evento a Kafka.", id);
             CitaCompletadaEventDTO evento = mapper.mapToCitaCompletadaEvent(cita);
             kafkaProducer.enviarCitaCompletada(evento);
         }
-
+        // Guardar cambios
         Cita citaActualizada = citaRepository.save(cita);
         mapper.updateEntityFromDTO(updateDTO, citaActualizada);
         return updateDTO;
     }
 
+    // Cancelar cita
     @Override
     @Transactional
     public void deleteCita(Long id) {
         log.warn("Cancelando Cita ID: {}", id);
         Cita cita = findCitaByIdPrivado(id);
-
+        // Cambiar estado a CANCELADA
         cita.setEstado(EstadoCita.CANCELADA);
         citaRepository.save(cita);
 
+        // Liberar slots en el servicio de agendamiento
         try {
             agendamientoClient.liberarSlots(cita.getId()).block();
             log.info("Slots liberados para Cita cancelada ID: {}", id);
@@ -159,6 +182,7 @@ public class CitaServiceImpl implements ICitaService {
         }
     }
 
+    // Buscar cita por ID y mapear a DTO
     @Override
     @Transactional(readOnly = true)
     public CitaResponseDTO findCitaById(Long id) {
@@ -167,11 +191,13 @@ public class CitaServiceImpl implements ICitaService {
                 .orElseThrow(() -> new EntityNotFoundException("Cita no encontrada con ID: " + id));
     }
 
+    // Buscar cita por ID (privado, devuelve entidad)
     private Cita findCitaByIdPrivado(Long id) {
         return citaRepository.findCitaById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Cita no encontrada con ID: " + id));
     }
 
+    // Buscar citas por estado
     @Override
     @Transactional(readOnly = true)
     public List<Cita> findCitaByEstado(String estado) {
@@ -179,6 +205,7 @@ public class CitaServiceImpl implements ICitaService {
         return citaRepository.findAllByEstado(estadoEnum); 
     }
 
+    // Buscar citas de un día específico
     @Override
     @Transactional(readOnly = true)
     public List<CitaResponseDTO> findCitasDelDia(LocalDate fecha) {

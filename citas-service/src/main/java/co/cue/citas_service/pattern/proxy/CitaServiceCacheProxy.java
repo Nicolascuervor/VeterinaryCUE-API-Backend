@@ -19,32 +19,34 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class CitaServiceCacheProxy implements ICitaService {
 
-
+    // Servicio real que se delega
     private final ICitaService realService;
 
+    // Caché de citas por fecha
     private final Map<LocalDate, List<CitaResponseDTO>> cache = new ConcurrentHashMap<>();
 
-
+    // Constructor inyectando el servicio real
     @Autowired
     public CitaServiceCacheProxy(@Qualifier("citaServiceImpl") ICitaService realService) {
         this.realService = realService;
     }
 
 
-
+    // Buscar citas por estado
     @Override
     public List<Cita> findCitaByEstado(String estado) {
         log.debug("PROXY CACHE: Passthrough findCitaByEstado");
         return realService.findCitaByEstado(estado);
     }
 
+    // Buscar cita por id
     @Override
     public CitaResponseDTO findCitaById(Long id) {
         log.debug("PROXY CACHE: Passthrough findCitaById");
         return realService.findCitaById(id);
     }
 
-
+    // Crear nueva cita y limpiar caché del día
     @Override
     public CitaResponseDTO createCita(CitaRequestDTO citaDTO, Long usuarioId) {
         log.debug("PROXY CACHE: (Write) Delegando createCita al servicio real...");
@@ -55,6 +57,7 @@ public class CitaServiceCacheProxy implements ICitaService {
         return nuevaCita;
     }
 
+    // Actualizar cita y limpiar caché del día
     @Override
     public CitaUpdateDTO updateCita(Long id, CitaUpdateDTO citaUpdateDTO) {
         log.debug("PROXY CACHE: (Write) Delegando updateCita al servicio real...");
@@ -64,6 +67,7 @@ public class CitaServiceCacheProxy implements ICitaService {
         return citaActualizada;
     }
 
+    // Eliminar cita y limpiar caché del día
     @Override
     public void deleteCita(Long id) {
         log.debug("PROXY CACHE: (Write) Delegando deleteCita al servicio real...");
@@ -72,18 +76,22 @@ public class CitaServiceCacheProxy implements ICitaService {
         cache.remove(LocalDate.now());
     }
 
+    // Buscar citas del día con caché
     @Override
     public List<CitaResponseDTO> findCitasDelDia(LocalDate fecha) {
         LocalDate hoy = LocalDate.now();
+        // Si la fecha no es hoy, delegar directamente al servicio real
         if (!fecha.equals(hoy)) {
             log.warn("PROXY CACHE: (Bypass) Solicitud para fecha {} no es 'hoy'. Delegando a BD.", fecha);
             return realService.findCitasDelDia(fecha);
         }
+        // Revisar caché
         List<CitaResponseDTO> citasCacheadas = cache.get(hoy);
         if (citasCacheadas != null) {
             log.info("PROXY CACHE: (Cache Hit) Devolviendo citas del día desde caché.");
             return citasCacheadas;
         }
+        // Cache miss, obtener del servicio real y guardar en caché
         log.info("PROXY CACHE: (Cache Miss) Buscando citas del día en el servicio real (BD).");
         List<CitaResponseDTO> citasReales = realService.findCitasDelDia(hoy);
         cache.put(hoy, citasReales);

@@ -5,4 +5,6 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class EstadoCancelada extends CitaStateAdapter {
+    // Clase que representa el estado "Cancelada" de una cita
+    // Actualmente hereda la funcionalidad por defecto de CitaStateAdapter
 }

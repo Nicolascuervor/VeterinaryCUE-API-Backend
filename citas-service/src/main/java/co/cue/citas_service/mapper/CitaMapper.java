@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class CitaMapper {
 
+    // Actualiza los campos de la entidad Cita con la información del DTO
     public void updateEntityFromDTO(CitaUpdateDTO dto, Cita cita) {
         cita.setEstadoGeneralMascota(dto.getEstadoGeneralMascota());
         cita.setObservaciones(dto.getObservaciones());
@@ -22,6 +23,7 @@ public class CitaMapper {
         cita.setProximaCita(dto.getProximaCita());
     }
 
+    // Convierte una entidad Cita a un DTO de respuesta para el cliente
     public CitaResponseDTO mapToResponseDTO(Cita cita) {
         CitaResponseDTO dto = new CitaResponseDTO();
         dto.setId(cita.getId());
@@ -35,6 +37,7 @@ public class CitaMapper {
         return dto;
     }
 
+    // Convierte una entidad Cita a un DTO para evento de cita completada
     public CitaCompletadaEventDTO mapToCitaCompletadaEvent(Cita cita) {
         return CitaCompletadaEventDTO.builder()
                 .citaId(cita.getId())

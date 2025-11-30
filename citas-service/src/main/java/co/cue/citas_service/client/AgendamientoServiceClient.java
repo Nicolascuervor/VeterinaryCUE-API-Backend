@@ -18,10 +18,14 @@ import java.util.List;
 public class AgendamientoServiceClient {
 
     private final WebClient.Builder webClientBuilder;
+
+    // URL base del microservicio de agendamiento
     private static final String AGENDAMIENTO_SERVICE_URL = "http://agendamiento-service";
+
+    // Prefijo para enviar el token JWT
     private static final String BEARER_PREFIX = "Bearer ";
 
-
+    // Obtiene un servicio específico por su ID
     public Mono<ServicioClienteDTO> getServicioById(Long servicioId) {
         String url = AGENDAMIENTO_SERVICE_URL + "/api/agendamiento/servicios-admin/" + servicioId;
 
@@ -32,7 +36,7 @@ public class AgendamientoServiceClient {
                 .bodyToMono(ServicioClienteDTO.class);
     }
 
-
+    // Obtiene la disponibilidad de una lista de slots por sus IDs
     public Mono<List<DisponibilidadClienteDTO>> getDisponibilidadByIds(List<Long> slotIds) {
         String url = AGENDAMIENTO_SERVICE_URL + "/api/agendamiento/disponibilidad/slots/list";
 
@@ -45,7 +49,7 @@ public class AgendamientoServiceClient {
                 .collectList();
     }
 
-
+    // Envía la solicitud para reservar los slots seleccionados
     public Mono<Void> reservarSlots(ReservaRequestDTO reservaDTO) {
         String url = AGENDAMIENTO_SERVICE_URL + "/api/agendamiento/disponibilidad/reservar";
 
@@ -57,7 +61,7 @@ public class AgendamientoServiceClient {
                 .bodyToMono(Void.class);
     }
 
-
+    // Solicita liberar slots cuando una cita es eliminada o modificada
     public Mono<Void> liberarSlots(Long citaId) {
         String url = AGENDAMIENTO_SERVICE_URL + "/api/agendamiento/disponibilidad/liberar/" + citaId;
 
@@ -68,9 +72,11 @@ public class AgendamientoServiceClient {
                 .bodyToMono(Void.class);
     }
 
-
+    // Obtiene el token JWT del usuario autenticado
     private String getAuthenticatedToken() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        // Verifica si el usuario está autenticado con un JWT
         if (authentication instanceof JwtAuthenticationToken jwtAuth) {
             return jwtAuth.getToken().getTokenValue();
         }
