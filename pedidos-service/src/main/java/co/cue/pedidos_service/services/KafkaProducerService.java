@@ -11,8 +11,9 @@ import org.springframework.kafka.core.KafkaTemplate;
 @Slf4j
 @AllArgsConstructor
 public class KafkaProducerService {
-
+    // Template de Kafka que permite enviar mensajes a un topic.
     private final KafkaTemplate<String, Object> kafkaTemplate;
+    // Nombre del topic donde se enviarán los eventos de pedidos completados.
     public static final String PEDIDOS_COMPLETADOS_TOPIC = "pedidos_completados_topic";
 
     /**

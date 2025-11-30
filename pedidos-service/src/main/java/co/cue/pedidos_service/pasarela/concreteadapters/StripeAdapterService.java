@@ -19,20 +19,48 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
-
+/**
+ * StripeAdapterService
+ *
+ * Implementación concreta del gateway de pasarela de pagos utilizando la API de Stripe.
+ * Esta clase funciona como un "Adapter" dentro del patrón de arquitectura Hexagonal o Ports & Adapters.
+ *
+ * Responsabilidades:
+ * - Crear PaymentIntent en Stripe para iniciar el proceso de pago.
+ * - Validar y procesar eventos enviados por Stripe mediante Webhooks.
+ * - Convertir los datos de Stripe en un modelo interno (EventoPagoDTO) que pueda ser
+ *   utilizado por la capa de aplicación sin depender directamente del SDK de Stripe.
+ *
+ * Esta clase garantiza el aislamiento del negocio respecto a la tecnología de pago.
+ */
 @Service
 @Slf4j
 public class StripeAdapterService implements IPasarelaPagoGateway {
-
+    /**
+     * Clave secreta privada de Stripe para realizar solicitudes autenticadas.
+     * Es inyectada desde el archivo de configuración.
+     */
     @Value("${stripe.api.secret-key}")
     private String secretKey;
-
+    /**
+     * Clave secreta usada para validar la firma de los Webhooks recibidos desde Stripe.
+     * Asegura que los eventos provienen realmente de Stripe.
+     */
     @Value("${stripe.webhook.secret}")
     private String webhookSecret;
 
 
     /**
-     * Implementación del método para crear un pago.
+     * Crear un PaymentIntent en Stripe.
+     *
+     * Este método es invocado desde la capa de aplicación para iniciar el proceso de pago.
+     * Convierte el monto total del pedido a centavos, envía los datos a Stripe y recibe
+     * un clientSecret que luego será usado por el frontend para completar el pago.
+     *
+     *  Monto total del pedido
+     * Identificador del pedido generado en el sistema
+     * Código de moneda (ej. "usd", "cop")
+     *  ClientSecret del PaymentIntent
      */
     @Override
     public String crearIntencionDePago(BigDecimal total, Long pedidoId, String moneda) {
@@ -58,7 +86,15 @@ public class StripeAdapterService implements IPasarelaPagoGateway {
     }
 
     /**
-     * Implementación del método para procesar webhooks.
+     * Procesa un evento enviado por Stripe a través de un webhook.
+     *
+     * Valida la firma del evento, lo deserializa y extrae los datos relevantes
+     * para la lógica del negocio, retornando un EventoPagoDTO que representa
+     * la información necesaria sin exponer detalles del SDK externo.
+     *
+     * Cuerpo del evento enviado por Stripe
+     * Objeto EventoPagoDTO con información normalizada del evento
+     * Si la firma es inválida o el evento es ilegible
      */
     @Override
     public EventoPagoDTO procesarEventoWebhook(String payload, String firmaHeader) throws PasarelaPagoException {
