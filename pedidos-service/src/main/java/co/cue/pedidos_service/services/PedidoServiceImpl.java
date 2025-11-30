@@ -31,46 +31,54 @@ import java.util.Set;
 @AllArgsConstructor
 @Slf4j
 public class PedidoServiceImpl implements IPedidoService {
-
+    // Repositorio para interactuar con la base de datos de pedidos.
     private final PedidoRepository pedidoRepository;
+    // Cliente para obtener información del usuario desde el microservicio de Autenticación.
     private final AuthServiceClient authClient;
+    // Cliente para obtener el carrito del usuario desde el microservicio Carrito.
     private final CarritoServiceClient carritoClient;
+    // Cliente para obtener productos y validar stock en el microservicio Inventario.
     private final InventarioServiceClient inventarioClient;
+    // Adaptador para interactuar con la pasarela de pagos (Stripe).
     private final IPasarelaPagoGateway pasarelaPagoGateway;
 
 
     @Override
-    @Transactional
+    @Transactional  // Garantiza atomicidad en la creación del pedido.
 
     public CheckoutResponseDTO iniciarCheckout(Long usuarioId, String sessionId, CheckoutGuestRequestDTO guestDTO) {
-
+        // Obtener datos del cliente (usuario registrado o invitado).
         UsuarioClienteDTO cliente = obtenerDatosCliente(usuarioId, guestDTO).block();
-
+// Validar que los datos del cliente existan.
         if (cliente == null) {
             log.error("No se pudieron obtener los datos del cliente para el usuarioId: {}", usuarioId);
             throw new EntityNotFoundException("No se pudieron verificar los datos del cliente.");
         }
-
+        // Recuperar el carrito desde el microservicio Carrito.
         CarritoClienteDTO carrito = carritoClient.findCarrito(usuarioId, sessionId).block();
+        // Validar que el carrito no esté vacío.
         if (carrito == null || carrito.getItems() == null || carrito.getItems().isEmpty()) {
             throw new CarritoVacioException("No se puede procesar un pedido con un carrito vacío.");
         }
-
+        // Conjunto donde se almacenararán los ítems del pedido.
         Set<PedidoItem> itemsDelPedido = new HashSet<>();
+        // Total acumulado del pedido.
         BigDecimal totalPedido = BigDecimal.ZERO;
-
+// Recorrer cada item del carrito.
         for (ItemCarritoClienteDTO itemCarrito : carrito.getItems()) {
+            // Buscar información del producto en el servicio de inventario.
             ProductoClienteDTO producto = inventarioClient.findProductoById(itemCarrito.getProductoId()).block();
-
+// Validar disponibilidad del producto.
             if (producto == null || !producto.isDisponibleParaVenta()) {
                 throw new StockInsuficienteException("El producto " + itemCarrito.getProductoId() + " no está disponible.");
             }
+            // Validar stock suficiente.
             if (producto.getStockActual() < itemCarrito.getCantidad()) {
                 throw new StockInsuficienteException("Stock insuficiente para " + producto.getNombre() +
                         ". Solicitados: " + itemCarrito.getCantidad() +
                         ", Disponibles: " + producto.getStockActual());
             }
-
+// Construcción del item del pedido.
             PedidoItem pedidoItem = new PedidoItem();
             pedidoItem.setProductoId(producto.getId());
             pedidoItem.setCantidad(itemCarrito.getCantidad());
@@ -82,7 +90,7 @@ public class PedidoServiceImpl implements IPedidoService {
             itemsDelPedido.add(pedidoItem);
             totalPedido = totalPedido.add(subtotal);
         }
-
+// Crear el objeto Pedido a partir de la información procesada.
         Pedido pedido = new Pedido();
         pedido.setUsuarioId(usuarioId);
         pedido.setClienteNombre(cliente.getNombre() + " " + cliente.getApellido());
@@ -110,7 +118,10 @@ public class PedidoServiceImpl implements IPedidoService {
         return new CheckoutResponseDTO(pedidoGuardado.getId(), clientSecret);
     }
 
-
+    /**
+     * Obtiene los datos del cliente dependiendo si es usuario registrado
+     * o usuario invitado.
+     */
     private Mono<UsuarioClienteDTO> obtenerDatosCliente(Long usuarioId, CheckoutGuestRequestDTO guestDTO) {
         if (usuarioId != null) {
             return authClient.findUsuarioById(usuarioId);
