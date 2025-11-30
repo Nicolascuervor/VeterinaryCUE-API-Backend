@@ -157,12 +157,11 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/auth/{id}").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/auth/email").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/api/auth/{id}").authenticated()
-
-                        .requestMatchers("/auth/**", "/api/auth/uploads/**").permitAll()
+                        
+                        .requestMatchers("/api/auth/uploads/**").permitAll()
                         .anyRequest().authenticated()
 
-                        // Política de "Cierre por Defecto": Cualquier otra petición se rechaza.
-                        .anyRequest().denyAll());
+                );
 
         return http.build();
     }
