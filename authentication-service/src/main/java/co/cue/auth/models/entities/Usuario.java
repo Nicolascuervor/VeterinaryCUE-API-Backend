@@ -73,6 +73,9 @@ public class Usuario implements UserDetails {
     @Column(nullable = false)
     private boolean activo;
 
+    @Column(name = "foto")
+    private String foto;
+
     // Auditoría
     // Campos gestionados automáticamente por Hibernate para rastrear el ciclo de vida del registro.
 

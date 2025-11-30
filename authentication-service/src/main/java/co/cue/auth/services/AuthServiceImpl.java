@@ -18,6 +18,12 @@ import org.springframework.transaction.annotation.Transactional;
 import co.cue.auth.models.dtos.ActualizarUsuarioDTO;
 import co.cue.auth.models.entities.Veterinario;
 import jakarta.persistence.EntityNotFoundException;
+import org.springframework.web.multipart.MultipartFile;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.UUID;
 
 import java.util.HashMap;
 import java.util.List;
@@ -44,6 +50,7 @@ public class AuthServiceImpl implements IAuthService {
     private final UsuarioRepository usuarioRepository;
     private final UsuarioFactory usuarioFactory;
     private final PasswordEncoder passwordEncoder;
+    private final Path rootLocation = Paths.get("uploads");
 
     // Referencia al propio proxy del servicio (Self-Injection).
     // Se usa para llamar métodos internos (como obtenerUsuarioPorId) asegurando que
@@ -213,5 +220,48 @@ public class AuthServiceImpl implements IAuthService {
 
         usuario.setActivo(false);
         usuarioRepository.save(usuario);
+    }
+
+    @Override
+    public String subirFotoPerfil(Long id, MultipartFile file) throws Exception {
+        // A. Validaciones básicas
+        if (file.isEmpty()) {
+            throw new RuntimeException("El archivo está vacío");
+        }
+
+        // B. Crear directorio si no existe
+        try {
+            if (!Files.exists(rootLocation)) {
+                Files.createDirectories(rootLocation);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("No se pudo inicializar la carpeta de uploads");
+        }
+
+        // C. Generar nombre único (ej: 123e4567-e89b...png)
+        String filename = UUID.randomUUID().toString() + "_" + file.getOriginalFilename();
+        Path destinationFile = this.rootLocation.resolve(Paths.get(filename))
+                .normalize().toAbsolutePath();
+
+        // D. Guardar el archivo (Sobrescribir si existe conflicto de nombre UUID raro)
+        try {
+            Files.copy(file.getInputStream(), destinationFile, StandardCopyOption.REPLACE_EXISTING);
+        } catch (Exception e) {
+            throw new RuntimeException("Fallo al guardar el archivo: " + e.getMessage());
+        }
+
+        // E. Actualizar la Entidad Usuario
+        Usuario usuario = usuarioRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        // Construimos la URL relativa o absoluta (Para local usamos relativa)
+        // OJO: Esto asume que tu backend sirve archivos estáticos (Ver Paso 3)
+        // Guardamos la URL completa para facilitar al frontend
+        String fileUrl = "https://api.veterinariacue.com/uploads/" + filename;
+
+        usuario.setFoto(fileUrl);
+        usuarioRepository.save(usuario);
+
+        return fileUrl;
     }
 }

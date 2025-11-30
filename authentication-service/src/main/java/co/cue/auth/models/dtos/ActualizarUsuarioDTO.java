@@ -27,6 +27,8 @@ public class ActualizarUsuarioDTO {
     private String apellido;
     private String direccion;
     private String telefono;
+    private String foto;
+
 
     // Campos Específicos de Roles
     // Este campo es opcional y solo relevante si el usuario es un VETERINARIO.

@@ -128,6 +128,8 @@ services:
         condition: service_healthy
     networks:
       - veterinaria-net
+    volumes:
+      - ./uploads_data:/app/uploads
 
   mascotas-service:
     build:

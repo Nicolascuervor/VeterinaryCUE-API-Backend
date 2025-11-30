@@ -9,8 +9,10 @@ import co.cue.auth.services.IAuthService;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -108,5 +110,16 @@ public class AuthController {
     public ResponseEntity<Void> desactivarUsuario(@PathVariable Long id) {
         authService.desactivarUsuario(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping(value = "/upload-photo/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> uploadPhoto(@PathVariable Long id, @RequestParam("file") MultipartFile file) {
+        try {
+            String url = authService.subirFotoPerfil(id, file);
+            return ResponseEntity.ok(new AuthResponseDTO("Foto actualizada correctamente", url, null, null, null));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error al subir la imagen: " + e.getMessage());
+        }
     }
 }

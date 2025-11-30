@@ -1,6 +1,7 @@
 package co.cue.auth.models.dtos;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 
 /**
@@ -14,6 +15,7 @@ import lombok.Getter;
  */
 @Getter
 @AllArgsConstructor
+@Builder
 public class AuthResponseDTO {
 
     /**
@@ -22,4 +24,5 @@ public class AuthResponseDTO {
      * Es la credencial que la API Gateway validará para permitir el acceso.
      */
     private String token;
+    private String foto;
 }

@@ -4,6 +4,7 @@ import co.cue.auth.models.dtos.AuthResponseDTO;
 import co.cue.auth.models.dtos.LoginRequestDTO;
 import co.cue.auth.models.dtos.RegistroUsuarioDTO;
 import co.cue.auth.models.entities.Usuario;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -67,4 +68,7 @@ public interface IAuthService {
      * genera y retorna un token de acceso (JWT).
      */
     AuthResponseDTO login(LoginRequestDTO dto);
+
+
+    String subirFotoPerfil(Long id, MultipartFile file) throws Exception;
 }
