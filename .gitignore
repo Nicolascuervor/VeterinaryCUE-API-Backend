@@ -20,8 +20,12 @@
 *.rar
 .env
 
-.init-scripts/
-init-scripts/
+# Ignorar configuración de bases de datos locales para evitar conflictos
+init-scripts/*
+
+# Permitir subir el script de producción para Dockploy
+!init-scripts/init-prod.sql
+
 
 # Virtual machine crash logs
 hs_err_pid*
