@@ -31,7 +31,7 @@ services:
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
       MYSQL_DATABASE: 'auth_service'
     volumes:
-      - mysql_data:/var/lib/mysql
+      - mysql_data_v2:/var/lib/mysql
       - ./init-scripts/init-prod.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - veterinaria-net
