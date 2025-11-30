@@ -157,7 +157,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/auth/{id}").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/auth/email").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/api/auth/{id}").authenticated()
-                        
+
                         .requestMatchers("/api/auth/uploads/**").permitAll()
                         .anyRequest().authenticated()
 
