@@ -7,7 +7,7 @@ import co.cue.agendamiento_service.models.entities.dtos.*;
 import co.cue.agendamiento_service.models.entities.enums.TipoOcupacion;
 import co.cue.agendamiento_service.repository.JornadaLaboralRepository;
 import co.cue.agendamiento_service.repository.OcupacionAgendaRepository;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,11 +21,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class AgendamientoServiceImpl implements IAgendamientoService {
 
     private final JornadaLaboralRepository jornadaRepository;
     private final OcupacionAgendaRepository ocupacionRepository;
+    private final AgendamientoMapper mapper;
 
     private IAgendamientoService self;
 
@@ -33,9 +34,6 @@ public class AgendamientoServiceImpl implements IAgendamientoService {
     public void setSelf(@Lazy IAgendamientoService self) {
         this.self = self;
     }
-
-    // Inyectamos el Mapper (asegúrate de que AgendamientoMapper tenga la anotación @Component)
-    private final AgendamientoMapper mapper;
 
     @Override
     @Transactional
@@ -101,7 +99,6 @@ public class AgendamientoServiceImpl implements IAgendamientoService {
     @Transactional
     public OcupacionResponseDTO crearOcupacion(OcupacionRequestDTO dto) {
         self.validarDisponibilidad(dto.getVeterinarioId(), dto.getFechaInicio(), dto.getFechaFin());
-
         OcupacionAgenda ocupacion = new OcupacionAgenda();
         ocupacion.setVeterinarioId(dto.getVeterinarioId());
         ocupacion.setFechaInicio(dto.getFechaInicio());
