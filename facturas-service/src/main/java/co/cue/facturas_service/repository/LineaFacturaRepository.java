@@ -13,7 +13,6 @@ import org.springframework.stereotype.Repository;
 // No necesita declarar métodos adicionales porque se usan los básicos.
 public interface LineaFacturaRepository extends JpaRepository<LineaFactura, Long> {
 // No se definen métodos personalizados por ahora.
-    // JpaRepository provee todo lo necesario para gestionar las líneas de una factura:
     // - Guardar líneas
     // - Buscar líneas por ID
     // - Listar todas las líneas

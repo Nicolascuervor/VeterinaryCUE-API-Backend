@@ -1,48 +1,45 @@
 package co.cue.agendamiento_service.mapper;
 
-import co.cue.agendamiento_service.models.entities.Disponibilidad;
 import co.cue.agendamiento_service.models.entities.JornadaLaboral;
-import co.cue.agendamiento_service.models.entities.dtos.DisponibilidadResponseDTO;
 import co.cue.agendamiento_service.models.entities.dtos.JornadaLaboralResponseDTO;
 import org.springframework.stereotype.Component;
+import co.cue.agendamiento_service.models.entities.OcupacionAgenda;
+import co.cue.agendamiento_service.models.entities.dtos.OcupacionResponseDTO;
 
-@Component  // Marca esta clase como un componente Spring para que pueda ser inyectada en otros beans.
+@Component
 public class AgendamientoMapper {
 
-    //  MÉTODO PARA MAPEAR DISPONIBILIDAD
-    public DisponibilidadResponseDTO toDisponibilidadResponseDTO(Disponibilidad entity) {
-        if (entity == null) { // Verifica si la entidad es null, en cuyo caso devuelve null para evitar NullPointerException.
-            return null;
-        }
+    // --- NUEVO MÉTODO ---
+    // Convierte la entidad de BD a la cajita de color para el Front
+    public OcupacionResponseDTO toOcupacionResponseDTO(OcupacionAgenda entity) {
+        if (entity == null) return null;
 
-        DisponibilidadResponseDTO dto = new DisponibilidadResponseDTO(); // Crea un nuevo DTO de respuesta.
-        dto.setId(entity.getId());                                       // Copia el ID de la entidad al DTO.
-        dto.setVeterinarioId(entity.getVeterinarioId());                 // Copia el ID del veterinario asociado.
-        dto.setFechaHoraInicio(entity.getFechaHoraInicio());             // Copia la fecha y hora de inicio del slot.
-        dto.setFechaHoraFin(entity.getFechaHoraFin());                   // Copia la fecha y hora de fin del slot.
-        dto.setEstado(entity.getEstado());                               // Copia el estado de disponibilidad del slot.
-        dto.setCitaId(entity.getCitaId());                               // Copia el ID de la cita asociada, si existe.
-
-        return dto;   // Retorna el DTO mapeado.
+        return OcupacionResponseDTO.builder()
+                .id(entity.getId())
+                .veterinarioId(entity.getVeterinarioId())
+                .fechaInicio(entity.getFechaInicio())
+                .fechaFin(entity.getFechaFin())
+                .tipo(entity.getTipo())
+                .referenciaExternaId(entity.getReferenciaExternaId()) // Importante para enlazar con la Cita
+                .observacion(entity.getObservacion())
+                .build();
     }
 
-
-    // MÉTODO PARA MAPEAR JORNADA LABORAL
+    // --- SE MANTIENE IGUAL ---
     public JornadaLaboralResponseDTO toJornadaResponseDTO(JornadaLaboral entity) {
-        if (entity == null) { // Verifica si la entidad es null, en cuyo caso devuelve null.
-            return null;
-        }
+        if (entity == null) return null;
 
-        JornadaLaboralResponseDTO dto = new JornadaLaboralResponseDTO();   // Crea un nuevo DTO de respuesta para jornada laboral.
-        dto.setId(entity.getId());                                         // Copia el ID de la jornada laboral.
-        dto.setVeterinarioId(entity.getVeterinarioId());                   // Copia el ID del veterinario asociado a la jornada.
-        dto.setDiaSemana(entity.getDiaSemana());                           // Copia el día de la semana correspondiente a la jornada.
-        dto.setHoraInicioJornada(entity.getHoraInicioJornada());           // Copia la hora de inicio de la jornada laboral.
-        dto.setHoraFinJornada(entity.getHoraFinJornada());                 // Copia la hora de fin de la jornada laboral.
-        dto.setHoraInicioDescanso(entity.getHoraInicioDescanso());         // Copia la hora de inicio del descanso.
-        dto.setHoraFinDescanso(entity.getHoraFinDescanso());               // Copia la hora de fin del descanso.
-        dto.setActiva(entity.isActiva());                                  // Copia si la jornada está activa o no.
-
-        return dto; // Retorna el DTO mapeado.
+        JornadaLaboralResponseDTO dto = new JornadaLaboralResponseDTO();
+        dto.setId(entity.getId());
+        dto.setVeterinarioId(entity.getVeterinarioId());
+        dto.setDiaSemana(entity.getDiaSemana());
+        dto.setHoraInicioJornada(entity.getHoraInicioJornada());
+        dto.setHoraFinJornada(entity.getHoraFinJornada());
+        dto.setHoraInicioDescanso(entity.getHoraInicioDescanso());
+        dto.setHoraFinDescanso(entity.getHoraFinDescanso());
+        dto.setActiva(entity.isActiva());
+        return dto;
     }
+
+    // NOTA: Puedes borrar el método antiguo 'toDisponibilidadResponseDTO' ya que esa clase ya no existe.
 }

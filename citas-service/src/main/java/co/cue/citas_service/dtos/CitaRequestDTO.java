@@ -1,7 +1,8 @@
 package co.cue.citas_service.dtos;
 import lombok.Getter;
 import lombok.Setter;
-import java.util.List;
+
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -14,10 +15,11 @@ public class CitaRequestDTO {
     private Long veterinarianId;
 
     // ID del servicio que se desea agendar (baño, consulta, cirugía, etc.)
+    // Esto determinará la duración y el precio.
     private Long servicioId;
 
-    // Lista de IDs de disponibilidad (slots horarios) seleccionados para la cita
-    private List<Long> idsDisponibilidad;
+
+    private LocalDateTime fechaInicio;
 
     // Motivo principal por el cual se agenda la cita
     private String motivoConsulta;

@@ -12,7 +12,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -223,14 +222,18 @@ public class AuthServiceImpl implements IAuthService {
         usuarioRepository.save(usuario);
     }
 
-    // Reemplaza el método subirFotoPerfil completo por este:
     @Override
-    @Transactional // Buena práctica: asegurar consistencia DB
+    @Transactional
     public String subirFotoPerfil(Long id, MultipartFile file) {
         // A. Validaciones básicas
         if (file.isEmpty()) {
-            // [CORRECCIÓN SONAR]: Usamos IllegalArgumentException en lugar de RuntimeException
             throw new IllegalArgumentException("No se puede subir un archivo vacío");
+        }
+
+        // [CORRECCIÓN SONARQUBE]: Validar explícitamente que el nombre no sea null
+        String originalFilename = file.getOriginalFilename();
+        if (originalFilename == null || originalFilename.isBlank()) {
+            throw new IllegalArgumentException("El archivo no tiene un nombre válido");
         }
 
         // B. Crear directorio si no existe
@@ -239,12 +242,11 @@ public class AuthServiceImpl implements IAuthService {
                 Files.createDirectories(rootLocation);
             }
         } catch (Exception e) {
-            // [CORRECCIÓN SONAR]: Excepción específica de almacenamiento
             throw new FileStorageException("No se pudo inicializar la carpeta de uploads", e);
         }
 
-        // C. Generar nombre único
-        String filename = UUID.randomUUID().toString() + "_" + file.getOriginalFilename().replace(" ", "_");
+        // C. Generar nombre único (Usando la variable validada 'originalFilename')
+        String filename = UUID.randomUUID().toString() + "_" + originalFilename.replace(" ", "_");
         Path destinationFile = this.rootLocation.resolve(Paths.get(filename))
                 .normalize().toAbsolutePath();
 
@@ -252,7 +254,6 @@ public class AuthServiceImpl implements IAuthService {
         try {
             Files.copy(file.getInputStream(), destinationFile, StandardCopyOption.REPLACE_EXISTING);
         } catch (Exception e) {
-            // [CORRECCIÓN SONAR]: Excepción específica con causa raíz
             throw new FileStorageException("Fallo al guardar el archivo físico", e);
         }
 

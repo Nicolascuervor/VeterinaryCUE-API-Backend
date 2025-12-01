@@ -35,5 +35,9 @@ public enum NotificationType {
      * (FacturaEmailNotificationStrategy) que puede incluir formateo avanzado de tablas HTML
      * o adjuntar PDFs, requiriendo datos específicos como "total", "items" y "fecha".
      */
-    FACTURA
+    FACTURA,
+
+    CITA_CONFIRMACION
+
+
 }

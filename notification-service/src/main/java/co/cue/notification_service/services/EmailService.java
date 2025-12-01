@@ -25,6 +25,10 @@ public class EmailService {
      */
     private final JavaMailSender mailSender;
 
+    private static final String NO_EMAIL = "no-reply@veterinariacue.com";
+    private static final String SALUDO = "Hola ";
+
+
     /**
      * Construye y envía un correo de bienvenida estándar.
      * Se utiliza cuando un nuevo usuario se registra en la plataforma.
@@ -39,10 +43,10 @@ public class EmailService {
             // --- Construcción del Mensaje ---
             // Creamos un objeto simple de correo (sin adjuntos ni HTML complejo).
             SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom("no-reply@veterinariacue.com"); // Remitente (puede ser ficticio si el SMTP lo permite)
+            message.setFrom(NO_EMAIL);
             message.setTo(correo);
             message.setSubject("¡Bienvenido a Veterinaria CUE!");
-            message.setText("Hola " + nombre + ",\n\nTu cuenta ha sido creada exitosamente. " +
+            message.setText(SALUDO + nombre + ",\n\nTu cuenta ha sido creada exitosamente. " +
                     "¡Estamos contentos de tenerte con nosotros!");
 
             // --- Transmisión SMTP ---
@@ -68,13 +72,13 @@ public class EmailService {
         log.info("Preparando correo de factura para {}", correo);
         try {
             SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom("no-reply@veterinariacue.com");
+            message.setFrom(NO_EMAIL);
             message.setTo(correo);
             message.setSubject("Comprobante de Compra - " + numFactura);
 
             // Construcción manual de la plantilla de texto.
             // En producción, esto se reemplazaría por un motor de plantillas como Thymeleaf o FreeMarker.
-            message.setText("Hola " + nombre + ",\n\n" +
+            message.setText(SALUDO + nombre + ",\n\n" +
                     "Gracias por tu compra en Veterinaria CUE.\n" +
                     "Aquí tienes el resumen de tu factura:\n\n" +
                     "-----------------------------------\n" +
@@ -89,6 +93,27 @@ public class EmailService {
 
         } catch (Exception e) {
             log.error("Error al enviar factura: {}", e.getMessage());
+        }
+    }
+
+    public void enviarConfirmacionCita(String correo, String nombreDuenio, String nombreMascota, String fecha, String medico) {
+        log.info("Enviando confirmación de cita a {}", correo);
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(NO_EMAIL);
+            message.setTo(correo);
+            message.setSubject("Confirmación de Cita - Veterinaria CUE");
+            message.setText(SALUDO + nombreDuenio + ",\n\n" +
+                    "Tu cita ha sido confirmada exitosamente.\n\n" +
+                    "Mascota: " + nombreMascota + "\n" +
+                    "Veterinario: " + medico + "\n" +
+                    "Fecha y Hora: " + fecha + "\n\n" +
+                    "Por favor llega 10 minutos antes.");
+
+            mailSender.send(message);
+            log.info("Correo de cita enviado.");
+        } catch (Exception e) {
+            log.error("Error enviando correo de cita: {}", e.getMessage());
         }
     }
 }

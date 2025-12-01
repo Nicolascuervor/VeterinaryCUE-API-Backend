@@ -1,10 +1,9 @@
 package co.cue.citas_service.client;
-
-
-import co.cue.agendamiento_service.models.entities.dtos.ReservaRequestDTO;
-import co.cue.citas_service.dtos.DisponibilidadClienteDTO;
+import co.cue.citas_service.dtos.OcupacionRequestDTO;
+import co.cue.citas_service.dtos.OcupacionResponseDTO;
 import co.cue.citas_service.dtos.ServicioClienteDTO;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
@@ -12,23 +11,21 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
-import java.util.List;
+
+
 @Component
 @AllArgsConstructor
+@Slf4j
 public class AgendamientoServiceClient {
 
     private final WebClient.Builder webClientBuilder;
-
-    // URL base del microservicio de agendamiento
     private static final String AGENDAMIENTO_SERVICE_URL = "http://agendamiento-service";
-
-    // Prefijo para enviar el token JWT
     private static final String BEARER_PREFIX = "Bearer ";
 
-    // Obtiene un servicio específico por su ID
+    // --- MÉTODOS DE SERVICIOS (Se mantienen igual) ---
+
     public Mono<ServicioClienteDTO> getServicioById(Long servicioId) {
         String url = AGENDAMIENTO_SERVICE_URL + "/api/agendamiento/servicios-admin/" + servicioId;
-
         return webClientBuilder.build()
                 .get().uri(url)
                 .header(HttpHeaders.AUTHORIZATION, BEARER_PREFIX + getAuthenticatedToken())
@@ -36,50 +33,52 @@ public class AgendamientoServiceClient {
                 .bodyToMono(ServicioClienteDTO.class);
     }
 
-    // Obtiene la disponibilidad de una lista de slots por sus IDs
-    public Mono<List<DisponibilidadClienteDTO>> getDisponibilidadByIds(List<Long> slotIds) {
-        String url = AGENDAMIENTO_SERVICE_URL + "/api/agendamiento/disponibilidad/slots/list";
+    // --- NUEVOS MÉTODOS DE RESERVA ---
 
-        return webClientBuilder.build()
-                .post().uri(url)
-                .bodyValue(slotIds)
-                .header(HttpHeaders.AUTHORIZATION, BEARER_PREFIX + getAuthenticatedToken())
-                .retrieve()
-                .bodyToFlux(DisponibilidadClienteDTO.class)
-                .collectList();
-    }
+    /**
+     * Solicita al servicio de agendamiento que cree una ocupación (reserva) para una cita.
+     * Ahora enviamos un rango de fechas, no una lista de IDs de slots.
+     */
+    public Mono<OcupacionResponseDTO> reservarEspacio(OcupacionRequestDTO reservaDTO) {
+        String url = AGENDAMIENTO_SERVICE_URL + "/api/agendamiento/interno/reservar";
 
-    // Envía la solicitud para reservar los slots seleccionados
-    public Mono<Void> reservarSlots(ReservaRequestDTO reservaDTO) {
-        String url = AGENDAMIENTO_SERVICE_URL + "/api/agendamiento/disponibilidad/reservar";
+        log.info("Enviando solicitud de reserva a Agendamiento: VetId={}, Inicio={}",
+                reservaDTO.getVeterinarioId(), reservaDTO.getFechaInicio());
 
         return webClientBuilder.build()
                 .post().uri(url)
                 .bodyValue(reservaDTO)
                 .header(HttpHeaders.AUTHORIZATION, BEARER_PREFIX + getAuthenticatedToken())
                 .retrieve()
-                .bodyToMono(Void.class);
+                .bodyToMono(OcupacionResponseDTO.class)
+                // Manejo básico de errores: si agendamiento dice "409 Conflict" o "400 Bad Request"
+                // WebClient lanzará una excepción que CitaService deberá capturar.
+                .doOnError(e -> log.error("Error reservando espacio en agendamiento-service: {}", e.getMessage()));
     }
 
-    // Solicita liberar slots cuando una cita es eliminada o modificada
-    public Mono<Void> liberarSlots(Long citaId) {
-        String url = AGENDAMIENTO_SERVICE_URL + "/api/agendamiento/disponibilidad/liberar/" + citaId;
+    /**
+     * Libera el espacio eliminando la ocupación asociada a la cita.
+     */
+    public Mono<Void> liberarEspacio(Long citaId) {
+        String url = AGENDAMIENTO_SERVICE_URL + "/api/agendamiento/interno/liberar/" + citaId;
+
+        log.info("Solicitando liberar espacio para Cita ID: {}", citaId);
 
         return webClientBuilder.build()
-                .post().uri(url)
+                .delete().uri(url)
                 .header(HttpHeaders.AUTHORIZATION, BEARER_PREFIX + getAuthenticatedToken())
                 .retrieve()
-                .bodyToMono(Void.class);
+                .bodyToMono(Void.class)
+                .doOnError(e -> log.error("Error liberando espacio para Cita ID {}: {}", citaId, e.getMessage()));
     }
 
-    // Obtiene el token JWT del usuario autenticado
     private String getAuthenticatedToken() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        // Verifica si el usuario está autenticado con un JWT
         if (authentication instanceof JwtAuthenticationToken jwtAuth) {
             return jwtAuth.getToken().getTokenValue();
         }
+        // En un entorno real, podrías manejar el caso de llamadas internas sin usuario (Service Account),
+        // pero por ahora asumimos que siempre hay un usuario logueado.
         throw new IllegalStateException("No se pudo obtener el token JWT del contexto de seguridad");
     }
 }
