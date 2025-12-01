@@ -2,7 +2,10 @@ package co.cue.citas_service.service;
 
 import co.cue.agendamiento_service.models.entities.dtos.ReservaRequestDTO;
 import co.cue.citas_service.client.AgendamientoServiceClient;
+import co.cue.citas_service.client.AuthServiceClient;
+import co.cue.citas_service.client.MascotaServiceClient;
 import co.cue.citas_service.dtos.*;
+import co.cue.citas_service.dtos.enums.NotificationType;
 import co.cue.citas_service.entity.Cita;
 import co.cue.citas_service.entity.EstadoCita;
 import co.cue.citas_service.events.CitaCompletadaEventDTO;
@@ -20,7 +23,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 
 @Service("citaServiceImpl")
@@ -43,29 +48,30 @@ public class CitaServiceImpl implements ICitaService {
     // Factory para obtener el comportamiento de cada estado
     private final CitaStateFactory stateFactory;
 
-    // Crear nueva cita
+    private final AuthServiceClient authClient;       // Inyectar
+    private final MascotaServiceClient mascotaClient; // Inyectar
+
     @Override
     @Transactional
     public CitaResponseDTO createCita(CitaRequestDTO dto, Long usuarioId) {
         log.info("Iniciando creación de cita para servicioId: {}", dto.getServicioId());
 
-        // Obtener datos del servicio y disponibilidad de slots
+        // 1. Obtener datos del servicio (duración, precio)
         ServicioClienteDTO servicio = agendamientoClient.getServicioById(dto.getServicioId())
                 .blockOptional()
                 .orElseThrow(() -> new EntityNotFoundException("Servicio no encontrado: " + dto.getServicioId()));
-        List<DisponibilidadClienteDTO> slots = agendamientoClient.getDisponibilidadByIds(dto.getIdsDisponibilidad())
-                .blockOptional()
-                .orElseThrow(() -> new EntityNotFoundException("Slots no encontrados: " + dto.getIdsDisponibilidad()));
 
-        // Validar slots
-        validarConsistenciaDeSlots(slots, servicio, dto.getVeterinarianId());
+        // 2. Calcular Fechas (El front ahora envía "fechaInicio", nosotros calculamos el fin)
+        // NOTA: Debes actualizar CitaRequestDTO para recibir 'fechaInicio' (LocalDateTime) en lugar de 'idsDisponibilidad'.
+        LocalDateTime fechaInicio = dto.getFechaInicio();
+        if (fechaInicio == null) {
+            throw new IllegalArgumentException("La fecha de inicio es obligatoria.");
+        }
 
-        // Ordenar slots y determinar inicio y fin
-        slots.sort(Comparator.comparing(DisponibilidadClienteDTO::getFechaHoraInicio));
-        LocalDateTime fechaHoraInicio = slots.get(0).getFechaHoraInicio();
-        LocalDateTime fechaHoraFin = slots.get(slots.size() - 1).getFechaHoraFin();
+        // Calculamos la hora fin sumando la duración del servicio
+        LocalDateTime fechaFin = fechaInicio.plusMinutes(servicio.getDuracionPromedioMinutos());
 
-        // Crear entidad Cita
+        // 3. Crear entidad Cita (Pre-guardado para tener ID)
         Cita cita = new Cita();
         cita.setDuenioId(usuarioId);
         cita.setPetId(dto.getPetId());
@@ -73,59 +79,44 @@ public class CitaServiceImpl implements ICitaService {
         cita.setServicioId(servicio.getId());
         cita.setNombreServicio(servicio.getNombre());
         cita.setPrecioServicio(servicio.getPrecio());
-        cita.setFechaHoraInicio(fechaHoraInicio);
-        cita.setFechaHoraFin(fechaHoraFin);
-        cita.setEstado(EstadoCita.CONFIRMADA);
+        cita.setFechaHoraInicio(fechaInicio);
+        cita.setFechaHoraFin(fechaFin);
+        cita.setEstado(EstadoCita.CONFIRMADA); // O ESPERA, según tu flujo
         cita.setMotivoConsulta(dto.getMotivoConsulta());
         cita.setEstadoGeneralMascota(dto.getEstadoGeneralMascota());
 
-        // Guardar cita
+        // Guardamos primero para obtener el ID de la cita
         Cita citaGuardada = citaRepository.save(cita);
 
-        // Reservar slots en el servicio de agendamiento
-        ReservaRequestDTO reservaDTO = new ReservaRequestDTO();
-        reservaDTO.setCitaId(citaGuardada.getId());
-        reservaDTO.setIdsDisponibilidad(dto.getIdsDisponibilidad());
+        // 4. Reservar en Agendamiento (Llamada al Microservicio)
+        // Preparamos el DTO con el ID de la cita recién creada
+        OcupacionRequestDTO reservaDTO = OcupacionRequestDTO.builder()
+                .veterinarioId(dto.getVeterinarianId())
+                .fechaInicio(fechaInicio)
+                .fechaFin(fechaFin)
+                .tipo("CITA") // Coincide con el Enum en el otro servicio
+                .referenciaExternaId(citaGuardada.getId()) // ¡Clave para poder cancelar luego!
+                .observacion("Cita para mascota ID: " + dto.getPetId())
+                .build();
 
         try {
-            agendamientoClient.reservarSlots(reservaDTO).block();
-            log.info("Slots reservados exitosamente para Cita ID: {}", citaGuardada.getId());
+            // Llamada síncrona (block) para asegurar que la reserva sea exitosa antes de confirmar
+            agendamientoClient.reservarEspacio(reservaDTO).block();
+            log.info("Espacio reservado exitosamente en agendamiento para Cita ID: {}", citaGuardada.getId());
         } catch (Exception e) {
-            log.error("Error al reservar slots. Revirtiendo creación de cita.", e);
-            throw new IllegalStateException("No se pudieron reservar los slots. Intente de nuevo.", e);
+            log.error("Error al reservar espacio en agenda. Revirtiendo creación de cita.", e);
+            // Si falla la reserva (ej: horario ocupado), borramos la cita local para mantener consistencia (Compensación simple)
+            citaRepository.deleteById(citaGuardada.getId());
+            throw new IllegalStateException("El horario seleccionado ya no está disponible o no es válido.", e);
+        }
+
+        try {
+            enviarNotificacionConfirmacion(citaGuardada, usuarioId);
+        } catch (Exception e) {
+            log.warn("La cita se creó pero falló el envío de notificación: {}", e.getMessage());
         }
 
         return mapper.mapToResponseDTO(citaGuardada);
-    }
-
-    // Validar que los slots sean consistentes y consecutivos
-    private void validarConsistenciaDeSlots(List<DisponibilidadClienteDTO> slots, ServicioClienteDTO servicio, Long vetIdRequest) {
-        if (slots == null || slots.isEmpty()) {
-            throw new IllegalArgumentException("La lista de slots no puede estar vacía.");
-        }
-        for (DisponibilidadClienteDTO slot : slots) {
-            if (!slot.getVeterinarioId().equals(vetIdRequest)) {
-                throw new IllegalArgumentException("Todos los slots deben pertenecer al veterinario solicitado.");
-            }
-            if (!"DISPONIBLE".equals(slot.getEstado())) {
-                throw new IllegalStateException("El slot " + slot.getId() + " ya no está disponible.");
-            }
-        }
-        int duracionSlot = 30;
-        int slotsNecesarios = servicio.getDuracionPromedioMinutos() / duracionSlot;
-        if (slots.size() != slotsNecesarios) {
-            throw new IllegalArgumentException("Número de slots incorrecto. El servicio requiere " +
-                    servicio.getDuracionPromedioMinutos() + " min (" + slotsNecesarios + " slots), pero se enviaron " + slots.size());
-        }
-        slots.sort(Comparator.comparing(DisponibilidadClienteDTO::getFechaHoraInicio));
-        for (int i = 0; i < slots.size() - 1; i++) {
-            LocalDateTime finSlotActual = slots.get(i).getFechaHoraFin();
-            LocalDateTime inicioSlotSiguiente = slots.get(i+1).getFechaHoraInicio();
-            if (!finSlotActual.equals(inicioSlotSiguiente)) {
-                throw new IllegalArgumentException("Los slots seleccionados no son consecutivos.");
-            }
-        }
-        log.info("Validación de slots exitosa.");
     }
 
     // Actualizar cita
@@ -163,22 +154,31 @@ public class CitaServiceImpl implements ICitaService {
         return updateDTO;
     }
 
-    // Cancelar cita
     @Override
     @Transactional
     public void deleteCita(Long id) {
-        log.warn("Cancelando Cita ID: {}", id);
+        log.warn("Iniciando cancelación de Cita ID: {}", id);
+
+        // 1. Buscamos la cita localmente
         Cita cita = findCitaByIdPrivado(id);
-        // Cambiar estado a CANCELADA
+
+        // 2. Cambiamos su estado a CANCELADA (No la borramos físicamente para historial)
         cita.setEstado(EstadoCita.CANCELADA);
         citaRepository.save(cita);
 
-        // Liberar slots en el servicio de agendamiento
+        // 3. Liberar el espacio en el microservicio de Agendamiento
+        // Esto borrará la "cajita de color" (OcupacionAgenda) del calendario del veterinario.
         try {
-            agendamientoClient.liberarSlots(cita.getId()).block();
-            log.info("Slots liberados para Cita cancelada ID: {}", id);
+            // Llamamos al nuevo endpoint '/interno/liberar/{referenciaId}'
+            agendamientoClient.liberarEspacio(cita.getId()).block();
+            log.info("Agenda liberada exitosamente para la Cita cancelada ID: {}", id);
+
         } catch (Exception e) {
-            log.error("¡ERROR CRÍTICO! No se pudieron liberar los slots para la Cita ID: {}", id, e);
+            // Manejo de consistencia eventual:
+            // Si el servicio de agendamiento falla, logueamos el error grave.
+            // (En un sistema ideal, esto enviaría un evento a una cola "Dead Letter" para reintentar luego)
+            log.error("¡ALERTA DE CONSISTENCIA! La cita {} se canceló localmente, pero falló la liberación de agenda en el servicio remoto. Error: {}", id, e.getMessage());
+
         }
     }
 
@@ -222,5 +222,41 @@ public class CitaServiceImpl implements ICitaService {
         return citasDelDia.stream()
                 .map(mapper::mapToResponseDTO)
                 .toList();
+    }
+
+
+    private void enviarNotificacionConfirmacion(Cita cita, Long usuarioId) {
+        // 1. Obtener datos del Dueño (Síncrono/Bloqueante para simplificar el flujo)
+        UsuarioClienteDTO usuario = authClient.obtenerUsuarioPorId(usuarioId).block();
+
+        // 2. Obtener nombre de la Mascota (Best effort)
+        String nombreMascota = "Tu Mascota";
+        try {
+            MascotaClienteDTO mascota = mascotaClient.findMascotaById(cita.getPetId()).block();
+            if (mascota != null) {
+                nombreMascota = "Mascota ID: " + cita.getPetId(); // Fallback si el DTO no tiene nombre
+            }
+        } catch (Exception e) {
+            log.warn("No se pudo obtener nombre de mascota para notificación");
+        }
+
+        if (usuario != null) {
+            // 3. Construir Payload para el Email
+            Map<String, String> payload = new HashMap<>();
+            payload.put("correo", usuario.getCorreo());
+            payload.put("nombreDuenio", usuario.getNombre() + " " + usuario.getApellido());
+            payload.put("nombreMascota", nombreMascota);
+            payload.put("fecha", cita.getFechaHoraInicio().toString().replace("T", " "));
+            payload.put("medico", "Dr. ID " + cita.getVeterinarianId()); // Ideal: Buscar nombre del vet también
+
+            // 4. Enviar evento
+            NotificationRequestDTO notificacion = new NotificationRequestDTO(
+                    NotificationType.CITA_CONFIRMACION,
+                    payload
+            );
+
+            kafkaProducer.enviarNotificacion(notificacion);
+            log.info("Solicitud de notificación enviada para Cita ID: {}", cita.getId());
+        }
     }
 }
