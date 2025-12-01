@@ -34,4 +34,6 @@ public interface ICitaService {
 
     CitaDetailDTO getCitaDetailById(Long id);
 
+    List<CitaDetailDTO> getAllCitasDetails();
+
 }

@@ -71,5 +71,10 @@ public class CitaController {
     public ResponseEntity<CitaDetailDTO> getCitaDetail(@PathVariable Long id) {
         return ResponseEntity.ok(citaService.getCitaDetailById(id));
     }
+
+    @GetMapping("/details")
+    public ResponseEntity<List<CitaDetailDTO>> obtenerTodasLasCitasDetalladas() {
+        return ResponseEntity.ok(citaService.getAllCitasDetails());
+    }
     
 }

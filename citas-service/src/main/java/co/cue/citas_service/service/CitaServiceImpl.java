@@ -277,4 +277,14 @@ public class CitaServiceImpl implements ICitaService {
         // Usamos un nuevo método en el mapper para este DTO
         return mapper.mapToDetailDTO(cita);
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CitaDetailDTO> getAllCitasDetails() {
+        log.info("Consultando el reporte detallado de todas las citas...");
+        return citaRepository.findAll().stream()
+                // Usamos el método 'mapToDetailDTO' que escribiste manualmente en el Mapper
+                .map(mapper::mapToDetailDTO)
+                .toList();
+    }
 }
