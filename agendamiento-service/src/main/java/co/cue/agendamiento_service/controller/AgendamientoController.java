@@ -105,6 +105,12 @@ public class AgendamientoController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/jornada/masiva")
+    @PreAuthorize("hasAnyRole('ADMIN', 'VETERINARIO')")
+    public ResponseEntity<List<JornadaLaboralResponseDTO>> crearJornadasMasivas(@RequestBody JornadaMasivaRequestDTO dto) {
+        return ResponseEntity.ok(agendamientoService.crearJornadasMasivas(dto));
+    }
+
 
 
 }

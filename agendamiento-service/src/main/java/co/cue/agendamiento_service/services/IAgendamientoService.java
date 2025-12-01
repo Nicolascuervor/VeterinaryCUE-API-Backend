@@ -47,4 +47,6 @@ public interface IAgendamientoService {
      * Cambia el estado (Activo/Inactivo) de una jornada laboral específica.
      */
     void cambiarEstadoJornada(Long id, boolean activa);
+
+    List<JornadaLaboralResponseDTO> crearJornadasMasivas(JornadaMasivaRequestDTO dto);
 }

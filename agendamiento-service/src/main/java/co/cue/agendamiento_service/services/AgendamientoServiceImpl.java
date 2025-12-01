@@ -169,4 +169,39 @@ public class AgendamientoServiceImpl implements IAgendamientoService {
         jornada.setActiva(activa);
         jornadaRepository.save(jornada);
     }
+
+
+    @Override
+    @Transactional
+    public List<JornadaLaboralResponseDTO> crearJornadasMasivas(JornadaMasivaRequestDTO dto) {
+        // Validamos que vengan días
+        if (dto.getDiasSeleccionados() == null || dto.getDiasSeleccionados().isEmpty()) {
+            throw new IllegalArgumentException("Debe seleccionar al menos un día de la semana.");
+        }
+
+        // Iteramos sobre cada día seleccionado y aplicamos la configuración
+        List<JornadaLaboral> jornadasGuardadas = dto.getDiasSeleccionados().stream().map(dia -> {
+
+            // 1. Buscamos si ya existe configuración para ese día y ese vet
+            JornadaLaboral jornada = jornadaRepository
+                    .findByVeterinarioIdAndDiaSemana(dto.getVeterinarioId(), dia)
+                    .orElse(new JornadaLaboral());
+
+            // 2. Actualizamos/Seteamos los valores
+            jornada.setVeterinarioId(dto.getVeterinarioId());
+            jornada.setDiaSemana(dia);
+            jornada.setHoraInicioJornada(dto.getHoraInicioJornada());
+            jornada.setHoraFinJornada(dto.getHoraFinJornada());
+            jornada.setHoraInicioDescanso(dto.getHoraInicioDescanso());
+            jornada.setHoraFinDescanso(dto.getHoraFinDescanso());
+            jornada.setActiva(true); // Al crear masivamente, asumimos que se activan
+
+            return jornadaRepository.save(jornada);
+        }).toList();
+
+        // 3. Retornamos la lista convertida a DTOs
+        return jornadasGuardadas.stream()
+                .map(mapper::toJornadaResponseDTO)
+                .toList();
+    }
 }
