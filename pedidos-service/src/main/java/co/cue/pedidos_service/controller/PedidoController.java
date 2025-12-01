@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/pedidos")
 // Genera un constructor con todos los atributos necesarios (Lombok)
 @AllArgsConstructor
+@CrossOrigin(origins = {"http://localhost:3000", "http://127.0.0.1:5500", "*"}) // Configuración CORS local específica para este controlador
 public class PedidoController {
     // Servicio encargado de manejar la lógica del módulo de pedidos
     private final IPedidoService pedidoService;

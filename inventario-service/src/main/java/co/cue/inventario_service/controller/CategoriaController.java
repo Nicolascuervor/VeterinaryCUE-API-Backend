@@ -12,6 +12,7 @@ import java.util.List;
 @RestController // Indica que esta clase expone endpoints REST
 @RequestMapping("/api/inventario/categorias") // Ruta base para las categorías
 @AllArgsConstructor // Genera un constructor con los atributos final
+@CrossOrigin(origins = {"http://localhost:3000", "http://127.0.0.1:5500", "*"}) // Configuración CORS local específica para este controlador
 public class CategoriaController {
 
     // Servicio encargado de la lógica de negocio de categorías

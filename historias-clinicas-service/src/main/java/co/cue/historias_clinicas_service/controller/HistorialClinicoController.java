@@ -16,6 +16,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/historial-clinico")
 @AllArgsConstructor
+@CrossOrigin(origins = {"http://localhost:3000", "http://127.0.0.1:5500", "*"}) // Configuración CORS local específica para este controlador
 public class HistorialClinicoController {
 
     private final IHistorialClinicoService historialClinicoService;

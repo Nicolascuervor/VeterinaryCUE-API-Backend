@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController // Expone endpoints REST para los kits
 @RequestMapping("/api/inventario/kits") // Ruta base para las operaciones de kits
 @AllArgsConstructor // Genera un constructor con los atributos final
+@CrossOrigin(origins = {"http://localhost:3000", "http://127.0.0.1:5500", "*"}) // Configuración CORS local específica para este controlador
 public class KitController {
 
     // Servicio encargado de ensamblar kits de bienvenida
