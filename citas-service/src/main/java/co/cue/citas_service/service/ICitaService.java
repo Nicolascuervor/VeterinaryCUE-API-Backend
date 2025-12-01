@@ -29,4 +29,6 @@ public interface ICitaService {
     // Obtener todas las citas de un día específico
     List<CitaResponseDTO> findCitasDelDia(LocalDate fecha);
 
+    List<CitaResponseDTO> getAllCitas();
+
 }

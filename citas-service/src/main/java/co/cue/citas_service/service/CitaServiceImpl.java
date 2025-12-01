@@ -259,4 +259,13 @@ public class CitaServiceImpl implements ICitaService {
             log.info("Solicitud de notificación enviada para Cita ID: {}", cita.getId());
         }
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CitaResponseDTO> getAllCitas() {
+        log.info("Consultando todas las citas registradas en el sistema");
+        return citaRepository.findAll().stream()
+                .map(mapper::mapToResponseDTO)
+                .toList();
+    }
 }

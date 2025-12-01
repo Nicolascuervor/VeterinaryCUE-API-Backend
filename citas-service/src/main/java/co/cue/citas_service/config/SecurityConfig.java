@@ -30,7 +30,7 @@ public class SecurityConfig {
     private static final String DUENIO_ROLE = "DUEÑO";
 
     // Ruta base del API de citas
-    private static final String CITAS_API_PATH = "/api/cita/**";
+    private static final String CITAS_API_PATH = "/api/citas/**";
 
     // Llave secreta para validar los JWT
     @Value("${jwt.secret.key}") //

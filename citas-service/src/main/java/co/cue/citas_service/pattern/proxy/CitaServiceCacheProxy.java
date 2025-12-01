@@ -97,4 +97,10 @@ public class CitaServiceCacheProxy implements ICitaService {
         cache.put(hoy, citasReales);
         return citasReales;
     }
+
+    @Override
+    public List<CitaResponseDTO> getAllCitas() {
+        log.debug("PROXY CACHE: (Bypass) Delegando solicitud de 'todas las citas' al servicio real.");
+        return realService.getAllCitas();
+    }
 }

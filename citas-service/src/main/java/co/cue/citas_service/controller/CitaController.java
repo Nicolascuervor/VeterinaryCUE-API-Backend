@@ -59,5 +59,10 @@ public class CitaController {
         List<CitaResponseDTO> citas = citaService.findCitasDelDia(fecha);
         return ResponseEntity.ok(citas);  // Retorna la lista de citas
     }
+
+    @GetMapping("/all")
+    public ResponseEntity<List<CitaResponseDTO>> obtenerTodasLasCitas() {
+        return ResponseEntity.ok(citaService.getAllCitas());
+    }
     
 }
