@@ -70,6 +70,16 @@ public class AgendamientoController {
         return ResponseEntity.ok(agendamientoService.obtenerJornadasPorVeterinario(veterinarioId));
     }
 
+
+    @PatchMapping("/jornada/{jornadaId}/estado")
+    @PreAuthorize("hasAnyRole('ADMIN', 'VETERINARIO')")
+    public ResponseEntity<Void> cambiarEstadoJornada(
+            @PathVariable Long jornadaId,
+            @RequestParam boolean activa) {
+        agendamientoService.cambiarEstadoJornada(jornadaId, activa);
+        return ResponseEntity.ok().build();
+    }
+
     // ---------------------------------------------------
     // 4. API INTERNA (Para uso de citas-service)
     // ---------------------------------------------------
@@ -93,4 +103,7 @@ public class AgendamientoController {
         agendamientoService.eliminarOcupacionPorReferencia(referenciaId);
         return ResponseEntity.noContent().build();
     }
+
+
+
 }

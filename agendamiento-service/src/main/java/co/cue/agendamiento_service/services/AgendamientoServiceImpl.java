@@ -7,6 +7,7 @@ import co.cue.agendamiento_service.models.entities.dtos.*;
 import co.cue.agendamiento_service.models.entities.enums.TipoOcupacion;
 import co.cue.agendamiento_service.repository.JornadaLaboralRepository;
 import co.cue.agendamiento_service.repository.OcupacionAgendaRepository;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -152,5 +153,15 @@ public class AgendamientoServiceImpl implements IAgendamientoService {
         return jornadaRepository.findByVeterinarioIdAndActivaTrue(veterinarioId).stream()
                 .map(mapper::toJornadaResponseDTO)
                 .toList();
+    }
+
+
+    @Override
+    @Transactional
+    public void cambiarEstadoJornada(Long id, boolean activa) {
+        JornadaLaboral jornada = jornadaRepository.findById(id)
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Jornada no encontrada con ID: " + id));
+        jornada.setActiva(activa);
+        jornadaRepository.save(jornada);
     }
 }

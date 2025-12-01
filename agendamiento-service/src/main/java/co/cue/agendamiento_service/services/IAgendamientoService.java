@@ -42,4 +42,9 @@ public interface IAgendamientoService {
     void eliminarOcupacionPorReferencia(Long referenciaId);
 
     List<JornadaLaboralResponseDTO> obtenerJornadasPorVeterinario(Long veterinarioId);
+
+    /**
+     * Cambia el estado (Activo/Inactivo) de una jornada laboral específica.
+     */
+    void cambiarEstadoJornada(Long id, boolean activa);
 }
