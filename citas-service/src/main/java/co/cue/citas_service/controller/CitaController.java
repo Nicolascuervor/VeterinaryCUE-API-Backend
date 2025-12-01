@@ -1,5 +1,6 @@
 package co.cue.citas_service.controller;
 
+import co.cue.citas_service.dtos.CitaDetailDTO;
 import co.cue.citas_service.dtos.CitaRequestDTO;
 import co.cue.citas_service.dtos.CitaResponseDTO;
 import co.cue.citas_service.dtos.CitaUpdateDTO;
@@ -64,6 +65,11 @@ public class CitaController {
     @GetMapping("/all")
     public ResponseEntity<List<CitaResponseDTO>> obtenerTodasLasCitas() {
         return ResponseEntity.ok(citaService.getAllCitas());
+    }
+
+    @GetMapping("/{id}/detail")
+    public ResponseEntity<CitaDetailDTO> getCitaDetail(@PathVariable Long id) {
+        return ResponseEntity.ok(citaService.getCitaDetailById(id));
     }
     
 }

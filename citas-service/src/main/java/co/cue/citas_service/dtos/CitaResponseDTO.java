@@ -5,6 +5,8 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+
 @Getter
 @Setter
 public class CitaResponseDTO {
@@ -32,4 +34,6 @@ public class CitaResponseDTO {
 
     // Estado de la cita
     private EstadoCita estado;
+
+    private LocalDateTime fechaHoraInicio;
 }

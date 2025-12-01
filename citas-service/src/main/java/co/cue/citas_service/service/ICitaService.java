@@ -1,5 +1,6 @@
 package co.cue.citas_service.service;
 
+import co.cue.citas_service.dtos.CitaDetailDTO;
 import co.cue.citas_service.dtos.CitaRequestDTO;
 import co.cue.citas_service.dtos.CitaResponseDTO;
 import co.cue.citas_service.dtos.CitaUpdateDTO;
@@ -30,5 +31,7 @@ public interface ICitaService {
     List<CitaResponseDTO> findCitasDelDia(LocalDate fecha);
 
     List<CitaResponseDTO> getAllCitas();
+
+    CitaDetailDTO getCitaDetailById(Long id);
 
 }

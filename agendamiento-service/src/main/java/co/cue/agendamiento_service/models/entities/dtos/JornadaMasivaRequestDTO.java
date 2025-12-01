@@ -14,12 +14,9 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class JornadaMasivaRequestDTO {
-
     private Long veterinarioId;
-
     // La lista de días a los que se aplicará este horario (Ej: MONDAY, TUESDAY...)
     private List<DayOfWeek> diasSeleccionados;
-
     private LocalTime horaInicioJornada;
     private LocalTime horaFinJornada;
     private LocalTime horaInicioDescanso;

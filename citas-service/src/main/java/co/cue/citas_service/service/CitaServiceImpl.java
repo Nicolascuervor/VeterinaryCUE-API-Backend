@@ -268,4 +268,13 @@ public class CitaServiceImpl implements ICitaService {
                 .map(mapper::mapToResponseDTO)
                 .toList();
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public CitaDetailDTO getCitaDetailById(Long id) {
+        Cita cita = findCitaByIdPrivado(id); // Reutilizamos tu método privado
+
+        // Usamos un nuevo método en el mapper para este DTO
+        return mapper.mapToDetailDTO(cita);
+    }
 }

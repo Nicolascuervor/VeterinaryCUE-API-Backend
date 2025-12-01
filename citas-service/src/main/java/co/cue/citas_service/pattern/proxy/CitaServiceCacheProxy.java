@@ -1,4 +1,5 @@
 package co.cue.citas_service.pattern.proxy;
+import co.cue.citas_service.dtos.CitaDetailDTO;
 import co.cue.citas_service.dtos.CitaRequestDTO;
 import co.cue.citas_service.dtos.CitaResponseDTO;
 import co.cue.citas_service.dtos.CitaUpdateDTO;
@@ -9,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -103,4 +105,12 @@ public class CitaServiceCacheProxy implements ICitaService {
         log.debug("PROXY CACHE: (Bypass) Delegando solicitud de 'todas las citas' al servicio real.");
         return realService.getAllCitas();
     }
+
+
+    @Override
+    public CitaDetailDTO getCitaDetailById(Long id) {
+        log.debug("PROXY CACHE: (Bypass) Solicitando detalle clínico fresco al servicio real para Cita ID: {}", id);
+        return realService.getCitaDetailById(id);
+    }
+
 }

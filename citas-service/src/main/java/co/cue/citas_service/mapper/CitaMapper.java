@@ -1,4 +1,5 @@
 package co.cue.citas_service.mapper;
+import co.cue.citas_service.dtos.CitaDetailDTO;
 import co.cue.citas_service.dtos.CitaResponseDTO;
 import co.cue.citas_service.dtos.CitaUpdateDTO;
 import co.cue.citas_service.entity.Cita;
@@ -34,6 +35,8 @@ public class CitaMapper {
         dto.setObservaciones(cita.getObservaciones());
         dto.setEstadoGeneral(cita.getEstadoGeneralMascota());
         dto.setEstado(cita.getEstado());
+        dto.setFechaHoraInicio(cita.getFechaHoraInicio());
+
         return dto;
     }
 
@@ -57,4 +60,41 @@ public class CitaMapper {
                 .proximaCita(cita.getProximaCita())
                 .build();
     }
+
+    public CitaDetailDTO mapToDetailDTO(Cita cita) {
+        CitaDetailDTO dto = new CitaDetailDTO();
+
+        // Datos Base
+        dto.setId(cita.getId());
+        dto.setDuenioId(cita.getDuenioId());
+        dto.setPetId(cita.getPetId());
+        dto.setVeterinarianId(cita.getVeterinarianId());
+        dto.setServicioId(cita.getServicioId());
+        dto.setFechaHoraInicio(cita.getFechaHoraInicio()); // ¡Con hora!
+        dto.setEstado(cita.getEstado());
+        dto.setNombreServicio(cita.getNombreServicio());
+        dto.setPrecioServicio(cita.getPrecioServicio());
+
+        // Datos Clínicos (Pueden ser null al inicio, no pasa nada)
+        dto.setMotivoConsulta(cita.getMotivoConsulta());
+        dto.setEstadoGeneralMascota(cita.getEstadoGeneralMascota());
+        // Convertimos BigDecimal a Double si es necesario, o mantenemos BigDecimal en el DTO
+        // Asumiendo que en CitaDetailDTO usaste Double para peso/temp:
+        dto.setPeso(cita.getPeso() != null ? cita.getPeso().doubleValue() : null);
+        dto.setTemperatura(cita.getTemperatura() != null ? cita.getTemperatura().doubleValue() : null);
+
+        dto.setFrecuenciaCardiaca(cita.getFrecuenciaCardiaca());
+        dto.setFrecuenciaRespiratoria(cita.getFrecuenciaRespiratoria());
+        dto.setDiagnostico(cita.getDiagnostico());
+        dto.setTratamiento(cita.getTratamiento());
+        dto.setMedicamentosRecetados(cita.getMedicamentosRecetados());
+        dto.setObservaciones(cita.getObservaciones());
+        dto.setExamenesRealizados(cita.getExamenesRealizados());
+
+        return dto;
+    }
+
+
+
+
 }
