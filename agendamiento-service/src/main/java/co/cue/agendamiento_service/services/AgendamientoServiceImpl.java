@@ -150,7 +150,12 @@ public class AgendamientoServiceImpl implements IAgendamientoService {
     @Override
     @Transactional(readOnly = true)
     public List<JornadaLaboralResponseDTO> obtenerJornadasPorVeterinario(Long veterinarioId) {
-        return jornadaRepository.findByVeterinarioIdAndActivaTrue(veterinarioId).stream()
+
+        List<JornadaLaboral> jornadas = jornadaRepository.findAllByVeterinarioId(veterinarioId);
+
+        return jornadas.stream()
+                // MEJORA DE UX: Ordenar los días de la semana (Lunes a Domingo)
+                .sorted((j1, j2) -> j1.getDiaSemana().compareTo(j2.getDiaSemana()))
                 .map(mapper::toJornadaResponseDTO)
                 .toList();
     }

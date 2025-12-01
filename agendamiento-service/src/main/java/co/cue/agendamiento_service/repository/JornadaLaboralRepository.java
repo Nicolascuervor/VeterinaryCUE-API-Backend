@@ -29,4 +29,6 @@ public interface JornadaLaboralRepository extends JpaRepository<JornadaLaboral, 
      * @return Lista de jornadas activas del veterinario
      */
     List<JornadaLaboral> findByVeterinarioIdAndActivaTrue(Long veterinarioId);
+
+    List<JornadaLaboral> findAllByVeterinarioId(Long veterinarioId);
 }
