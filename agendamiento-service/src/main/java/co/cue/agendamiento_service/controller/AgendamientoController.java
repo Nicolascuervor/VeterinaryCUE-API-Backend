@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
+import java.util.List;
 
 
 @RestController
@@ -60,6 +61,13 @@ public class AgendamientoController {
     public ResponseEntity<OcupacionResponseDTO> crearBloqueoManual(@RequestBody OcupacionRequestDTO dto) {
         // Forzamos el tipo si viene nulo, o validamos que no sea CITA (eso va por otro lado)
         return ResponseEntity.ok(agendamientoService.crearOcupacion(dto));
+    }
+
+
+    @GetMapping("/jornada/veterinario/{veterinarioId}")
+    @PreAuthorize("isAuthenticated()") // Visible para todos los logueados
+    public ResponseEntity<List<JornadaLaboralResponseDTO>> obtenerJornadasPorVeterinario(@PathVariable Long veterinarioId) {
+        return ResponseEntity.ok(agendamientoService.obtenerJornadasPorVeterinario(veterinarioId));
     }
 
     // ---------------------------------------------------

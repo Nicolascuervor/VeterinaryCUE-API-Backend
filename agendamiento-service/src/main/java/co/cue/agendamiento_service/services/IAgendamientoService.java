@@ -9,6 +9,7 @@ import java.time.LocalDate;
 import co.cue.agendamiento_service.models.entities.dtos.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public interface IAgendamientoService {
 
@@ -39,4 +40,6 @@ public interface IAgendamientoService {
      * Libera un espacio (ej: al cancelar una cita).
      */
     void eliminarOcupacionPorReferencia(Long referenciaId);
+
+    List<JornadaLaboralResponseDTO> obtenerJornadasPorVeterinario(Long veterinarioId);
 }

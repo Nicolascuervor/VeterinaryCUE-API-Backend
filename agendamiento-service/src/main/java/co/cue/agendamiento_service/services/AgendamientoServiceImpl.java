@@ -145,4 +145,12 @@ public class AgendamientoServiceImpl implements IAgendamientoService {
     public void eliminarOcupacionPorReferencia(Long referenciaId) {
         ocupacionRepository.deleteByReferenciaExternaIdAndTipo(referenciaId, TipoOcupacion.CITA);
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<JornadaLaboralResponseDTO> obtenerJornadasPorVeterinario(Long veterinarioId) {
+        return jornadaRepository.findByVeterinarioIdAndActivaTrue(veterinarioId).stream()
+                .map(mapper::toJornadaResponseDTO)
+                .toList();
+    }
 }
