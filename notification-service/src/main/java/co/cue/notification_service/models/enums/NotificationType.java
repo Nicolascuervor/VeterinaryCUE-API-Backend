@@ -37,7 +37,36 @@ public enum NotificationType {
      */
     FACTURA,
 
-    CITA_CONFIRMACION
+    CITA_CONFIRMACION,
 
+    /**
+     * Estrategia para notificar cuando se crea una nueva mascota para un cliente.
+     * Requiere un payload con "correo", "nombreDuenio", "nombreMascota", "especie", "raza".
+     */
+    MASCOTA_CREADA,
+
+    /**
+     * Estrategia para notificar cuando una cita es cancelada.
+     * Requiere un payload con "correo", "nombreDuenio", "nombreMascota", "fecha", "motivo".
+     */
+    CITA_CANCELADA,
+
+    /**
+     * Estrategia para notificar cuando una cita comienza (estado EN_PROGRESO).
+     * Requiere un payload con "correo", "nombreDuenio", "nombreMascota", "fecha", "medico".
+     */
+    CITA_EN_PROGRESO,
+
+    /**
+     * Estrategia para notificar cuando una cita es finalizada.
+     * Requiere un payload con "correo", "nombreDuenio", "nombreMascota", "fecha", "medico".
+     */
+    CITA_FINALIZADA,
+
+    /**
+     * Estrategia para notificar cuando un paciente no asistió a la cita.
+     * Requiere un payload con "correo", "nombreDuenio", "nombreMascota", "fecha".
+     */
+    CITA_NO_ASISTIO
 
 }

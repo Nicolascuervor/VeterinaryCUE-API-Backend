@@ -109,11 +109,142 @@ public class EmailService {
                     "Veterinario: " + medico + "\n" +
                     "Fecha y Hora: " + fecha + "\n\n" +
                     "Por favor llega 10 minutos antes.");
-
+            
             mailSender.send(message);
             log.info("Correo de cita enviado.");
         } catch (Exception e) {
             log.error("Error enviando correo de cita: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Envía un correo al cliente cuando se registra una nueva mascota en el sistema.
+     */
+    public void enviarNotificacionMascotaCreada(String correo, String nombreDuenio, String nombreMascota, String especie, String raza) {
+        log.info("Enviando notificación de mascota creada a {}", correo);
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(NO_EMAIL);
+            message.setTo(correo);
+            message.setSubject("Nueva Mascota Registrada - Veterinaria CUE");
+            message.setText(SALUDO + nombreDuenio + ",\n\n" +
+                    "¡Felicidades! Tu mascota ha sido registrada exitosamente en nuestro sistema.\n\n" +
+                    "Detalles de tu mascota:\n" +
+                    "Nombre: " + nombreMascota + "\n" +
+                    "Especie: " + especie + "\n" +
+                    (raza != null && !raza.isEmpty() ? "Raza: " + raza + "\n" : "") +
+                    "\n" +
+                    "Ahora puedes agendar citas para " + nombreMascota + " desde tu cuenta.\n\n" +
+                    "¡Gracias por confiar en nosotros!");
+            
+            mailSender.send(message);
+            log.info("Correo de mascota creada enviado exitosamente.");
+        } catch (Exception e) {
+            log.error("Error enviando correo de mascota creada: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Envía un correo cuando una cita es cancelada.
+     */
+    public void enviarNotificacionCitaCancelada(String correo, String nombreDuenio, String nombreMascota, String fecha, String motivo) {
+        log.info("Enviando notificación de cita cancelada a {}", correo);
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(NO_EMAIL);
+            message.setTo(correo);
+            message.setSubject("Cita Cancelada - Veterinaria CUE");
+            message.setText(SALUDO + nombreDuenio + ",\n\n" +
+                    "Te informamos que tu cita ha sido cancelada.\n\n" +
+                    "Detalles de la cita cancelada:\n" +
+                    "Mascota: " + nombreMascota + "\n" +
+                    "Fecha y Hora: " + fecha + "\n" +
+                    (motivo != null && !motivo.isEmpty() ? "Motivo: " + motivo + "\n" : "") +
+                    "\n" +
+                    "Si deseas reagendar, puedes hacerlo desde tu cuenta o contactándonos.\n\n" +
+                    "Lamentamos cualquier inconveniente.");
+            
+            mailSender.send(message);
+            log.info("Correo de cita cancelada enviado exitosamente.");
+        } catch (Exception e) {
+            log.error("Error enviando correo de cita cancelada: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Envía un correo cuando una cita comienza (estado EN_PROGRESO).
+     */
+    public void enviarNotificacionCitaEnProgreso(String correo, String nombreDuenio, String nombreMascota, String fecha, String medico) {
+        log.info("Enviando notificación de cita en progreso a {}", correo);
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(NO_EMAIL);
+            message.setTo(correo);
+            message.setSubject("Cita en Progreso - Veterinaria CUE");
+            message.setText(SALUDO + nombreDuenio + ",\n\n" +
+                    "Tu cita ha comenzado.\n\n" +
+                    "Detalles:\n" +
+                    "Mascota: " + nombreMascota + "\n" +
+                    "Veterinario: " + medico + "\n" +
+                    "Fecha y Hora: " + fecha + "\n\n" +
+                    "Tu mascota está siendo atendida. Te mantendremos informado sobre el progreso.");
+            
+            mailSender.send(message);
+            log.info("Correo de cita en progreso enviado exitosamente.");
+        } catch (Exception e) {
+            log.error("Error enviando correo de cita en progreso: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Envía un correo cuando una cita es finalizada.
+     */
+    public void enviarNotificacionCitaFinalizada(String correo, String nombreDuenio, String nombreMascota, String fecha, String medico) {
+        log.info("Enviando notificación de cita finalizada a {}", correo);
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(NO_EMAIL);
+            message.setTo(correo);
+            message.setSubject("Cita Finalizada - Veterinaria CUE");
+            message.setText(SALUDO + nombreDuenio + ",\n\n" +
+                    "Tu cita ha sido finalizada exitosamente.\n\n" +
+                    "Detalles:\n" +
+                    "Mascota: " + nombreMascota + "\n" +
+                    "Veterinario: " + medico + "\n" +
+                    "Fecha y Hora: " + fecha + "\n\n" +
+                    "El historial clínico de " + nombreMascota + " ha sido actualizado. " +
+                    "Puedes revisarlo desde tu cuenta.\n\n" +
+                    "¡Gracias por confiar en nosotros!");
+            
+            mailSender.send(message);
+            log.info("Correo de cita finalizada enviado exitosamente.");
+        } catch (Exception e) {
+            log.error("Error enviando correo de cita finalizada: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Envía un correo cuando un paciente no asistió a la cita.
+     */
+    public void enviarNotificacionCitaNoAsistio(String correo, String nombreDuenio, String nombreMascota, String fecha) {
+        log.info("Enviando notificación de no asistencia a {}", correo);
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(NO_EMAIL);
+            message.setTo(correo);
+            message.setSubject("Cita No Asistida - Veterinaria CUE");
+            message.setText(SALUDO + nombreDuenio + ",\n\n" +
+                    "Te informamos que se registró que no asististe a tu cita programada.\n\n" +
+                    "Detalles de la cita:\n" +
+                    "Mascota: " + nombreMascota + "\n" +
+                    "Fecha y Hora: " + fecha + "\n\n" +
+                    "Si deseas reagendar, puedes hacerlo desde tu cuenta o contactándonos.\n\n" +
+                    "Recuerda que es importante avisar con anticipación si no puedes asistir.");
+            
+            mailSender.send(message);
+            log.info("Correo de no asistencia enviado exitosamente.");
+        } catch (Exception e) {
+            log.error("Error enviando correo de no asistencia: {}", e.getMessage());
         }
     }
 }

@@ -1,7 +1,10 @@
 package co.cue.mascotas_service.service;
 
+import co.cue.mascotas_service.client.AuthServiceClient;
 import co.cue.mascotas_service.dto.MascotaRequestDTO;
 import co.cue.mascotas_service.dto.MascotaResponseDTO;
+import co.cue.mascotas_service.dto.NotificationRequestDTO;
+import co.cue.mascotas_service.dto.NotificationType;
 import co.cue.mascotas_service.exceptions.MascotaNotFoundException;
 import co.cue.mascotas_service.model.Mascota;
 import co.cue.mascotas_service.repository.MascotaRepository;
@@ -11,7 +14,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.Period;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -19,6 +24,8 @@ import java.util.List;
 public class MascotaService {
 
     private final MascotaRepository mascotaRepository;
+    private final KafkaProducerService kafkaProducer;
+    private final AuthServiceClient authClient;
     // ------------------------------------------------------------
     //                      CREATE
     // ------------------------------------------------------------
@@ -41,7 +48,44 @@ public class MascotaService {
         Mascota savedMascota = mascotaRepository.save(mascota);
         log.info("Mascota creada exitosamente con ID: {}", savedMascota.getId());
 
+        // Enviar notificación al cliente
+        try {
+            enviarNotificacionMascotaCreada(savedMascota, requestDTO.getDuenioId());
+        } catch (Exception e) {
+            log.warn("La mascota se creó pero falló el envío de notificación: {}", e.getMessage());
+        }
+
         return mapToResponseDTO(savedMascota);
+    }
+
+    private void enviarNotificacionMascotaCreada(Mascota mascota, Long duenioId) {
+        try {
+            // Obtener datos del dueño
+            var usuario = authClient.obtenerUsuarioPorId(duenioId).block();
+            
+            if (usuario != null && usuario.getCorreo() != null) {
+                // Construir payload para el email
+                Map<String, String> payload = new HashMap<>();
+                payload.put("correo", usuario.getCorreo());
+                payload.put("nombreDuenio", usuario.getNombre() + " " + (usuario.getApellido() != null ? usuario.getApellido() : ""));
+                payload.put("nombreMascota", mascota.getNombre());
+                payload.put("especie", mascota.getEspecie());
+                payload.put("raza", mascota.getRaza() != null ? mascota.getRaza() : "");
+
+                // Enviar evento
+                NotificationRequestDTO notificacion = new NotificationRequestDTO(
+                        NotificationType.MASCOTA_CREADA,
+                        payload
+                );
+
+                kafkaProducer.enviarNotificacion(notificacion);
+                log.info("Solicitud de notificación enviada para Mascota ID: {}", mascota.getId());
+            } else {
+                log.warn("No se pudo obtener información del usuario para enviar notificación de mascota creada");
+            }
+        } catch (Exception e) {
+            log.error("Error al enviar notificación de mascota creada: {}", e.getMessage(), e);
+        }
     }
     // ------------------------------------------------------------
     //                      GET BY ID

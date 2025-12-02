@@ -130,6 +130,9 @@ public class CitaServiceImpl implements ICitaService {
         log.info("Actualizando cita ID: {}", id);
         Cita cita = findCitaByIdPrivado(id);
 
+        // Guardar el estado anterior para comparar
+        EstadoCita estadoAnterior = cita.getEstado();
+        
         // Manejar transición de estado usando patrón State
         if (updateDTO.getEstado() != null && updateDTO.getEstado() != cita.getEstado()) {
             log.debug("Intentando transición de estado: {} -> {}", cita.getEstado(), updateDTO.getEstado());
@@ -146,15 +149,26 @@ public class CitaServiceImpl implements ICitaService {
         // Actualizar campos de la cita
         mapper.updateEntityFromDTO(updateDTO, cita);
 
-        // Enviar evento si la cita se finalizó
-        if (cita.getEstado() == EstadoCita.FINALIZADA) {
-            log.info("Cita {} finalizada. Enviando evento a Kafka.", id);
-            CitaCompletadaEventDTO evento = mapper.mapToCitaCompletadaEvent(cita);
-            kafkaProducer.enviarCitaCompletada(evento);
-        }
-        // Guardar cambios
+        // Guardar cambios primero para tener la cita actualizada
         Cita citaActualizada = citaRepository.save(cita);
         mapper.updateEntityFromDTO(updateDTO, citaActualizada);
+
+        // Enviar evento si la cita se finalizó (para crear historial clínico)
+        if (citaActualizada.getEstado() == EstadoCita.FINALIZADA) {
+            log.info("Cita {} finalizada. Enviando evento a Kafka.", id);
+            CitaCompletadaEventDTO evento = mapper.mapToCitaCompletadaEvent(citaActualizada);
+            kafkaProducer.enviarCitaCompletada(evento);
+        }
+
+        // Enviar notificación al cliente si cambió el estado
+        if (estadoAnterior != citaActualizada.getEstado()) {
+            try {
+                enviarNotificacionCambioEstado(citaActualizada, estadoAnterior, citaActualizada.getDuenioId());
+            } catch (Exception e) {
+                log.warn("La cita se actualizó pero falló el envío de notificación: {}", e.getMessage());
+            }
+        }
+
         return updateDTO;
     }
 
@@ -228,6 +242,69 @@ public class CitaServiceImpl implements ICitaService {
                 .toList();
     }
 
+
+    private void enviarNotificacionCambioEstado(Cita cita, EstadoCita estadoAnterior, Long usuarioId) {
+        // Solo enviar notificación si el estado cambió y no es la primera confirmación
+        if (estadoAnterior == EstadoCita.CONFIRMADA && cita.getEstado() == EstadoCita.CONFIRMADA) {
+            // Ya se envió notificación de confirmación en createCita
+            return;
+        }
+
+        try {
+            // Obtener datos del Dueño
+            UsuarioClienteDTO usuario = authClient.obtenerUsuarioPorId(usuarioId).block();
+
+            // Obtener nombre de la Mascota
+            String nombreMascota = "Tu Mascota";
+            try {
+                MascotaClienteDTO mascota = mascotaClient.findMascotaById(cita.getPetId()).block();
+                if (mascota != null && mascota.getNombre() != null) {
+                    nombreMascota = mascota.getNombre();
+                }
+            } catch (Exception e) {
+                log.warn("No se pudo obtener nombre de mascota para notificación");
+            }
+
+            if (usuario != null && usuario.getCorreo() != null) {
+                Map<String, String> payload = new HashMap<>();
+                payload.put("correo", usuario.getCorreo());
+                payload.put("nombreDuenio", usuario.getNombre() + " " + (usuario.getApellido() != null ? usuario.getApellido() : ""));
+                payload.put("nombreMascota", nombreMascota);
+                payload.put("fecha", cita.getFechaHoraInicio().toString().replace("T", " "));
+                payload.put("medico", "Dr. ID " + cita.getVeterinarianId());
+
+                NotificationRequestDTO notificacion = null;
+                NotificationType tipoNotificacion = null;
+
+                // Determinar el tipo de notificación según el nuevo estado
+                switch (cita.getEstado()) {
+                    case CANCELADA -> {
+                        tipoNotificacion = NotificationType.CITA_CANCELADA;
+                        payload.put("motivo", cita.getObservaciones() != null ? cita.getObservaciones() : "Sin motivo especificado");
+                    }
+                    case EN_PROGRESO -> {
+                        tipoNotificacion = NotificationType.CITA_EN_PROGRESO;
+                    }
+                    case FINALIZADA -> {
+                        tipoNotificacion = NotificationType.CITA_FINALIZADA;
+                    }
+                    case NO_ASISTIO -> {
+                        tipoNotificacion = NotificationType.CITA_NO_ASISTIO;
+                    }
+                    default -> {
+                        log.debug("No se envía notificación para el estado: {}", cita.getEstado());
+                        return;
+                    }
+                }
+
+                notificacion = new NotificationRequestDTO(tipoNotificacion, payload);
+                kafkaProducer.enviarNotificacion(notificacion);
+                log.info("Notificación de cambio de estado enviada para Cita ID: {}, Estado: {}", cita.getId(), cita.getEstado());
+            }
+        } catch (Exception e) {
+            log.error("Error al enviar notificación de cambio de estado: {}", e.getMessage(), e);
+        }
+    }
 
     private void enviarNotificacionConfirmacion(Cita cita, Long usuarioId) {
         // 1. Obtener datos del Dueño (Síncrono/Bloqueante para simplificar el flujo)
