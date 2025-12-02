@@ -27,7 +27,7 @@ public class SecurityConfig {
     // Roles permitidos en el sistema
     private static final String ADMIN_ROLE = "ADMIN";
     private static final String VETERINARIO_ROLE = "VETERINARIO";
-    private static final String DUENIO_ROLE = "DUEÑO";
+    private static final String DUENIO_ROLE = "DUENIO";
 
     // Ruta base del API de citas
     private static final String CITAS_API_PATH = "/api/citas/**";
