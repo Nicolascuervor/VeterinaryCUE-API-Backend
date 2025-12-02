@@ -6,6 +6,7 @@ import co.cue.citas_service.dtos.CitaResponseDTO;
 import co.cue.citas_service.dtos.CitaUpdateDTO;
 import co.cue.citas_service.service.ICitaService;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +19,7 @@ import java.util.List;
 @RequestMapping("/api/citas") // Ruta base para todos los endpoints de citas
 @AllArgsConstructor // Inyecta las dependencias mediante constructor
 @CrossOrigin(origins = {"http://localhost:3000", "http://127.0.0.1:5500", "*"}) // Configuración CORS local específica para este controlador
+@Slf4j
 public class CitaController {
     private final ICitaService citaService;
 
@@ -32,12 +34,23 @@ public class CitaController {
     // Crear una nueva cita
     @PostMapping
     public ResponseEntity<CitaResponseDTO> crearCita(
-            @RequestBody CitaRequestDTO requestDTO,   // Datos de la cita
-            @RequestHeader(value = "X-Usuario-Id") Long usuarioId) { // <-- ¡LA SOLUCIÓN!
+            @RequestBody CitaRequestDTO requestDTO,
+            @RequestHeader(value = "X-Usuario-Id") Long usuarioId) {
+
+        // --- 3. IMPLEMENTACIÓN DEL LOG DE ENTRADA ---
+        log.info("🔔 [POST /api/citas] Solicitud recibida. Usuario (Header): {}, Mascota: {}, Veterinario: {}, Servicio: {}",
+                usuarioId,
+                requestDTO.getPetId(),
+                requestDTO.getVeterinarianId(),
+                requestDTO.getServicioId());
 
         // Llama al servicio para crear la cita
         CitaResponseDTO nuevaCita = citaService.createCita(requestDTO, usuarioId);
-        return new ResponseEntity<>(nuevaCita, HttpStatus.CREATED); // Retorna la cita creada con status 201
+
+        // (Opcional) Log de éxito
+        log.info("✅ Cita creada exitosamente. ID asignado: {}", nuevaCita.getId());
+
+        return new ResponseEntity<>(nuevaCita, HttpStatus.CREATED);
     }
 
     // Actualizar información de una cita existente
