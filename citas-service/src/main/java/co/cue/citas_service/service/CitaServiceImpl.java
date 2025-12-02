@@ -56,13 +56,17 @@ public class CitaServiceImpl implements ICitaService {
     public CitaResponseDTO createCita(CitaRequestDTO dto, Long usuarioId) {
         log.info("Iniciando creación de cita para servicioId: {}", dto.getServicioId());
 
-        // 1. Obtener datos del servicio (duración, precio)
-        ServicioClienteDTO servicio = agendamientoClient.getServicioById(dto.getServicioId())
-                .blockOptional()
-                .orElseThrow(() -> new EntityNotFoundException("Servicio no encontrado: " + dto.getServicioId()));
+        ServicioClienteDTO servicio;
+        try {
+            servicio = agendamientoClient.getServicioById(dto.getServicioId())
+                    .blockOptional()
+                    .orElseThrow(() -> new EntityNotFoundException("Servicio no encontrado: " + dto.getServicioId()));
+        } catch (Exception e) {
+            // Capturamos si agendamiento-service falla o no encuentra el ID
+            log.error("Error al consultar servicio: {}", e.getMessage());
+            throw new IllegalArgumentException("No se pudo validar el servicio seleccionado. Verifique que exista y el sistema esté activo.");
+        }
 
-        // 2. Calcular Fechas (El front ahora envía "fechaInicio", nosotros calculamos el fin)
-        // NOTA: Debes actualizar CitaRequestDTO para recibir 'fechaInicio' (LocalDateTime) en lugar de 'idsDisponibilidad'.
         LocalDateTime fechaInicio = dto.getFechaInicio();
         if (fechaInicio == null) {
             throw new IllegalArgumentException("La fecha de inicio es obligatoria.");
