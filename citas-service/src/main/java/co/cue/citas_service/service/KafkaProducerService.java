@@ -18,7 +18,13 @@ public class KafkaProducerService {
     public static final String NOTIFICACIONES_TOPIC = "usuarios_registrados_topic";
 
     public void enviarCitaCompletada(CitaCompletadaEventDTO event) {
-        // ... (código existente) ...
+        try {
+            log.info("Enviando evento de Cita Completada (ID: {}) a Kafka", event.getCitaId());
+            kafkaTemplate.send(CITAS_COMPLETADAS_TOPIC, event);
+            log.info("Evento de Cita Completada enviado exitosamente al tópico {}", CITAS_COMPLETADAS_TOPIC);
+        } catch (Exception e) {
+            log.error("Error al enviar CitaCompletadaEventDTO a Kafka para Cita ID: {}", event.getCitaId(), e);
+        }
     }
 
     /**

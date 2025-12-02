@@ -35,9 +35,36 @@ public class HistorialClinicoServiceImpl implements IHistorialClinicoService {
             log.warn("Evento de Cita ID: {} recibido, pero ya existe un historial. Ignorando (Idempotencia).", event.getCitaId());
             return;
         }
+        
+        // Validar campos requeridos antes de crear el historial
+        if (event.getPetId() == null) {
+            log.error("Error: El evento de Cita ID: {} no tiene petId. No se puede crear el historial.", event.getCitaId());
+            return;
+        }
+        if (event.getVeterinarianId() == null) {
+            log.error("Error: El evento de Cita ID: {} no tiene veterinarianId. No se puede crear el historial.", event.getCitaId());
+            return;
+        }
+        if (event.getFecha() == null) {
+            log.error("Error: El evento de Cita ID: {} no tiene fecha. No se puede crear el historial.", event.getCitaId());
+            return;
+        }
+        if (event.getDiagnostico() == null || event.getDiagnostico().trim().isEmpty()) {
+            log.warn("Advertencia: El evento de Cita ID: {} no tiene diagnóstico. Se establecerá un valor por defecto.", event.getCitaId());
+            // El mapper manejará esto estableciendo un valor por defecto
+        }
+        
         log.info("Procesando evento para Cita ID: {}. Creando nuevo registro de historial.", event.getCitaId());
         HistorialClinico nuevoHistorial = mapper.mapEventToEntity(event);
+        
+        // Asegurar que el diagnóstico no sea null (requerido por la BD)
+        if (nuevoHistorial.getDiagnostico() == null || nuevoHistorial.getDiagnostico().trim().isEmpty()) {
+            nuevoHistorial.setDiagnostico("Sin diagnóstico registrado");
+            log.info("Se estableció diagnóstico por defecto para Cita ID: {}", event.getCitaId());
+        }
+        
         historialClinicoRepository.save(nuevoHistorial);
+        log.info("Historial clínico creado exitosamente para Cita ID: {}", event.getCitaId());
     }
 
 
