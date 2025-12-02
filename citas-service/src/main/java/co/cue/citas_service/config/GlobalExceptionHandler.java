@@ -17,10 +17,5 @@ public class GlobalExceptionHandler {
         log.error("🛑 Error de Negocio (IllegalState): {}", ex.getMessage(), ex);
         return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
     }
-
-    @ExceptionHandler(Exception.class) // Captura genérica para lo inesperado (NullPointer, etc)
-    public ResponseEntity<String> handleGeneralError(Exception ex) {
-        log.error("🔥 Error Inesperado (500): {}", ex.getMessage(), ex);
-        return new ResponseEntity<>("Error interno del servidor: " + ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-    }
+    
 }
