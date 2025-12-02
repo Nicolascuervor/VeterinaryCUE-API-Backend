@@ -27,7 +27,7 @@ public class SecurityConfig {
 
     private static final String ADMIN_ROLE = "ADMIN";
     private static final String VETERINARIO_ROLE = "VETERINARIO";
-    private static final String DUENIO_ROLE = "DUEÑO";
+    private static final String DUENIO_ROLE = "DUENIO";
 
     private static final String HISTORIAL_API_PATH = "/api/historial-clinico/**";
 
