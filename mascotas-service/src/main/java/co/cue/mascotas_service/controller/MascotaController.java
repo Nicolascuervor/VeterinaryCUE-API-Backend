@@ -16,7 +16,6 @@ import java.util.List;
 @RequestMapping("/api/mascotas")
 @Slf4j
 @RequiredArgsConstructor
-@CrossOrigin(origins = {"http://localhost:3000", "http://127.0.0.1:5500", "*"}) // Configuración CORS local específica para este controlador
 // Controlador encargado de manejar todas las operaciones relacionadas con mascotas.
 public class MascotaController {
     // Servicio encargado de la lógica de negocio para mascotas.

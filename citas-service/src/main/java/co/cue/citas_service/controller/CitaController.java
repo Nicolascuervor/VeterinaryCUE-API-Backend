@@ -18,7 +18,6 @@ import java.util.List;
 @RestController // Indica que esta clase expone endpoints REST
 @RequestMapping("/api/citas") // Ruta base para todos los endpoints de citas
 @AllArgsConstructor // Inyecta las dependencias mediante constructor
-@CrossOrigin(origins = {"http://localhost:3000", "http://127.0.0.1:5500", "*"}) // Configuración CORS local específica para este controlador
 @Slf4j
 public class CitaController {
     private final ICitaService citaService;

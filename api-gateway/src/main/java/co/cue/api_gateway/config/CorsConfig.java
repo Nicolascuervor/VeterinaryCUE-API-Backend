@@ -34,8 +34,9 @@ public class CorsConfig {
         CorsConfiguration config = new CorsConfiguration();
 
         // Configuración de Orígenes Permitidos
-        // Permitimos cualquier origen usando el patrón "*" que permite todos los dominios y esquemas
-        // NOTA: En producción, esto debería restringirse a dominios específicos por seguridad
+        // Usamos setAllowedOriginPatterns con "*" para permitir cualquier origen
+        // NOTA: Cuando allowCredentials es true, no podemos usar "*" directamente,
+        // pero setAllowedOriginPatterns con "*" funciona correctamente
         config.setAllowedOriginPatterns(List.of("*"));
 
         // Configuración de Métodos y Cabeceras
@@ -46,9 +47,12 @@ public class CorsConfig {
         config.addAllowedHeader("*");
 
         // Credenciales
-        // Permitimos el envío de cookies y credenciales de autenticación.
-        // Esto es necesario si el frontend necesita enviar cookies de sesión o tokens en cookies seguras.
+        // IMPORTANTE: Cuando allowCredentials es true y usamos setAllowedOriginPatterns("*"),
+        // Spring Gateway manejará automáticamente el origen específico en la respuesta
         config.setAllowCredentials(true);
+        
+        // Tiempo máximo que el navegador puede cachear la respuesta preflight (OPTIONS)
+        config.setMaxAge(3600L);
 
         // Registro de la Configuración
         // Asociamos la configuración creada a rutas específicas URL.

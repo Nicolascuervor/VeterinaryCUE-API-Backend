@@ -14,9 +14,6 @@ import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
@@ -54,8 +51,8 @@ public class SecurityConfig {
                 // Desactiva CSRF porque usamos autenticación stateless
                 .csrf(AbstractHttpConfigurer::disable)
                 
-                // Habilita CORS con la configuración personalizada
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                // CORS se maneja en el API Gateway, no aquí para evitar duplicación de headers
+                .cors(AbstractHttpConfigurer::disable)
 
                 // No se guardan sesiones, cada petición se autentica con JWT
                 .sessionManagement(session -> session
@@ -102,23 +99,5 @@ public class SecurityConfig {
         JwtAuthenticationConverter jwtConverter = new JwtAuthenticationConverter();
         jwtConverter.setJwtGrantedAuthoritiesConverter(grantedAuthoritiesConverter);
         return jwtConverter;
-    }
-    
-    /**
-     * Configuración de CORS para Spring Security.
-     * Permite peticiones desde cualquier origen.
-     */
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(java.util.List.of("*"));
-        configuration.setAllowedMethods(java.util.List.of("*"));
-        configuration.setAllowedHeaders(java.util.List.of("*"));
-        configuration.setAllowCredentials(true);
-        configuration.setExposedHeaders(java.util.List.of("Authorization", "Content-Type"));
-        
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        return source;
     }
 }

@@ -15,7 +15,6 @@ import java.util.List;
 
 // Genera automáticamente un constructor con todos los atributos final.
 @AllArgsConstructor
-@CrossOrigin(origins = {"http://localhost:3000", "http://127.0.0.1:5500", "*"}) // Configuración CORS local específica para este controlador
 public class FacturaController {
     // Servicio encargado de la lógica de negocio relacionada con Facturas
     private final FacturaService facturaService;
