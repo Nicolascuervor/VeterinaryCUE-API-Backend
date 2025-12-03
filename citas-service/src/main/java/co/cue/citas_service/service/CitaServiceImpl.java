@@ -373,7 +373,7 @@ public class CitaServiceImpl implements ICitaService {
                     cita.getId(), e.getMessage(), e);
         }
 
-        log.info("=== FINALIZANDO ENVÍO DE NOTIFICACIÓN DE CAMBIO DE ESTADO PARA LA CITA ===");
+        log.info("=== FINALIZANDO ENVÍO DE NOTIFICACIÓN DE CAMBIO DE ESTADO ===");
     }
 
     private void enviarNotificacionConfirmacion(Cita cita, Long usuarioId) {
@@ -487,6 +487,8 @@ public class CitaServiceImpl implements ICitaService {
                         NotificationType.CITA_CONFIRMACION,
                         payloadVeterinario
                 );
+
+                log.info("Enviando notificación al veterinario: {}", veterinario.getCorreo());
                 kafkaProducer.enviarNotificacion(notificacionVeterinario);
                 log.info("✅ Solicitud de notificación enviada al veterinario para Cita ID: {}", cita.getId());
             } catch (Exception e) {
@@ -496,11 +498,13 @@ public class CitaServiceImpl implements ICitaService {
             log.warn("No se puede enviar correo al veterinario. Veterinario es null o no tiene correo. Cita ID: {}", cita.getId());
         }
 
-
+        log.info("=== FINALIZANDO ENVÍO DE NOTIFICACIONES ===");
     }
+
     @Override
     @Transactional(readOnly = true)
     public List<CitaResponseDTO> getAllCitas() {
+        log.info("Consultando todas las citas registradas en el sistema");
         return citaRepository.findAll().stream()
                 .map(mapper::mapToResponseDTO)
                 .toList();
@@ -510,12 +514,15 @@ public class CitaServiceImpl implements ICitaService {
     @Transactional(readOnly = true)
     public CitaDetailDTO getCitaDetailById(Long id) {
         Cita cita = findCitaByIdPrivado(id); // Reutilizamos tu método privado
+
+        // Usamos un nuevo método en el mapper para este DTO
         return mapper.mapToDetailDTO(cita);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<CitaDetailDTO> getAllCitasDetails() {
+        log.info("Consultando el reporte detallado de todas las citas...");
         return citaRepository.findAll().stream()
                 // Usamos el método 'mapToDetailDTO' que escribiste manualmente en el Mapper
                 .map(mapper::mapToDetailDTO)
