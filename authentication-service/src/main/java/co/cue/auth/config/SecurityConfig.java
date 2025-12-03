@@ -41,6 +41,7 @@ public class SecurityConfig {
 
     private final UserDetailsServiceImpl userDetailsService;
     private static final String ADMIN_ROLE = "ADMIN";
+    private static final String VETERINARIO_ROLE = "VETERINARIO";
     private final String secretKey;
 
     /**
@@ -149,7 +150,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
 
                         //Rutas Administrativas (Solo ADMIN)
-                        .requestMatchers(HttpMethod.GET, "/api/auth/active/users").hasRole(ADMIN_ROLE)
+                        .requestMatchers(HttpMethod.GET, "/api/auth/active/users").hasAnyRole(ADMIN_ROLE, VETERINARIO_ROLE)
                         .requestMatchers(HttpMethod.DELETE, "/api/auth/**").hasRole(ADMIN_ROLE)
 
                         // Rutas Autenticadas (Perfil propio)
