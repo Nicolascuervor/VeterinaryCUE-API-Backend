@@ -3,7 +3,9 @@ package co.cue.agendamiento_service.services;
 import co.cue.agendamiento_service.models.entities.dtos.serviciosdtos.requestdtos.CirugiaRequestDTO;
 import co.cue.agendamiento_service.models.entities.dtos.serviciosdtos.requestdtos.ConsultaRequestDTO;
 import co.cue.agendamiento_service.models.entities.dtos.serviciosdtos.requestdtos.EsteticaRequestDTO;
+import co.cue.agendamiento_service.models.entities.dtos.serviciosdtos.requestdtos.ServicioRequestDTO;
 import co.cue.agendamiento_service.models.entities.dtos.serviciosdtos.requestdtos.VacunacionRequestDTO;
+import co.cue.agendamiento_service.models.entities.dtos.serviciosdtos.responsedtos.BulkServicioResponseDTO;
 import co.cue.agendamiento_service.models.entities.dtos.serviciosdtos.responsedtos.ServicioResponseDTO;
 
 import java.util.List;
@@ -52,4 +54,14 @@ public interface IServicioAdminService {
     // Desactiva un servicio existente por su ID
     // El servicio deja de aparecer en listados activos y no puede ser usado
     void desactivarServicio(Long id);
+
+    /**
+     * Crea múltiples servicios de forma masiva.
+     * Procesa cada servicio individualmente, permitiendo que algunos se creen exitosamente
+     * aunque otros fallen. Devuelve un resumen con los servicios creados y los errores.
+     * 
+     * @param servicios Lista de DTOs de servicios a crear (pueden ser de cualquier tipo)
+     * @return DTO con los servicios creados exitosamente y los errores ocurridos
+     */
+    BulkServicioResponseDTO crearServiciosMasivo(List<ServicioRequestDTO> servicios);
 }

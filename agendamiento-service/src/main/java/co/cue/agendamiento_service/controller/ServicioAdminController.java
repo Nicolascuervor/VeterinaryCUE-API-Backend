@@ -3,7 +3,9 @@ package co.cue.agendamiento_service.controller;
 import co.cue.agendamiento_service.models.entities.dtos.serviciosdtos.requestdtos.CirugiaRequestDTO;
 import co.cue.agendamiento_service.models.entities.dtos.serviciosdtos.requestdtos.ConsultaRequestDTO;
 import co.cue.agendamiento_service.models.entities.dtos.serviciosdtos.requestdtos.EsteticaRequestDTO;
+import co.cue.agendamiento_service.models.entities.dtos.serviciosdtos.requestdtos.ServicioRequestDTO;
 import co.cue.agendamiento_service.models.entities.dtos.serviciosdtos.requestdtos.VacunacionRequestDTO;
+import co.cue.agendamiento_service.models.entities.dtos.serviciosdtos.responsedtos.BulkServicioResponseDTO;
 import co.cue.agendamiento_service.models.entities.dtos.serviciosdtos.responsedtos.ServicioResponseDTO;
 import co.cue.agendamiento_service.services.IServicioAdminService;
 import lombok.AllArgsConstructor;
@@ -99,5 +101,36 @@ public class ServicioAdminController {
     public ResponseEntity<Void> desactivarServicio(@PathVariable Long id) {
         servicioAdminService.desactivarServicio(id);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Endpoint POST para crear múltiples servicios de forma masiva.
+     * Acepta una lista de servicios de cualquier tipo (Consulta, Cirugía, Estética, Vacunación).
+     * Cada servicio debe incluir el campo "tipoServicio" para identificar su tipo.
+     * 
+     * El endpoint procesa cada servicio individualmente, permitiendo que algunos se creen
+     * exitosamente aunque otros fallen. Devuelve un resumen con los servicios creados y los errores.
+     * 
+     * @param servicios Lista de servicios a crear (pueden ser de diferentes tipos)
+     * @return ResponseEntity con el resultado de la operación masiva
+     */
+    @PostMapping("/bulk")  // Endpoint POST para creación masiva de servicios
+    public ResponseEntity<BulkServicioResponseDTO> crearServiciosMasivo(
+            @RequestBody List<ServicioRequestDTO> servicios) {
+        
+        if (servicios == null || servicios.isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
+        
+        BulkServicioResponseDTO resultado = servicioAdminService.crearServiciosMasivo(servicios);
+        
+        // Si todos los servicios fallaron, devolver 400 Bad Request
+        // Si algunos fallaron pero otros tuvieron éxito, devolver 207 Multi-Status (pero Spring no lo soporta nativamente)
+        // Por simplicidad, devolvemos 201 si hay al menos un éxito, o 400 si todos fallaron
+        if (resultado.getTotalExitosos() > 0) {
+            return ResponseEntity.status(HttpStatus.CREATED).body(resultado);
+        } else {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(resultado);
+        }
     }
 }

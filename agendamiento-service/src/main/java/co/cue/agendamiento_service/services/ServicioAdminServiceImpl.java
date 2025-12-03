@@ -4,20 +4,24 @@ import co.cue.agendamiento_service.mapper.ServicioMapper;
 import co.cue.agendamiento_service.models.entities.dtos.serviciosdtos.requestdtos.CirugiaRequestDTO;
 import co.cue.agendamiento_service.models.entities.dtos.serviciosdtos.requestdtos.ConsultaRequestDTO;
 import co.cue.agendamiento_service.models.entities.dtos.serviciosdtos.requestdtos.EsteticaRequestDTO;
+import co.cue.agendamiento_service.models.entities.dtos.serviciosdtos.requestdtos.ServicioRequestDTO;
 import co.cue.agendamiento_service.models.entities.dtos.serviciosdtos.requestdtos.VacunacionRequestDTO;
+import co.cue.agendamiento_service.models.entities.dtos.serviciosdtos.responsedtos.BulkServicioResponseDTO;
 import co.cue.agendamiento_service.models.entities.dtos.serviciosdtos.responsedtos.ServicioResponseDTO;
 import co.cue.agendamiento_service.models.entities.servicios.*;
 import co.cue.agendamiento_service.repository.ServicioRepository;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.persistence.EntityNotFoundException;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service  // Marca la clase como un servicio de Spring para inyección de dependencias
 @AllArgsConstructor  // Genera un constructor con todos los campos (inyección de repositorios y mapper)
-
+@Slf4j
 public class ServicioAdminServiceImpl implements IServicioAdminService {
 
     private final ServicioRepository servicioRepository;  // Repositorio para acceder a la entidad Servicio
@@ -225,5 +229,78 @@ public class ServicioAdminServiceImpl implements IServicioAdminService {
         return servicioRepository.findById(id)   // Busca por ID
                 .filter(Servicio::isActivo)       // Filtra para asegurarse de que esté activo.
                 .orElseThrow(() -> new EntityNotFoundException("Servicio no encontrado o inactivo con ID: " + id)); // Lanza excepción si no se encuentra.
+    }
+
+    /**
+     * Crea múltiples servicios de forma masiva.
+     * Procesa cada servicio individualmente, permitiendo que algunos se creen exitosamente
+     * aunque otros fallen. Devuelve un resumen con los servicios creados y los errores.
+     */
+    @Override
+    @Transactional
+    public BulkServicioResponseDTO crearServiciosMasivo(List<ServicioRequestDTO> servicios) {
+        log.info("Iniciando creación masiva de {} servicios", servicios.size());
+        
+        List<ServicioResponseDTO> serviciosCreados = new ArrayList<>();
+        List<BulkServicioResponseDTO.ErrorServicioDTO> errores = new ArrayList<>();
+        
+        for (int i = 0; i < servicios.size(); i++) {
+            ServicioRequestDTO servicioDTO = servicios.get(i);
+            String nombreServicio = servicioDTO.getNombre() != null ? servicioDTO.getNombre() : "Sin nombre";
+            String tipoServicio = obtenerTipoServicio(servicioDTO);
+            
+            try {
+                ServicioResponseDTO servicioCreado = crearServicioPorTipo(servicioDTO);
+                serviciosCreados.add(servicioCreado);
+                log.debug("Servicio {} (índice {}) creado exitosamente: {}", nombreServicio, i, servicioCreado.getId());
+            } catch (Exception e) {
+                String mensajeError = e.getMessage() != null ? e.getMessage() : "Error desconocido al crear el servicio";
+                errores.add(new BulkServicioResponseDTO.ErrorServicioDTO(i, nombreServicio, tipoServicio, mensajeError));
+                log.error("Error al crear servicio {} (índice {}): {}", nombreServicio, i, mensajeError, e);
+            }
+        }
+        
+        int totalProcesados = servicios.size();
+        int totalExitosos = serviciosCreados.size();
+        int totalFallidos = errores.size();
+        
+        log.info("Creación masiva completada: {} procesados, {} exitosos, {} fallidos", 
+                totalProcesados, totalExitosos, totalFallidos);
+        
+        return new BulkServicioResponseDTO(serviciosCreados, errores, totalProcesados, totalExitosos, totalFallidos);
+    }
+
+    /**
+     * Crea un servicio según su tipo específico.
+     */
+    private ServicioResponseDTO crearServicioPorTipo(ServicioRequestDTO dto) {
+        if (dto instanceof ConsultaRequestDTO consultaDTO) {
+            return crearConsulta(consultaDTO);
+        } else if (dto instanceof CirugiaRequestDTO cirugiaDTO) {
+            return crearCirugia(cirugiaDTO);
+        } else if (dto instanceof EsteticaRequestDTO esteticaDTO) {
+            return crearEstetica(esteticaDTO);
+        } else if (dto instanceof VacunacionRequestDTO vacunacionDTO) {
+            return crearVacunacion(vacunacionDTO);
+        } else {
+            throw new IllegalArgumentException("Tipo de servicio no reconocido: " + dto.getClass().getSimpleName());
+        }
+    }
+
+    /**
+     * Obtiene el tipo de servicio como String para logging y reportes.
+     */
+    private String obtenerTipoServicio(ServicioRequestDTO dto) {
+        if (dto instanceof ConsultaRequestDTO) {
+            return "CONSULTA";
+        } else if (dto instanceof CirugiaRequestDTO) {
+            return "CIRUGIA";
+        } else if (dto instanceof EsteticaRequestDTO) {
+            return "ESTETICA";
+        } else if (dto instanceof VacunacionRequestDTO) {
+            return "VACUNACION";
+        } else {
+            return "DESCONOCIDO";
+        }
     }
 }
