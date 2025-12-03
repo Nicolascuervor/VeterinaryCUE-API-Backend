@@ -75,9 +75,27 @@ public class CitaServiceImpl implements ICitaService {
         // Calculamos la hora fin sumando la duración del servicio
         LocalDateTime fechaFin = fechaInicio.plusMinutes(servicio.getDuracionPromedioMinutos());
 
+        // 2.5. Obtener el dueño de la mascota (NO el usuario que crea la cita)
+        // Esto es importante porque cuando un veterinario agenda una cita, el dueño debe ser el dueño de la mascota, no el veterinario
+        Long duenioIdReal = null;
+        try {
+            log.info("Obteniendo datos de la mascota para determinar el dueño real. Pet ID: {}", dto.getPetId());
+            MascotaClienteDTO mascota = mascotaClient.findMascotaById(dto.getPetId()).block();
+            if (mascota != null && mascota.getDuenioId() != null) {
+                duenioIdReal = mascota.getDuenioId();
+                log.info("Dueño real de la mascota obtenido: Duenio ID: {}", duenioIdReal);
+            } else {
+                log.warn("No se pudo obtener el dueño de la mascota. Usando usuarioId del header como fallback. Pet ID: {}", dto.getPetId());
+                duenioIdReal = usuarioId; // Fallback: usar el usuarioId si no se puede obtener el dueño
+            }
+        } catch (Exception e) {
+            log.error("Error al obtener el dueño de la mascota. Usando usuarioId del header como fallback. Pet ID: {}, Error: {}", dto.getPetId(), e.getMessage(), e);
+            duenioIdReal = usuarioId; // Fallback: usar el usuarioId si hay error
+        }
+
         // 3. Crear entidad Cita (Pre-guardado para tener ID)
         Cita cita = new Cita();
-        cita.setDuenioId(usuarioId);
+        cita.setDuenioId(duenioIdReal); // Usar el dueño real de la mascota, no el usuario que crea la cita
         cita.setPetId(dto.getPetId());
         cita.setVeterinarianId(dto.getVeterinarianId());
         cita.setServicioId(servicio.getId());
@@ -115,9 +133,13 @@ public class CitaServiceImpl implements ICitaService {
         }
 
         try {
-            enviarNotificacionConfirmacion(citaGuardada, usuarioId);
+            // Usar el duenioIdReal (dueño de la mascota) para las notificaciones, no el usuarioId del header
+            log.info("Iniciando envío de notificaciones para Cita ID: {}, Dueño Real ID: {} (Usuario que creó la cita: {})",
+                    citaGuardada.getId(), duenioIdReal, usuarioId);
+            enviarNotificacionConfirmacion(citaGuardada, duenioIdReal); // Usar el dueño real, no el usuarioId
+            log.info("Notificaciones enviadas exitosamente para Cita ID: {}", citaGuardada.getId());
         } catch (Exception e) {
-            log.warn("La cita se creó pero falló el envío de notificación: {}", e.getMessage());
+            log.error("La cita se creó pero falló el envío de notificación. Cita ID: {}, Error: {}", citaGuardada.getId(), e.getMessage(), e);
         }
 
         return mapper.mapToResponseDTO(citaGuardada);
