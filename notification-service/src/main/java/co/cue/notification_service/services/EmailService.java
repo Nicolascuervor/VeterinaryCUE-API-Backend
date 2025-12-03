@@ -247,4 +247,26 @@ public class EmailService {
             log.error("Error enviando correo de no asistencia: {}", e.getMessage());
         }
     }
+
+    public void enviarConfirmacionCitaVeterinario(String correo, String nombreVeterinario, String nombreDuenio, String nombreMascota, String fecha) {
+        log.info("Enviando confirmación de cita al veterinario {}", correo);
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(NO_EMAIL);
+            message.setTo(correo);
+            message.setSubject("Nueva Cita Agendada - Veterinaria CUE");
+            message.setText(SALUDO + nombreVeterinario + ",\n\n" +
+                    "Se ha agendado una nueva cita para tu atención.\n\n" +
+                    "Detalles de la cita:\n" +
+                    "Cliente: " + nombreDuenio + "\n" +
+                    "Mascota: " + nombreMascota + "\n" +
+                    "Fecha y Hora: " + fecha + "\n\n" +
+                    "Por favor asegúrate de estar disponible en el horario indicado.");
+
+            mailSender.send(message);
+            log.info("Correo de cita enviado al veterinario.");
+        } catch (Exception e) {
+            log.error("Error enviando correo de cita al veterinario: {}", e.getMessage());
+        }
+    }
 }
