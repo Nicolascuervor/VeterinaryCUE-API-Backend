@@ -35,8 +35,7 @@ public class CorsConfig {
 
         // Configuración de Orígenes Permitidos
         // Usamos setAllowedOriginPatterns con "*" para permitir cualquier origen
-        // NOTA: Cuando allowCredentials es true, no podemos usar "*" directamente,
-        // pero setAllowedOriginPatterns con "*" funciona correctamente
+        // NOTA: setAllowedOriginPatterns permite usar "*" incluso con allowCredentials=true
         config.setAllowedOriginPatterns(List.of("*"));
 
         // Configuración de Métodos y Cabeceras
@@ -47,11 +46,12 @@ public class CorsConfig {
         config.addAllowedHeader("*");
 
         // Credenciales
-        // IMPORTANTE: Cuando allowCredentials es true y usamos setAllowedOriginPatterns("*"),
-        // Spring Gateway manejará automáticamente el origen específico en la respuesta
+        // IMPORTANTE: Cuando allowCredentials es true, Spring Gateway manejará automáticamente
+        // el origen específico en la respuesta usando setAllowedOriginPatterns("*")
         config.setAllowCredentials(true);
         
         // Tiempo máximo que el navegador puede cachear la respuesta preflight (OPTIONS)
+        // 3600 segundos = 1 hora
         config.setMaxAge(3600L);
 
         // Registro de la Configuración
