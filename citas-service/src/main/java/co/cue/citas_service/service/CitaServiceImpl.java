@@ -305,70 +305,114 @@ public class CitaServiceImpl implements ICitaService {
             log.error("Error al enviar notificación de cambio de estado: {}", e.getMessage(), e);
         }
     }
-
     private void enviarNotificacionConfirmacion(Cita cita, Long usuarioId) {
+        log.info("=== INICIANDO ENVÍO DE NOTIFICACIONES ===");
+        log.info("Cita ID: {}, Usuario ID: {}, Veterinario ID: {}, Pet ID: {}",
+                cita.getId(), usuarioId, cita.getVeterinarianId(), cita.getPetId());
+
         // 1. Obtener datos del Dueño (Síncrono/Bloqueante para simplificar el flujo)
-        UsuarioClienteDTO duenio = authClient.obtenerUsuarioPorId(usuarioId).block();
+        UsuarioClienteDTO duenio = null;
+        try {
+            log.info("Obteniendo datos del dueño (Usuario ID: {})...", usuarioId);
+            duenio = authClient.obtenerUsuarioPorId(usuarioId).block();
+            if (duenio != null) {
+                log.info("Dueño obtenido: {} {} ({})", duenio.getNombre(), duenio.getApellido(), duenio.getCorreo());
+            } else {
+                log.warn("No se pudo obtener datos del dueño. Usuario ID: {}", usuarioId);
+            }
+        } catch (Exception e) {
+            log.error("Error al obtener datos del dueño. Usuario ID: {}, Error: {}", usuarioId, e.getMessage(), e);
+        }
 
         // 2. Obtener datos del Veterinario
         UsuarioClienteDTO veterinario = null;
         try {
+            log.info("Obteniendo datos del veterinario (Veterinario ID: {})...", cita.getVeterinarianId());
             veterinario = authClient.obtenerUsuarioPorId(cita.getVeterinarianId()).block();
+            if (veterinario != null) {
+                log.info("Veterinario obtenido: {} {} ({})", veterinario.getNombre(), veterinario.getApellido(), veterinario.getCorreo());
+            } else {
+                log.warn("No se pudo obtener datos del veterinario. Veterinario ID: {}", cita.getVeterinarianId());
+            }
         } catch (Exception e) {
-            log.warn("No se pudo obtener datos del veterinario para notificación: {}", e.getMessage());
+            log.error("Error al obtener datos del veterinario. Veterinario ID: {}, Error: {}", cita.getVeterinarianId(), e.getMessage(), e);
         }
 
         // 3. Obtener nombre de la Mascota (Best effort)
         String nombreMascota = "Tu Mascota";
         try {
+            log.info("Obteniendo datos de la mascota (Pet ID: {})...", cita.getPetId());
             MascotaClienteDTO mascota = mascotaClient.findMascotaById(cita.getPetId()).block();
             if (mascota != null && mascota.getNombre() != null) {
                 nombreMascota = mascota.getNombre(); // Usar el nombre real de la mascota
+                log.info("Mascota obtenida: {}", nombreMascota);
+            } else {
+                log.warn("No se pudo obtener nombre de la mascota. Pet ID: {}", cita.getPetId());
             }
         } catch (Exception e) {
-            log.warn("No se pudo obtener nombre de mascota para notificación");
+            log.error("Error al obtener datos de la mascota. Pet ID: {}, Error: {}", cita.getPetId(), e.getMessage(), e);
         }
 
         // 4. Enviar correo al Dueño
-        if (duenio != null) {
-            Map<String, String> payloadDuenio = new HashMap<>();
-            payloadDuenio.put("correo", duenio.getCorreo());
-            payloadDuenio.put("nombreDuenio", duenio.getNombre() + " " + duenio.getApellido());
-            payloadDuenio.put("nombreMascota", nombreMascota);
-            payloadDuenio.put("fecha", cita.getFechaHoraInicio().toString().replace("T", " "));
-            payloadDuenio.put("medico", veterinario != null ?
-                    "Dr. " + veterinario.getNombre() + " " + veterinario.getApellido() :
-                    "Dr. ID " + cita.getVeterinarianId());
-            payloadDuenio.put("tipoDestinatario", "DUENIO");
+        if (duenio != null && duenio.getCorreo() != null && !duenio.getCorreo().isEmpty()) {
+            try {
+                Map<String, String> payloadDuenio = new HashMap<>();
+                payloadDuenio.put("correo", duenio.getCorreo());
+                String nombreCompletoDuenio = ((duenio.getNombre() != null ? duenio.getNombre() : "") + " " +
+                        (duenio.getApellido() != null ? duenio.getApellido() : "")).trim();
+                payloadDuenio.put("nombreDuenio", nombreCompletoDuenio);
+                payloadDuenio.put("nombreMascota", nombreMascota);
+                payloadDuenio.put("fecha", cita.getFechaHoraInicio().toString().replace("T", " "));
+                payloadDuenio.put("medico", veterinario != null ?
+                        "Dr. " + veterinario.getNombre() + " " + veterinario.getApellido() :
+                        "Dr. ID " + cita.getVeterinarianId());
+                payloadDuenio.put("tipoDestinatario", "DUENIO");
 
-            NotificationRequestDTO notificacionDuenio = new NotificationRequestDTO(
-                    NotificationType.CITA_CONFIRMACION,
-                    payloadDuenio
-            );
+                NotificationRequestDTO notificacionDuenio = new NotificationRequestDTO(
+                        NotificationType.CITA_CONFIRMACION,
+                        payloadDuenio
+                );
 
-            kafkaProducer.enviarNotificacion(notificacionDuenio);
-            log.info("Solicitud de notificación enviada al dueño para Cita ID: {}", cita.getId());
+                log.info("Enviando notificación al dueño: {}", duenio.getCorreo());
+                kafkaProducer.enviarNotificacion(notificacionDuenio);
+                log.info("✅ Solicitud de notificación enviada al dueño para Cita ID: {}", cita.getId());
+            } catch (Exception e) {
+                log.error("Error al enviar notificación al dueño. Cita ID: {}, Error: {}", cita.getId(), e.getMessage(), e);
+            }
+        } else {
+            log.warn("No se puede enviar correo al dueño. Dueño es null o no tiene correo. Cita ID: {}", cita.getId());
         }
 
         // 5. Enviar correo al Veterinario
-        if (veterinario != null) {
-            Map<String, String> payloadVeterinario = new HashMap<>();
-            payloadVeterinario.put("correo", veterinario.getCorreo());
-            payloadVeterinario.put("nombreDuenio", duenio != null ?
-                    duenio.getNombre() + " " + duenio.getApellido() : "Cliente");
-            payloadVeterinario.put("nombreMascota", nombreMascota);
-            payloadVeterinario.put("fecha", cita.getFechaHoraInicio().toString().replace("T", " "));
-            payloadVeterinario.put("medico", "Dr. " + veterinario.getNombre() + " " + veterinario.getApellido());
-            payloadVeterinario.put("tipoDestinatario", "VETERINARIO");
+        if (veterinario != null && veterinario.getCorreo() != null && !veterinario.getCorreo().isEmpty()) {
+            try {
+                Map<String, String> payloadVeterinario = new HashMap<>();
+                payloadVeterinario.put("correo", veterinario.getCorreo());
+                String nombreCompletoCliente = duenio != null ?
+                        ((duenio.getNombre() != null ? duenio.getNombre() : "") + " " +
+                                (duenio.getApellido() != null ? duenio.getApellido() : "")).trim() : "Cliente";
+                payloadVeterinario.put("nombreDuenio", nombreCompletoCliente);
+                payloadVeterinario.put("nombreMascota", nombreMascota);
+                payloadVeterinario.put("fecha", cita.getFechaHoraInicio().toString().replace("T", " "));
+                payloadVeterinario.put("medico", "Dr. " + veterinario.getNombre() + " " + veterinario.getApellido());
+                payloadVeterinario.put("tipoDestinatario", "VETERINARIO");
 
-            NotificationRequestDTO notificacionVeterinario = new NotificationRequestDTO(
-                    NotificationType.CITA_CONFIRMACION,
-                    payloadVeterinario
-            );
+                NotificationRequestDTO notificacionVeterinario = new NotificationRequestDTO(
+                        NotificationType.CITA_CONFIRMACION,
+                        payloadVeterinario
+                );
 
-            kafkaProducer.enviarNotificacion(notificacionVeterinario);
-            log.info("Solicitud de notificación enviada al veterinario para Cita ID: {}", cita.getId());
+                log.info("Enviando notificación al veterinario: {}", veterinario.getCorreo());
+                kafkaProducer.enviarNotificacion(notificacionVeterinario);
+                log.info("✅ Solicitud de notificación enviada al veterinario para Cita ID: {}", cita.getId());
+            } catch (Exception e) {
+                log.error("Error al enviar notificación al veterinario. Cita ID: {}, Error: {}", cita.getId(), e.getMessage(), e);
+            }
+        } else {
+            log.warn("No se puede enviar correo al veterinario. Veterinario es null o no tiene correo. Cita ID: {}", cita.getId());
         }
+
+        log.info("=== FINALIZANDO ENVÍO DE NOTIFICACIONES ===");
     }
 
     @Override
