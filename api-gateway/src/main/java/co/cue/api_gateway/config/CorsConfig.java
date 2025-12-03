@@ -34,15 +34,9 @@ public class CorsConfig {
         CorsConfiguration config = new CorsConfiguration();
 
         // Configuración de Orígenes Permitidos
-        // Definimos qué dominios (Frontends) tienen permiso para llamar a nuestra API.
-        // Usamos setAllowedOriginPatterns en lugar de setAllowedOrigins para mayor flexibilidad
-        // con subdominios o esquemas, y para evitar conflictos cuando allowCredentials es true.
-        config.setAllowedOriginPatterns(List.of(
-                "http://localhost:5500",      // Entorno de desarrollo frontend local (ej. Live Server)
-                "http://127.0.0.1:5500",      // Variante IP del entorno local
-                "http://localhost:3000",      // Puerto estándar para React/Next.js
-                "*://*"                       // Permite cualquier esquema y dominio. Solo permitido para desarrollo, posteriormente debe restringirse en producción.
-        ));
+        // Permitimos cualquier origen usando el patrón "*" que permite todos los dominios y esquemas
+        // NOTA: En producción, esto debería restringirse a dominios específicos por seguridad
+        config.setAllowedOriginPatterns(List.of("*"));
 
         // Configuración de Métodos y Cabeceras
         // Permitimos todos los HTTP (GET, POST, PUT, DELETE, OPTIONS, etc.)
