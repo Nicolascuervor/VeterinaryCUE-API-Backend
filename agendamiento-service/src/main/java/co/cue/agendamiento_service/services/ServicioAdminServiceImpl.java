@@ -235,9 +235,9 @@ public class ServicioAdminServiceImpl implements IServicioAdminService {
      * Crea múltiples servicios de forma masiva.
      * Procesa cada servicio individualmente, permitiendo que algunos se creen exitosamente
      * aunque otros fallen. Devuelve un resumen con los servicios creados y los errores.
+     * Cada servicio se procesa en su propia transacción para evitar que un error afecte a los demás.
      */
     @Override
-    @Transactional
     public BulkServicioResponseDTO crearServiciosMasivo(List<ServicioRequestDTO> servicios) {
         log.info("Iniciando creación masiva de {} servicios", servicios.size());
         
@@ -246,15 +246,27 @@ public class ServicioAdminServiceImpl implements IServicioAdminService {
         
         for (int i = 0; i < servicios.size(); i++) {
             ServicioRequestDTO servicioDTO = servicios.get(i);
-            String nombreServicio = servicioDTO.getNombre() != null ? servicioDTO.getNombre() : "Sin nombre";
-            String tipoServicio = obtenerTipoServicio(servicioDTO);
+            String nombreServicio = "Sin nombre";
+            String tipoServicio = "DESCONOCIDO";
             
             try {
-                ServicioResponseDTO servicioCreado = crearServicioPorTipo(servicioDTO);
+                // Validar que el DTO no sea null
+                if (servicioDTO == null) {
+                    throw new IllegalArgumentException("El servicio en el índice " + i + " es null");
+                }
+                
+                nombreServicio = servicioDTO.getNombre() != null ? servicioDTO.getNombre() : "Sin nombre";
+                tipoServicio = obtenerTipoServicio(servicioDTO);
+                
+                // Validar campos requeridos
+                validarServicioDTO(servicioDTO, i);
+                
+                // Crear servicio en su propia transacción
+                ServicioResponseDTO servicioCreado = crearServicioPorTipoTransaccional(servicioDTO);
                 serviciosCreados.add(servicioCreado);
                 log.debug("Servicio {} (índice {}) creado exitosamente: {}", nombreServicio, i, servicioCreado.getId());
             } catch (Exception e) {
-                String mensajeError = e.getMessage() != null ? e.getMessage() : "Error desconocido al crear el servicio";
+                String mensajeError = extraerMensajeError(e);
                 errores.add(new BulkServicioResponseDTO.ErrorServicioDTO(i, nombreServicio, tipoServicio, mensajeError));
                 log.error("Error al crear servicio {} (índice {}): {}", nombreServicio, i, mensajeError, e);
             }
@@ -268,6 +280,43 @@ public class ServicioAdminServiceImpl implements IServicioAdminService {
                 totalProcesados, totalExitosos, totalFallidos);
         
         return new BulkServicioResponseDTO(serviciosCreados, errores, totalProcesados, totalExitosos, totalFallidos);
+    }
+    
+    /**
+     * Valida que el DTO tenga los campos requeridos.
+     */
+    private void validarServicioDTO(ServicioRequestDTO dto, int indice) {
+        if (dto.getNombre() == null || dto.getNombre().trim().isEmpty()) {
+            throw new IllegalArgumentException("El nombre del servicio es requerido (índice " + indice + ")");
+        }
+        if (dto.getDuracionPromedioMinutos() == null || dto.getDuracionPromedioMinutos() <= 0) {
+            throw new IllegalArgumentException("La duración promedio en minutos debe ser mayor a 0 (índice " + indice + ")");
+        }
+        if (dto.getPrecio() == null || dto.getPrecio().compareTo(java.math.BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("El precio debe ser mayor a 0 (índice " + indice + ")");
+        }
+    }
+    
+    /**
+     * Crea un servicio según su tipo en una transacción separada.
+     * Esto permite que cada servicio se cree independientemente.
+     */
+    @Transactional(rollbackFor = Exception.class)
+    private ServicioResponseDTO crearServicioPorTipoTransaccional(ServicioRequestDTO dto) {
+        return crearServicioPorTipo(dto);
+    }
+    
+    /**
+     * Extrae un mensaje de error legible de una excepción.
+     */
+    private String extraerMensajeError(Exception e) {
+        if (e.getMessage() != null && !e.getMessage().isEmpty()) {
+            return e.getMessage();
+        }
+        if (e.getCause() != null && e.getCause().getMessage() != null) {
+            return e.getCause().getMessage();
+        }
+        return "Error desconocido: " + e.getClass().getSimpleName();
     }
 
     /**

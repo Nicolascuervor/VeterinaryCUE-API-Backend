@@ -9,9 +9,12 @@ import co.cue.agendamiento_service.models.entities.dtos.serviciosdtos.responsedt
 import co.cue.agendamiento_service.models.entities.dtos.serviciosdtos.responsedtos.ServicioResponseDTO;
 import co.cue.agendamiento_service.services.IServicioAdminService;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.*;
+import java.util.ArrayList;
 import java.util.List;
 
 // Define esta clase como un controlador REST que responderá solicitudes HTTP.
@@ -22,6 +25,7 @@ import java.util.List;
 
 // Genera automáticamente un constructor con todas las dependencias inyectadas.
 @AllArgsConstructor
+@Slf4j
 public class ServicioAdminController {
 
     private final IServicioAdminService servicioAdminService; // Servicio que contiene la lógica de negocio de los servicios administrativos.
@@ -118,19 +122,55 @@ public class ServicioAdminController {
     public ResponseEntity<BulkServicioResponseDTO> crearServiciosMasivo(
             @RequestBody List<ServicioRequestDTO> servicios) {
         
-        if (servicios == null || servicios.isEmpty()) {
-            return ResponseEntity.badRequest().build();
+        try {
+            if (servicios == null || servicios.isEmpty()) {
+                log.warn("Intento de crear servicios masivos con lista null o vacía");
+                return ResponseEntity.badRequest().build();
+            }
+            
+            log.info("Recibida solicitud para crear {} servicios masivamente", servicios.size());
+            BulkServicioResponseDTO resultado = servicioAdminService.crearServiciosMasivo(servicios);
+            
+            // Si todos los servicios fallaron, devolver 400 Bad Request
+            // Si algunos fallaron pero otros tuvieron éxito, devolver 207 Multi-Status (pero Spring no lo soporta nativamente)
+            // Por simplicidad, devolvemos 201 si hay al menos un éxito, o 400 si todos fallaron
+            if (resultado.getTotalExitosos() > 0) {
+                log.info("Creación masiva completada: {} exitosos de {} procesados", 
+                        resultado.getTotalExitosos(), resultado.getTotalProcesados());
+                return ResponseEntity.status(HttpStatus.CREATED).body(resultado);
+            } else {
+                log.warn("Todos los servicios fallaron en la creación masiva");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(resultado);
+            }
+        } catch (HttpMessageNotReadableException e) {
+            log.error("Error de deserialización JSON: {}", e.getMessage(), e);
+            BulkServicioResponseDTO errorResponse = crearErrorResponse(
+                "Error al deserializar el JSON. Verifique que cada servicio tenga el campo 'tipoServicio' y que sea válido (CONSULTA, CIRUGIA, ESTETICA, VACUNACION). " + 
+                "Detalle: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage())
+            );
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+        } catch (Exception e) {
+            log.error("Error inesperado al procesar creación masiva: {}", e.getMessage(), e);
+            BulkServicioResponseDTO errorResponse = crearErrorResponse(
+                "Error inesperado al procesar la solicitud: " + e.getMessage()
+            );
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
-        
-        BulkServicioResponseDTO resultado = servicioAdminService.crearServiciosMasivo(servicios);
-        
-        // Si todos los servicios fallaron, devolver 400 Bad Request
-        // Si algunos fallaron pero otros tuvieron éxito, devolver 207 Multi-Status (pero Spring no lo soporta nativamente)
-        // Por simplicidad, devolvemos 201 si hay al menos un éxito, o 400 si todos fallaron
-        if (resultado.getTotalExitosos() > 0) {
-            return ResponseEntity.status(HttpStatus.CREATED).body(resultado);
-        } else {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(resultado);
-        }
+    }
+    
+    /**
+     * Crea una respuesta de error estándar.
+     */
+    private BulkServicioResponseDTO crearErrorResponse(String mensajeError) {
+        BulkServicioResponseDTO errorResponse = new BulkServicioResponseDTO();
+        errorResponse.setServiciosCreados(new ArrayList<>());
+        errorResponse.setErrores(new ArrayList<>());
+        errorResponse.getErrores().add(new BulkServicioResponseDTO.ErrorServicioDTO(
+            0, "Error general", "ERROR", mensajeError
+        ));
+        errorResponse.setTotalProcesados(0);
+        errorResponse.setTotalExitosos(0);
+        errorResponse.setTotalFallidos(1);
+        return errorResponse;
     }
 }
