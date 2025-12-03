@@ -315,7 +315,7 @@ public class CitaServiceImpl implements ICitaService {
         try {
             MascotaClienteDTO mascota = mascotaClient.findMascotaById(cita.getPetId()).block();
             if (mascota != null) {
-                nombreMascota = "Mascota ID: " + cita.getPetId(); // Fallback si el DTO no tiene nombre
+                nombreMascota = mascota.getNombre();
             }
         } catch (Exception e) {
             log.warn("No se pudo obtener nombre de mascota para notificación");
