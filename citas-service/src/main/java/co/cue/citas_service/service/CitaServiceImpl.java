@@ -145,7 +145,7 @@ public class CitaServiceImpl implements ICitaService {
         return mapper.mapToResponseDTO(citaGuardada);
     }
 
-    // Actualizar cita
+    
     @Override
     @Transactional
     public CitaUpdateDTO updateCita(Long id, CitaUpdateDTO updateDTO) {
@@ -154,7 +154,7 @@ public class CitaServiceImpl implements ICitaService {
 
         // Guardar el estado anterior para comparar
         EstadoCita estadoAnterior = cita.getEstado();
-        
+
         // Manejar transición de estado usando patrón State
         if (updateDTO.getEstado() != null && updateDTO.getEstado() != cita.getEstado()) {
             log.debug("Intentando transición de estado: {} -> {}", cita.getEstado(), updateDTO.getEstado());
@@ -183,11 +183,16 @@ public class CitaServiceImpl implements ICitaService {
         }
 
         // Enviar notificación al cliente si cambió el estado
+        // Usar el duenioId de la cita (dueño real de la mascota), no el usuario que realiza la acción
         if (estadoAnterior != citaActualizada.getEstado()) {
             try {
-                enviarNotificacionCambioEstado(citaActualizada, estadoAnterior, citaActualizada.getDuenioId());
+                Long duenioIdReal = citaActualizada.getDuenioId();
+                log.info("Estado de cita cambió de {} a {}. Enviando notificación al dueño real (ID: {})",
+                        estadoAnterior, citaActualizada.getEstado(), duenioIdReal);
+                enviarNotificacionCambioEstado(citaActualizada, estadoAnterior, duenioIdReal);
             } catch (Exception e) {
-                log.warn("La cita se actualizó pero falló el envío de notificación: {}", e.getMessage());
+                log.error("La cita se actualizó pero falló el envío de notificación. Cita ID: {}, Error: {}",
+                        citaActualizada.getId(), e.getMessage(), e);
             }
         }
 
