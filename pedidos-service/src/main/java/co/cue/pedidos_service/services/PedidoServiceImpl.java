@@ -108,7 +108,7 @@ public class PedidoServiceImpl implements IPedidoService {
         String clientSecret = pasarelaPagoGateway.crearIntencionDePago(
                 totalPedido,
                 pedidoGuardado.getId(),
-                "usd"
+                "cop"  // Pesos colombianos
         );
 
 
