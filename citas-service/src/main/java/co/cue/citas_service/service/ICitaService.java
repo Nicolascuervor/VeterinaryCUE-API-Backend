@@ -36,4 +36,7 @@ public interface ICitaService {
 
     List<CitaDetailDTO> getAllCitasDetails();
 
+    // Confirmar una cita mediante token (endpoint público)
+    void confirmarCitaPorToken(String token);
+
 }

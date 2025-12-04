@@ -24,6 +24,7 @@ import java.time.LocalTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 
 @Service("citaServiceImpl")
@@ -101,9 +102,14 @@ public class CitaServiceImpl implements ICitaService {
         cita.setPrecioServicio(servicio.getPrecio());
         cita.setFechaHoraInicio(fechaInicio);
         cita.setFechaHoraFin(fechaFin);
-        cita.setEstado(EstadoCita.CONFIRMADA); // O ESPERA, según tu flujo
+        cita.setEstado(EstadoCita.ESPERA); // La cita inicia en ESPERA hasta que el usuario la confirme
         cita.setMotivoConsulta(dto.getMotivoConsulta());
         cita.setEstadoGeneralMascota(dto.getEstadoGeneralMascota());
+        
+        // Generar token único para confirmación por correo
+        String tokenConfirmacion = UUID.randomUUID().toString();
+        cita.setTokenConfirmacion(tokenConfirmacion);
+        log.info("Token de confirmación generado para Cita: {}", tokenConfirmacion);
 
         // Guardamos primero para obtener el ID de la cita
         Cita citaGuardada = citaRepository.save(cita);
@@ -613,6 +619,10 @@ public class CitaServiceImpl implements ICitaService {
                         "Dr. " + veterinario.getNombre() + " " + veterinario.getApellido() :
                         "Dr. ID " + cita.getVeterinarianId());
                 payloadDuenio.put("tipoDestinatario", "DUENIO");
+                // Agregar link de confirmación con el token
+                if (cita.getTokenConfirmacion() != null) {
+                    payloadDuenio.put("linkConfirmacion", cita.getTokenConfirmacion());
+                }
 
                 NotificationRequestDTO notificacionDuenio = new NotificationRequestDTO(
                         NotificationType.CITA_CONFIRMACION,
@@ -694,5 +704,29 @@ public class CitaServiceImpl implements ICitaService {
                 // Usamos el método 'mapToDetailDTO' que escribiste manualmente en el Mapper
                 .map(mapper::mapToDetailDTO)
                 .toList();
+    }
+
+    @Override
+    @Transactional
+    public void confirmarCitaPorToken(String token) {
+        log.info("Confirmando cita con token: {}", token);
+        
+        // Buscar la cita por token
+        Cita cita = citaRepository.findByTokenConfirmacion(token)
+                .orElseThrow(() -> new EntityNotFoundException("Token de confirmación inválido o cita no encontrada"));
+        
+        // Validar que la cita esté en estado ESPERA
+        if (cita.getEstado() != EstadoCita.ESPERA) {
+            throw new IllegalStateException("La cita ya ha sido confirmada o no está en estado de espera. Estado actual: " + cita.getEstado());
+        }
+        
+        // Usar el patrón State para confirmar la cita
+        ICitaState estadoEspera = stateFactory.getState(EstadoCita.ESPERA);
+        estadoEspera.confirmar(cita);
+        
+        // Guardar la cita confirmada
+        citaRepository.save(cita);
+        
+        log.info("Cita ID: {} confirmada exitosamente mediante token", cita.getId());
     }
 }

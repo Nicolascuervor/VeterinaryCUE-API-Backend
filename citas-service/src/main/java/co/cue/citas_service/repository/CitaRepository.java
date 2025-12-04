@@ -17,4 +17,7 @@ public interface CitaRepository extends JpaRepository<Cita, Long> {
 
     // Buscar todas las citas cuyo inicio esté entre dos fechas
     List<Cita> findAllByFechaHoraInicioBetween(LocalDateTime inicioDelDia, LocalDateTime finDelDia);
+    
+    // Buscar una cita por su token de confirmación
+    Optional<Cita> findByTokenConfirmacion(String tokenConfirmacion);
 }

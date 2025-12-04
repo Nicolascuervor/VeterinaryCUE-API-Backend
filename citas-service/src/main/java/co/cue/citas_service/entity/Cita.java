@@ -109,6 +109,10 @@ public class Cita {
     @Column(name = "proxima_cita")
     private LocalDate proximaCita;
 
+    // Token único para confirmar la cita mediante link en el correo
+    @Column(name = "token_confirmacion", unique = true, length = 100)
+    private String tokenConfirmacion;
+
     // Fecha de creación del registro
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

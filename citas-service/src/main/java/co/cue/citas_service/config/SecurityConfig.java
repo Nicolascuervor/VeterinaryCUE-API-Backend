@@ -67,6 +67,10 @@ public class SecurityConfig {
 
         http
                 .authorizeHttpRequests(authz -> authz
+                        // Endpoint público para confirmar cita mediante token (sin autenticación)
+                        .requestMatchers(HttpMethod.GET, "/api/citas/public/confirmar/**")
+                        .permitAll()
+                        
                         // GET: Dueños, Vets y Admins pueden leer citas.
                         .requestMatchers(HttpMethod.GET, CITAS_API_PATH)
                         .hasAnyRole(DUENIO_ROLE, VETERINARIO_ROLE, ADMIN_ROLE)

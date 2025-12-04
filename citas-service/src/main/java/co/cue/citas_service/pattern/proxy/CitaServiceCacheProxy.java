@@ -119,4 +119,12 @@ public class CitaServiceCacheProxy implements ICitaService {
         return realService.getAllCitasDetails();
     }
 
+    @Override
+    public void confirmarCitaPorToken(String token) {
+        log.debug("PROXY CACHE: (Write) Delegando confirmarCitaPorToken al servicio real...");
+        realService.confirmarCitaPorToken(token);
+        log.info("PROXY CACHE: (Invalidate 🗑️) Confirmación de cita detectada. Limpiando caché para {}.", LocalDate.now());
+        cache.remove(LocalDate.now());
+    }
+
 }

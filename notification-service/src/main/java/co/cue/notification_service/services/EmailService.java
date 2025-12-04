@@ -118,6 +118,40 @@ public class EmailService {
     }
 
     /**
+     * Envía un correo al cliente cuando se crea una nueva cita, incluyendo un link para confirmarla.
+     * El cliente debe hacer clic en el link para confirmar la cita.
+     */
+    public void enviarConfirmacionCitaConLink(String correo, String nombreDuenio, String nombreMascota, String fecha, String medico, String linkConfirmacion) {
+        log.info("Enviando confirmación de cita con link a {}", correo);
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(NO_EMAIL);
+            message.setTo(correo);
+            message.setSubject("¡Confirma tu Cita - Veterinaria CUE");
+            
+            // Construir la URL completa del link de confirmación
+            String urlConfirmacion = "https://api.veterinariacue.com/api/citas/public/confirmar/" + linkConfirmacion;
+            
+            message.setText(SALUDO + nombreDuenio + ",\n\n" +
+                    "Se ha agendado una nueva cita para tu mascota.\n\n" +
+                    "Detalles de la cita:\n" +
+                    "Mascota: " + nombreMascota + "\n" +
+                    "Veterinario: " + medico + "\n" +
+                    "Fecha y Hora: " + fecha + "\n\n" +
+                    "⚠️ IMPORTANTE: Para confirmar tu cita, por favor haz clic en el siguiente enlace:\n" +
+                    urlConfirmacion + "\n\n" +
+                    "Tu cita quedará confirmada una vez que hagas clic en el enlace.\n" +
+                    "Si no confirmas la cita, esta podría ser cancelada.\n\n" +
+                    "¡Esperamos verte pronto!");
+            
+            mailSender.send(message);
+            log.info("Correo de confirmación de cita con link enviado exitosamente.");
+        } catch (Exception e) {
+            log.error("Error enviando correo de confirmación de cita con link: {}", e.getMessage());
+        }
+    }
+
+    /**
      * Envía un correo al cliente cuando se registra una nueva mascota en el sistema.
      */
     public void enviarNotificacionMascotaCreada(String correo, String nombreDuenio, String nombreMascota, String especie, String raza) {

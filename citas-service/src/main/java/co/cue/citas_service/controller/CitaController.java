@@ -13,7 +13,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController // Indica que esta clase expone endpoints REST
 @RequestMapping("/api/citas") // Ruta base para todos los endpoints de citas
@@ -87,6 +89,19 @@ public class CitaController {
     @GetMapping("/details")
     public ResponseEntity<List<CitaDetailDTO>> obtenerTodasLasCitasDetalladas() {
         return ResponseEntity.ok(citaService.getAllCitasDetails());
+    }
+    
+    // Endpoint público para confirmar una cita mediante token (sin autenticación)
+    @GetMapping("/public/confirmar/{token}")
+    public ResponseEntity<Map<String, String>> confirmarCitaPorToken(@PathVariable String token) {
+        log.info("Solicitud de confirmación de cita recibida con token: {}", token);
+        citaService.confirmarCitaPorToken(token);
+        
+        Map<String, String> response = new HashMap<>();
+        response.put("mensaje", "Cita confirmada exitosamente");
+        response.put("estado", "CONFIRMADA");
+        
+        return ResponseEntity.ok(response);
     }
     
 }

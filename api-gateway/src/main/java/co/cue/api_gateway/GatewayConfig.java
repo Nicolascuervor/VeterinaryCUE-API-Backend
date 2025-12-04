@@ -45,6 +45,10 @@ public class GatewayConfig {
                 .route("authentication_service_route", r -> r.path("/api/auth/**")
                         .uri("lb://authentication-service"))
 
+                // Endpoint público para confirmar citas mediante token (sin autenticación)
+                .route("citas_service_public_confirmar", r -> r.path("/api/citas/public/confirmar/**")
+                        .uri("lb://citas-service"))
+
 
                 // RUTAS PROTEGIDAS
 

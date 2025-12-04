@@ -34,13 +34,28 @@ public class CitaEmailNotificationStrategy implements NotificationStrategy {
             );
         } else {
             // Enviar correo al dueño (por defecto)
-            emailService.enviarConfirmacionCita(
-                    data.get("correo"),
-                    data.get("nombreDuenio"),
-                    data.get("nombreMascota"),
-                    data.get("fecha"),
-                    data.get("medico")
-            );
+            // Verificar si hay un link de confirmación (para citas nuevas en estado ESPERA)
+            String linkConfirmacion = data.get("linkConfirmacion");
+            if (linkConfirmacion != null && !linkConfirmacion.isEmpty()) {
+                // Enviar correo con link de confirmación
+                emailService.enviarConfirmacionCitaConLink(
+                        data.get("correo"),
+                        data.get("nombreDuenio"),
+                        data.get("nombreMascota"),
+                        data.get("fecha"),
+                        data.get("medico"),
+                        linkConfirmacion
+                );
+            } else {
+                // Enviar correo de confirmación normal (cita ya confirmada)
+                emailService.enviarConfirmacionCita(
+                        data.get("correo"),
+                        data.get("nombreDuenio"),
+                        data.get("nombreMascota"),
+                        data.get("fecha"),
+                        data.get("medico")
+                );
+            }
         }
     }
 
