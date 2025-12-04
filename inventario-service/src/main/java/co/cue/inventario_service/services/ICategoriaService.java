@@ -1,6 +1,7 @@
 package co.cue.inventario_service.services;
 
 import co.cue.inventario_service.models.dtos.requestdtos.CategoriaRequestDTO;
+import co.cue.inventario_service.models.dtos.responsedtos.BulkCategoriaResponseDTO;
 import co.cue.inventario_service.models.dtos.responsedtos.CategoriaResponseDTO;
 
 import java.util.List;
@@ -21,4 +22,7 @@ public interface ICategoriaService {
 
     // Realiza una eliminación lógica marcando la categoría como inactiva
     void deleteCategoria(Long id);
+
+    // Crea múltiples categorías de forma masiva
+    BulkCategoriaResponseDTO crearCategoriasMasivo(List<CategoriaRequestDTO> categorias);
 }

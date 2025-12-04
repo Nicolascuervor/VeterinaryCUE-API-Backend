@@ -1,0 +1,15 @@
+[
+  {
+    "nombre": "Alimentos",
+    "descripcion": "Alimentos balanceados y nutricionales para perros y gatos. Incluye productos para todas las etapas de vida: cachorros, adultos y senior."
+  },
+  {
+    "nombre": "Medicinas y Antiparasitarios",
+    "descripcion": "Medicamentos veterinarios, antiparasitarios, vacunas y tratamientos para la salud y bienestar de tus mascotas."
+  },
+  {
+    "nombre": "Accesorios",
+    "descripcion": "Juguetes, collares, camas, platos, correas y otros accesorios esenciales para el cuidado y entretenimiento de tus mascotas."
+  }
+]
+
