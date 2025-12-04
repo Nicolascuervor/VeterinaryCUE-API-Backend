@@ -67,6 +67,12 @@ public enum NotificationType {
      * Estrategia para notificar cuando un paciente no asistió a la cita.
      * Requiere un payload con "correo", "nombreDuenio", "nombreMascota", "fecha".
      */
-    CITA_NO_ASISTIO
+    CITA_NO_ASISTIO,
+
+    /**
+     * Estrategia para notificar cuando se crea un nuevo historial clínico para una mascota.
+     * Requiere un payload con "correo", "nombreDuenio", "nombreMascota", "fecha", "diagnostico".
+     */
+    HISTORIAL_CLINICO_CREADO
 
 }

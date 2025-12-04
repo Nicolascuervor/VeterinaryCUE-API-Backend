@@ -14,4 +14,7 @@ public class MascotaClienteDTO {
 
     // Identificador del dueño de la mascota.
     private Long duenioId;
+    
+    // Nombre de la mascota.
+    private String nombre;
 }

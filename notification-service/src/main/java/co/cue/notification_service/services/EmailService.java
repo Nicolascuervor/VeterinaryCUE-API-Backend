@@ -269,4 +269,30 @@ public class EmailService {
             log.error("Error enviando correo de cita al veterinario: {}", e.getMessage());
         }
     }
+
+    /**
+     * Envía un correo cuando se crea un nuevo historial clínico para una mascota.
+     */
+    public void enviarNotificacionHistorialClinicoCreado(String correo, String nombreDuenio, String nombreMascota, String fecha, String diagnostico) {
+        log.info("Enviando notificación de historial clínico creado a {}", correo);
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(NO_EMAIL);
+            message.setTo(correo);
+            message.setSubject("Nuevo Historial Clínico - Veterinaria CUE");
+            message.setText(SALUDO + nombreDuenio + ",\n\n" +
+                    "Te informamos que se ha creado un nuevo historial clínico para tu mascota.\n\n" +
+                    "Detalles:\n" +
+                    "Mascota: " + nombreMascota + "\n" +
+                    "Fecha: " + fecha + "\n" +
+                    "Diagnóstico: " + (diagnostico != null && !diagnostico.isEmpty() ? diagnostico : "Sin diagnóstico registrado") + "\n\n" +
+                    "Puedes revisar el historial clínico completo desde tu cuenta.\n\n" +
+                    "¡Gracias por confiar en nosotros!");
+            
+            mailSender.send(message);
+            log.info("Correo de historial clínico creado enviado exitosamente.");
+        } catch (Exception e) {
+            log.error("Error enviando correo de historial clínico creado: {}", e.getMessage());
+        }
+    }
 }

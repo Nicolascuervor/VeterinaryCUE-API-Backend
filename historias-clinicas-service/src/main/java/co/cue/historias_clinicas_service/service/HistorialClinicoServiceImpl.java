@@ -1,9 +1,13 @@
 package co.cue.historias_clinicas_service.service;
 
+import co.cue.historias_clinicas_service.client.AuthServiceClient;
 import co.cue.historias_clinicas_service.client.MascotaClienteDTO;
 import co.cue.historias_clinicas_service.client.MascotaServiceClient;
+import co.cue.historias_clinicas_service.client.UsuarioClienteDTO;
 import co.cue.historias_clinicas_service.dto.HistorialClinicoRequestDTO;
 import co.cue.historias_clinicas_service.dto.HistorialClinicoResponseDTO;
+import co.cue.historias_clinicas_service.dto.NotificationRequestDTO;
+import co.cue.historias_clinicas_service.dto.NotificationType;
 import co.cue.historias_clinicas_service.entity.HistorialClinico;
 import co.cue.historias_clinicas_service.events.CitaCompletadaEventDTO;
 import co.cue.historias_clinicas_service.mapper.HistorialClinicoMapper;
@@ -18,8 +22,11 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.format.DateTimeFormatter;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @AllArgsConstructor
@@ -28,6 +35,8 @@ public class HistorialClinicoServiceImpl implements IHistorialClinicoService {
     private final HistorialClinicoRepository historialClinicoRepository;
     private final HistorialClinicoMapper mapper;
     private final MascotaServiceClient mascotaClient;
+    private final AuthServiceClient authServiceClient;
+    private final KafkaProducerService kafkaProducerService;
     @Override
     @Transactional
     public void registrarHistorialDesdeEvento(CitaCompletadaEventDTO event) {
@@ -63,8 +72,11 @@ public class HistorialClinicoServiceImpl implements IHistorialClinicoService {
             log.info("Se estableció diagnóstico por defecto para Cita ID: {}", event.getCitaId());
         }
         
-        historialClinicoRepository.save(nuevoHistorial);
+        HistorialClinico guardado = historialClinicoRepository.save(nuevoHistorial);
         log.info("Historial clínico creado exitosamente para Cita ID: {}", event.getCitaId());
+        
+        // Enviar notificación al dueño de la mascota
+        enviarNotificacionHistorialCreado(guardado);
     }
 
 
@@ -98,6 +110,10 @@ public class HistorialClinicoServiceImpl implements IHistorialClinicoService {
         HistorialClinico nuevoHistorial = mapper.mapRequestToEntity(requestDTO);
         nuevoHistorial.setVeterinarianId(veterinarioId); // Asignamos el ID del Vet que crea
         HistorialClinico guardado = historialClinicoRepository.save(nuevoHistorial);
+        
+        // Enviar notificación al dueño de la mascota
+        enviarNotificacionHistorialCreado(guardado);
+        
         return mapper.mapEntityToResponseDTO(guardado);
     }
 
@@ -165,5 +181,64 @@ public class HistorialClinicoServiceImpl implements IHistorialClinicoService {
         }
 
         log.info("Acceso autorizado por PROPIEDAD (DUEÑO) para usuario {}", usuarioId);
+    }
+
+    /**
+     * Envía una notificación por correo electrónico al dueño de la mascota
+     * cuando se crea un nuevo historial clínico.
+     */
+    private void enviarNotificacionHistorialCreado(HistorialClinico historial) {
+        try {
+            log.info("Preparando notificación de historial clínico creado para mascota ID: {}", historial.getPetId());
+            
+            // Obtener información de la mascota
+            MascotaClienteDTO mascota = mascotaClient.findMascotaById(historial.getPetId())
+                    .blockOptional()
+                    .orElse(null);
+            
+            if (mascota == null) {
+                log.warn("No se pudo obtener información de la mascota ID: {}. No se enviará notificación.", historial.getPetId());
+                return;
+            }
+            
+            if (mascota.getDuenioId() == null) {
+                log.warn("La mascota ID: {} no tiene dueño asignado. No se enviará notificación.", historial.getPetId());
+                return;
+            }
+            
+            // Obtener información del dueño
+            UsuarioClienteDTO usuario = authServiceClient.obtenerUsuarioPorId(mascota.getDuenioId())
+                    .blockOptional()
+                    .orElse(null);
+            
+            if (usuario == null || usuario.getCorreo() == null) {
+                log.warn("No se pudo obtener información del usuario ID: {} o no tiene correo. No se enviará notificación.", mascota.getDuenioId());
+                return;
+            }
+            
+            // Preparar el payload de la notificación
+            Map<String, String> payload = new HashMap<>();
+            payload.put("correo", usuario.getCorreo());
+            payload.put("nombreDuenio", (usuario.getNombre() != null ? usuario.getNombre() : "") + 
+                    (usuario.getApellido() != null ? " " + usuario.getApellido() : "").trim());
+            payload.put("nombreMascota", mascota.getNombre() != null ? mascota.getNombre() : "Tu mascota");
+            payload.put("fecha", historial.getFecha() != null ? 
+                    historial.getFecha().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) : "N/A");
+            payload.put("diagnostico", historial.getDiagnostico() != null ? historial.getDiagnostico() : "Sin diagnóstico registrado");
+            
+            // Crear y enviar la notificación
+            NotificationRequestDTO notificationRequest = new NotificationRequestDTO(
+                    NotificationType.HISTORIAL_CLINICO_CREADO,
+                    payload
+            );
+            
+            kafkaProducerService.enviarNotificacion(notificationRequest);
+            log.info("Notificación de historial clínico creado enviada exitosamente para mascota ID: {}", historial.getPetId());
+            
+        } catch (Exception e) {
+            log.error("Error al enviar notificación de historial clínico creado para historial ID: {}", 
+                    historial.getId(), e);
+            // No lanzamos la excepción para que la creación del historial no falle si la notificación falla
+        }
     }
 }
