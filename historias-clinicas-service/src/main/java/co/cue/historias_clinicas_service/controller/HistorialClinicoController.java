@@ -45,9 +45,26 @@ public class HistorialClinicoController {
     }
 
     /**
-     * Crear un historial clínico (solo veterinarios).
+     * Crear un historial clínico para una mascota específica (solo veterinarios).
+     * El petId se obtiene de la URL, no del body.
      */
+    @PostMapping("/mascota/{petId}")
+    public ResponseEntity<HistorialClinicoResponseDTO> crearHistorialClinicoPorMascota(
+            @PathVariable Long petId,
+            @RequestBody HistorialClinicoRequestDTO requestDTO,
+            @RequestHeader(value = "X-Usuario-Id") Long veterinarioId) {
+        
+        // Asignar el petId desde la URL al DTO
+        requestDTO.setPetId(petId);
+        
+        HistorialClinicoResponseDTO nuevoHistorial = historialClinicoService.createHistorialMedico(requestDTO, veterinarioId);
+        return new ResponseEntity<>(nuevoHistorial, HttpStatus.CREATED);
+    }
 
+    /**
+     * Crear un historial clínico (solo veterinarios).
+     * Requiere que el petId esté incluido en el body del request.
+     */
     @PostMapping
     public ResponseEntity<HistorialClinicoResponseDTO> crearHistorialClinico(
             @RequestBody HistorialClinicoRequestDTO requestDTO,
