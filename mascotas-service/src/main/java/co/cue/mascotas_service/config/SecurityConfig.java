@@ -29,6 +29,8 @@ public class SecurityConfig {
 
     // Rol requerido para operaciones administrativas.
     private static final String ADMIN_ROLE = "ADMIN";
+    private static final String DUENIO_ROLE = "DUENIO";
+    private static final String VETERINARIO_ROLE = "VETERINARIO";
     // Ruta protegida del módulo de mascotas.
     private static final String MASCOTAS_API_PATH = "/api/mascotas/**";
 
@@ -67,7 +69,7 @@ public class SecurityConfig {
                 // Define permisos por tipo de petición y rol.
                 .authorizeHttpRequests(authz -> authz
                         .requestMatchers(HttpMethod.GET, MASCOTAS_API_PATH).authenticated()
-                        .requestMatchers(HttpMethod.POST, MASCOTAS_API_PATH).hasRole(ADMIN_ROLE)
+                        .requestMatchers(HttpMethod.POST, MASCOTAS_API_PATH).hasAnyRole(ADMIN_ROLE,  DUENIO_ROLE,  VETERINARIO_ROLE)
                         .requestMatchers(HttpMethod.PUT, MASCOTAS_API_PATH).hasRole(ADMIN_ROLE)
                         .requestMatchers(HttpMethod.DELETE, MASCOTAS_API_PATH).hasRole(ADMIN_ROLE)
                         // Cualquier otra ruta requiere autenticación.
