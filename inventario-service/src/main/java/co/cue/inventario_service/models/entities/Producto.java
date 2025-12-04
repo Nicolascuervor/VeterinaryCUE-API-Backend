@@ -30,6 +30,14 @@ public abstract class Producto {
     @Column(nullable = false, unique = true)
     private String nombre;
 
+    // Descripción del producto para mostrar en el ecommerce
+    @Column(length = 1000)
+    private String descripcion;
+
+    // URL o ruta de la foto/imagen del producto
+    @Column(length = 500)
+    private String foto;
+
     // Precio del producto
     @Column(nullable = false)
     private Double precio;

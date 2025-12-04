@@ -68,6 +68,8 @@ public class ProductoMapper {
     // Mapea atributos comunes de Producto desde el DTO hacia la entidad
     private void mapBaseRequestToEntity(ProductoRequestDTO dto, Producto entity) {
         entity.setNombre(dto.getNombre());
+        entity.setDescripcion(dto.getDescripcion());
+        entity.setFoto(dto.getFoto());
         entity.setPrecio(dto.getPrecio());
         entity.setStockActual(dto.getStockActual());
         entity.setStockMinimo(dto.getStockMinimo());
@@ -79,6 +81,8 @@ public class ProductoMapper {
     private void mapBaseEntityToResponseDTO(Producto entity, ProductoResponseDTO dto) {
         dto.setId(entity.getId());
         dto.setNombre(entity.getNombre());
+        dto.setDescripcion(entity.getDescripcion());
+        dto.setFoto(entity.getFoto());
         dto.setPrecio(entity.getPrecio());
         dto.setStockActual(entity.getStockActual());
         dto.setDisponibleParaVenta(entity.isDisponibleParaVenta());

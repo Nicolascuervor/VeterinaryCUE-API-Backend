@@ -24,6 +24,13 @@ public class CategoriaController {
         return ResponseEntity.ok(categorias);
     }
 
+    // GET: Endpoint público para obtener todas las categorías activas (para ecommerce)
+    @GetMapping("/public")
+    public ResponseEntity<List<CategoriaResponseDTO>> listarCategoriasPublicas() {
+        List<CategoriaResponseDTO> categorias = categoriaService.listAllActiveCategorias();
+        return ResponseEntity.ok(categorias);
+    }
+
     // GET: Obtiene una categoría activa según su ID
     @GetMapping("/{id}")
     public ResponseEntity<CategoriaResponseDTO> obtenerCategoriaPorId(@PathVariable Long id) {

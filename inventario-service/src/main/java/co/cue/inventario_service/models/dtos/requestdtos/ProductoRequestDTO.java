@@ -27,6 +27,12 @@ public abstract class ProductoRequestDTO {
     // Nombre del producto
     private String nombre;
 
+    // Descripción del producto para mostrar en el ecommerce
+    private String descripcion;
+
+    // URL o ruta de la foto/imagen del producto
+    private String foto;
+
     // Precio del producto
     private Double precio;
 

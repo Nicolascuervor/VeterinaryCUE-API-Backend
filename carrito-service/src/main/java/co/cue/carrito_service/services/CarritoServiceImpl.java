@@ -2,6 +2,7 @@ package co.cue.carrito_service.services;
 
 import co.cue.carrito_service.client.InventarioServiceClient;
 import co.cue.carrito_service.mapper.CarritoMapper;
+import co.cue.carrito_service.models.dtos.ProductoInventarioDTO;
 import co.cue.carrito_service.models.dtos.requestdtos.AddItemRequestDTO;
 import co.cue.carrito_service.models.dtos.responsedtos.CarritoResponseDTO;
 import co.cue.carrito_service.models.entities.Carrito;
@@ -36,17 +37,41 @@ public class CarritoServiceImpl implements ICarritoService {
     @Transactional
     // Añade un item al carrito, si ya existe incrementa la cantidad
     public CarritoResponseDTO addItem(Long usuarioId, String sessionId, AddItemRequestDTO itemDTO) {
-        // Valida que el producto exista en inventario
-        inventarioServiceClient.findProductoById(itemDTO.getProductoId());
+        // Valida que el producto exista en inventario y obtiene su información
+        ProductoInventarioDTO producto = inventarioServiceClient.findProductoById(itemDTO.getProductoId());
+        
+        // Validar que el producto esté disponible para venta
+        if (!producto.isDisponibleParaVenta()) {
+            throw new IllegalStateException("El producto no está disponible para venta");
+        }
+        
         Carrito carrito = findOrCreateCarrito(usuarioId, sessionId);
         Optional<ItemCarrito> itemExistenteOpt = carrito.getItems().stream()
                 .filter(item -> item.getProductoId().equals(itemDTO.getProductoId()))
                 .findFirst();
 
+        int cantidadTotal;
+        if (itemExistenteOpt.isPresent()) {
+            // Si el item ya está, calcula la nueva cantidad total
+            ItemCarrito itemExistente = itemExistenteOpt.get();
+            cantidadTotal = itemExistente.getCantidad() + itemDTO.getCantidad();
+        } else {
+            // Si no está, la cantidad total es la que se quiere agregar
+            cantidadTotal = itemDTO.getCantidad();
+        }
+
+        // Validar stock disponible en tiempo real
+        if (producto.getStockActual() == null || cantidadTotal > producto.getStockActual()) {
+            throw new IllegalStateException(
+                    String.format("Stock insuficiente. Disponible: %d, Solicitado: %d", 
+                            producto.getStockActual() != null ? producto.getStockActual() : 0, 
+                            cantidadTotal));
+        }
+
         if (itemExistenteOpt.isPresent()) {
             // Si el item ya está, incrementa la cantidad
             ItemCarrito itemExistente = itemExistenteOpt.get();
-            itemExistente.setCantidad(itemExistente.getCantidad() + itemDTO.getCantidad());
+            itemExistente.setCantidad(cantidadTotal);
             itemCarritoRepository.save(itemExistente);
         } else {
             // Si no está, crea un nuevo item
