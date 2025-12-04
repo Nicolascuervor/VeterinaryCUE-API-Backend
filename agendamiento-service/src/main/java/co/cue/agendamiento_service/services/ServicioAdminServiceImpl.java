@@ -11,6 +11,7 @@ import co.cue.agendamiento_service.models.entities.dtos.serviciosdtos.responsedt
 import co.cue.agendamiento_service.models.entities.servicios.*;
 import co.cue.agendamiento_service.repository.ServicioRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,15 +25,23 @@ public class ServicioAdminServiceImpl implements IServicioAdminService {
 
     private final ServicioRepository servicioRepository;  // Repositorio para acceder a la entidad Servicio
     private final ServicioMapper mapper;                 // Mapper para convertir entre entidades y DTOs
-    private final IServicioAdminService self;            // Auto-inyección para permitir llamadas transaccionales
+    private final ApplicationContext applicationContext;  // Contexto de aplicación para obtener el proxy
     
-    // Constructor con auto-inyección para permitir llamadas transaccionales
+    // Constructor sin auto-inyección para evitar dependencia circular
     public ServicioAdminServiceImpl(ServicioRepository servicioRepository, 
                                     ServicioMapper mapper,
-                                    IServicioAdminService self) {
+                                    ApplicationContext applicationContext) {
         this.servicioRepository = servicioRepository;
         this.mapper = mapper;
-        this.self = self;
+        this.applicationContext = applicationContext;
+    }
+    
+    /**
+     * Obtiene el proxy del servicio para permitir llamadas transaccionales.
+     * Esto evita la dependencia circular mientras permite que Spring aplique el proxy.
+     */
+    private IServicioAdminService getSelf() {
+        return applicationContext.getBean(IServicioAdminService.class);
     }
 
 
@@ -269,8 +278,8 @@ public class ServicioAdminServiceImpl implements IServicioAdminService {
                 // Validar campos requeridos
                 validarServicioDTO(servicioDTO, i);
                 
-                // Crear servicio en su propia transacción usando auto-inyección
-                ServicioResponseDTO servicioCreado = self.crearServicioPorTipoTransaccional(servicioDTO);
+                // Crear servicio en su propia transacción usando el proxy
+                ServicioResponseDTO servicioCreado = getSelf().crearServicioPorTipoTransaccional(servicioDTO);
                 serviciosCreados.add(servicioCreado);
                 log.debug("Servicio {} (índice {}) creado exitosamente: {}", nombreServicio, i, servicioCreado.getId());
             } catch (Exception e) {
@@ -331,9 +340,10 @@ public class ServicioAdminServiceImpl implements IServicioAdminService {
 
     /**
      * Crea un servicio según su tipo específico.
-     * Usa auto-inyección para garantizar que las transacciones funcionen correctamente.
+     * Usa el proxy del servicio para garantizar que las transacciones funcionen correctamente.
      */
     private ServicioResponseDTO crearServicioPorTipo(ServicioRequestDTO dto) {
+        IServicioAdminService self = getSelf();
         if (dto instanceof ConsultaRequestDTO consultaDTO) {
             return self.crearConsulta(consultaDTO);
         } else if (dto instanceof CirugiaRequestDTO cirugiaDTO) {
