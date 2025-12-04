@@ -31,6 +31,24 @@ public interface IProductoService {
     // Actualiza la información general de un producto
     ProductoResponseDTO updateProducto(Long id, ProductoRequestDTO dto);
 
+    // Actualiza un producto de tipo Alimento
+    ProductoResponseDTO updateAlimento(Long id, AlimentoRequestDTO requestDTO);
+
+    // Actualiza un producto de tipo Medicina
+    ProductoResponseDTO updateMedicina(Long id, MedicinaRequestDTO requestDTO);
+
+    // Actualiza un producto de tipo Accesorio
+    ProductoResponseDTO updateAccesorio(Long id, AccesorioRequestDTO requestDTO);
+
+    // Actualiza el stock de un producto específico
+    ProductoResponseDTO actualizarStock(Long id, Integer nuevoStock);
+
+    // Reactiva un producto que fue eliminado lógicamente
+    ProductoResponseDTO reactivarProducto(Long id);
+
+    // Actualiza la disponibilidad para venta de un producto
+    ProductoResponseDTO actualizarDisponibilidadVenta(Long id, boolean disponibleParaVenta);
+
     // Reduce el stock de una lista de productos según las cantidades indicadas
     void descontarStock(List<StockReductionDTO> items);
 

@@ -67,6 +67,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, INVENTARIO_API_PATH).permitAll()
                         .requestMatchers(HttpMethod.POST, INVENTARIO_API_PATH).hasRole(ADMIN_ROLE)
                         .requestMatchers(HttpMethod.PUT, INVENTARIO_API_PATH).hasRole(ADMIN_ROLE)
+                        .requestMatchers(HttpMethod.PATCH, INVENTARIO_API_PATH).hasRole(ADMIN_ROLE)
                         .requestMatchers(HttpMethod.DELETE, INVENTARIO_API_PATH).hasRole(ADMIN_ROLE)
                         .anyRequest().authenticated());
         return http.build();

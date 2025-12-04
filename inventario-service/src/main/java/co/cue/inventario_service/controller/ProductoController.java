@@ -73,13 +73,65 @@ public class ProductoController {
         return ResponseEntity.noContent().build();
     }
 
-    // PUT: Actualiza un producto existente por su ID
+    // PUT: Actualiza un producto existente por su ID (genérico)
     @PutMapping("/{id}")
     public ResponseEntity<ProductoResponseDTO> actualizarProducto(
             @PathVariable Long id,
             @RequestBody ProductoRequestDTO requestDTO) {
 
         ProductoResponseDTO actualizado = productoService.updateProducto(id, requestDTO);
+        return ResponseEntity.ok(actualizado);
+    }
+
+    // PUT: Actualiza un producto de tipo Alimento por su ID
+    @PutMapping("/alimento/{id}")
+    public ResponseEntity<ProductoResponseDTO> actualizarAlimento(
+            @PathVariable Long id,
+            @RequestBody AlimentoRequestDTO requestDTO) {
+        ProductoResponseDTO actualizado = productoService.updateAlimento(id, requestDTO);
+        return ResponseEntity.ok(actualizado);
+    }
+
+    // PUT: Actualiza un producto de tipo Medicina por su ID
+    @PutMapping("/medicina/{id}")
+    public ResponseEntity<ProductoResponseDTO> actualizarMedicina(
+            @PathVariable Long id,
+            @RequestBody MedicinaRequestDTO requestDTO) {
+        ProductoResponseDTO actualizado = productoService.updateMedicina(id, requestDTO);
+        return ResponseEntity.ok(actualizado);
+    }
+
+    // PUT: Actualiza un producto de tipo Accesorio por su ID
+    @PutMapping("/accesorio/{id}")
+    public ResponseEntity<ProductoResponseDTO> actualizarAccesorio(
+            @PathVariable Long id,
+            @RequestBody AccesorioRequestDTO requestDTO) {
+        ProductoResponseDTO actualizado = productoService.updateAccesorio(id, requestDTO);
+        return ResponseEntity.ok(actualizado);
+    }
+
+    // PATCH: Actualiza el stock de un producto específico
+    @PatchMapping("/{id}/stock")
+    public ResponseEntity<ProductoResponseDTO> actualizarStock(
+            @PathVariable Long id,
+            @RequestParam Integer stock) {
+        ProductoResponseDTO actualizado = productoService.actualizarStock(id, stock);
+        return ResponseEntity.ok(actualizado);
+    }
+
+    // PATCH: Reactiva un producto que fue eliminado lógicamente
+    @PatchMapping("/{id}/reactivar")
+    public ResponseEntity<ProductoResponseDTO> reactivarProducto(@PathVariable Long id) {
+        ProductoResponseDTO reactivado = productoService.reactivarProducto(id);
+        return ResponseEntity.ok(reactivado);
+    }
+
+    // PATCH: Actualiza la disponibilidad para venta de un producto
+    @PatchMapping("/{id}/disponibilidad")
+    public ResponseEntity<ProductoResponseDTO> actualizarDisponibilidadVenta(
+            @PathVariable Long id,
+            @RequestParam boolean disponibleParaVenta) {
+        ProductoResponseDTO actualizado = productoService.actualizarDisponibilidadVenta(id, disponibleParaVenta);
         return ResponseEntity.ok(actualizado);
     }
 

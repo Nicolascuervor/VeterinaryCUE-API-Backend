@@ -198,6 +198,72 @@ public class ProductoServiceImpl implements IProductoService {
 
     @Override
     @Transactional
+    public ProductoResponseDTO updateAlimento(Long id, AlimentoRequestDTO requestDTO) {
+        Producto producto = findProductoActivoById(id);
+        if (!(producto instanceof Alimento)) {
+            throw new IllegalArgumentException("El producto con ID " + id + " no es de tipo Alimento");
+        }
+        return updateProducto(id, requestDTO);
+    }
+
+    @Override
+    @Transactional
+    public ProductoResponseDTO updateMedicina(Long id, MedicinaRequestDTO requestDTO) {
+        Producto producto = findProductoActivoById(id);
+        if (!(producto instanceof Medicina)) {
+            throw new IllegalArgumentException("El producto con ID " + id + " no es de tipo Medicina");
+        }
+        return updateProducto(id, requestDTO);
+    }
+
+    @Override
+    @Transactional
+    public ProductoResponseDTO updateAccesorio(Long id, AccesorioRequestDTO requestDTO) {
+        Producto producto = findProductoActivoById(id);
+        if (!(producto instanceof Accesorio)) {
+            throw new IllegalArgumentException("El producto con ID " + id + " no es de tipo Accesorio");
+        }
+        return updateProducto(id, requestDTO);
+    }
+
+    @Override
+    @Transactional
+    public ProductoResponseDTO actualizarStock(Long id, Integer nuevoStock) {
+        if (nuevoStock == null || nuevoStock < 0) {
+            throw new IllegalArgumentException("El stock debe ser un número mayor o igual a 0");
+        }
+        Producto producto = findProductoActivoById(id);
+        producto.setStockActual(nuevoStock);
+        Producto actualizado = productoRepository.save(producto);
+        return productoMapper.mapToResponseDTO(actualizado);
+    }
+
+    @Override
+    @Transactional
+    public ProductoResponseDTO reactivarProducto(Long id) {
+        Producto producto = productoRepository.findById(id)
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Producto no encontrado con ID: " + id));
+        
+        if (producto.isActivo()) {
+            throw new IllegalStateException("El producto con ID " + id + " ya está activo");
+        }
+        
+        producto.setActivo(true);
+        Producto reactivado = productoRepository.save(producto);
+        return productoMapper.mapToResponseDTO(reactivado);
+    }
+
+    @Override
+    @Transactional
+    public ProductoResponseDTO actualizarDisponibilidadVenta(Long id, boolean disponibleParaVenta) {
+        Producto producto = findProductoActivoById(id);
+        producto.setDisponibleParaVenta(disponibleParaVenta);
+        Producto actualizado = productoRepository.save(producto);
+        return productoMapper.mapToResponseDTO(actualizado);
+    }
+
+    @Override
+    @Transactional
     public void descontarStock(List<StockReductionDTO> items) {
         // Recorre los elementos y descuenta el stock de cada producto
         for (StockReductionDTO item : items) {
