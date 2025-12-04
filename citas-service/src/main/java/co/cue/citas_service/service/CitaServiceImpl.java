@@ -33,6 +33,41 @@ import java.util.UUID;
 @Slf4j
 public class CitaServiceImpl implements ICitaService {
 
+    // Constantes para strings
+    private static final String TIPO_CITA = "CITA";
+    private static final String DR_PREFIX = "Dr. ";
+    private static final String DR_ID_PREFIX = "Dr. ID ";
+    private static final String NOMBRE_MASCOTA_DEFAULT = "Tu Mascota";
+    private static final String NOMBRE_MASCOTA_NA = "N/A";
+    private static final String CORREO_KEY = "correo";
+    private static final String NOMBRE_DUENIO_KEY = "nombreDuenio";
+    private static final String NOMBRE_MASCOTA_KEY = "nombreMascota";
+    private static final String FECHA_KEY = "fecha";
+    private static final String MEDICO_KEY = "medico";
+    private static final String TIPO_DESTINATARIO_KEY = "tipoDestinatario";
+    private static final String LINK_CONFIRMACION_KEY = "linkConfirmacion";
+    private static final String FECHA_ANTERIOR_KEY = "fechaAnterior";
+    private static final String FECHA_NUEVA_KEY = "fechaNueva";
+    private static final String MOTIVO_KEY = "motivo";
+    private static final String SIN_MOTIVO_ESPECIFICADO = "Sin motivo especificado";
+    private static final String CLIENTE_DEFAULT = "Cliente";
+    
+    // Mensajes de log
+    private static final String LOG_OBTENIENDO_DATOS_MASCOTA = "Obteniendo datos de la mascota (Pet ID: {})...";
+    private static final String LOG_MASCOTA_OBTENIDA = "Mascota obtenida: {}";
+    private static final String LOG_ERROR_OBTENER_MASCOTA = "Error al obtener datos de la mascota. Pet ID: {}, Error: {}";
+    private static final String LOG_NO_PUDO_OBTENER_MASCOTA = "No se pudo obtener nombre de la mascota. Pet ID: {}";
+    private static final String LOG_OBTENIENDO_DATOS_VETERINARIO = "Obteniendo datos del veterinario (Veterinario ID: {})...";
+    private static final String LOG_VETERINARIO_OBTENIDO = "Veterinario obtenido: {}";
+    private static final String LOG_ERROR_OBTENER_VETERINARIO = "No se pudo obtener datos del veterinario. Veterinario ID: {}, Error: {}";
+    private static final String LOG_OBTENIENDO_DATOS_DUENIO = "Obteniendo datos del dueño real (Dueño ID: {})...";
+    private static final String LOG_DUENIO_OBTENIDO = "Dueño obtenido: {} {} ({})";
+    private static final String LOG_NO_PUDO_OBTENER_DUENIO = "No se pudo obtener datos del dueño. Dueño ID: {}";
+    private static final String LOG_ERROR_OBTENER_DUENIO = "Error al obtener datos del dueño. Dueño ID: {}, Error: {}";
+    
+    // Estados válidos para mensajes de error
+    private static final String ESTADOS_VALIDOS = "ESPERA, CONFIRMADA, EN_PROGRESO, FINALIZADA, CANCELADA, NO_ASISTIO";
+
     // Repositorio de citas
     private final CitaRepository citaRepository;
 
@@ -48,8 +83,8 @@ public class CitaServiceImpl implements ICitaService {
     // Factory para obtener el comportamiento de cada estado
     private final CitaStateFactory stateFactory;
 
-    private final AuthServiceClient authClient;       // Inyectar
-    private final MascotaServiceClient mascotaClient; // Inyectar
+    private final AuthServiceClient authClient;
+    private final MascotaServiceClient mascotaClient;
 
     @Override
     @Transactional
@@ -121,7 +156,7 @@ public class CitaServiceImpl implements ICitaService {
                 .veterinarioId(dto.getVeterinarianId())
                 .fechaInicio(fechaInicio)
                 .fechaFin(fechaFin)
-                .tipo("CITA") // Coincide con el Enum en el otro servicio
+                .tipo(TIPO_CITA)
                 .referenciaExternaId(citaGuardada.getId()) // ¡Clave para poder cancelar luego!
                 .observacion("Cita para mascota ID: " + dto.getPetId())
                 .build();
@@ -184,71 +219,7 @@ public class CitaServiceImpl implements ICitaService {
             log.info("Detectado cambio de horario para Cita ID: {}. Horario anterior: {}, Nuevo horario: {}", 
                     id, fechaHoraInicioAnterior, updateDTO.getFechaHoraInicio());
             horarioCambio = true;
-            
-            // Calcular la nueva fechaHoraFin si no se proporciona
-            LocalDateTime nuevaFechaHoraFin;
-            if (updateDTO.getFechaHoraFin() != null) {
-                nuevaFechaHoraFin = updateDTO.getFechaHoraFin();
-            } else {
-                // Obtener la duración del servicio para calcular la fecha fin
-                try {
-                    ServicioClienteDTO servicio = agendamientoClient.getServicioById(cita.getServicioId())
-                            .blockOptional()
-                            .orElseThrow(() -> new EntityNotFoundException("Servicio no encontrado: " + cita.getServicioId()));
-                    nuevaFechaHoraFin = updateDTO.getFechaHoraInicio().plusMinutes(servicio.getDuracionPromedioMinutos());
-                    updateDTO.setFechaHoraFin(nuevaFechaHoraFin);
-                } catch (Exception e) {
-                    log.error("Error al obtener duración del servicio. Usando duración del horario anterior.", e);
-                    // Si falla, usar la misma duración que tenía antes
-                    long duracionMinutos = java.time.Duration.between(fechaHoraInicioAnterior, fechaHoraFinAnterior).toMinutes();
-                    nuevaFechaHoraFin = updateDTO.getFechaHoraInicio().plusMinutes(duracionMinutos);
-                    updateDTO.setFechaHoraFin(nuevaFechaHoraFin);
-                }
-            }
-            
-            // 1. Liberar el espacio anterior en agendamiento
-            try {
-                log.info("Liberando espacio anterior en agendamiento para Cita ID: {}", id);
-                agendamientoClient.liberarEspacio(id).block();
-                log.info("Espacio anterior liberado exitosamente");
-            } catch (Exception e) {
-                log.error("Error al liberar espacio anterior. Continuando con la actualización. Error: {}", e.getMessage());
-                // No lanzamos excepción para permitir que continúe, pero registramos el error
-            }
-            
-            // 2. Reservar el nuevo espacio (esto valida automáticamente que no haya conflictos)
-            try {
-                OcupacionRequestDTO nuevaReservaDTO = OcupacionRequestDTO.builder()
-                        .veterinarioId(cita.getVeterinarianId())
-                        .fechaInicio(updateDTO.getFechaHoraInicio())
-                        .fechaFin(nuevaFechaHoraFin)
-                        .tipo("CITA")
-                        .referenciaExternaId(id)
-                        .observacion("Cita reasignada para mascota ID: " + cita.getPetId())
-                        .build();
-                
-                log.info("Reservando nuevo espacio en agendamiento para Cita ID: {}", id);
-                agendamientoClient.reservarEspacio(nuevaReservaDTO).block();
-                log.info("Nuevo espacio reservado exitosamente");
-            } catch (Exception e) {
-                log.error("Error al reservar nuevo espacio. Revirtiendo liberación del espacio anterior.", e);
-                // Intentar restaurar el espacio anterior
-                try {
-                    OcupacionRequestDTO reservaAnteriorDTO = OcupacionRequestDTO.builder()
-                            .veterinarioId(cita.getVeterinarianId())
-                            .fechaInicio(fechaHoraInicioAnterior)
-                            .fechaFin(fechaHoraFinAnterior)
-                            .tipo("CITA")
-                            .referenciaExternaId(id)
-                            .observacion("Restauración de cita para mascota ID: " + cita.getPetId())
-                            .build();
-                    agendamientoClient.reservarEspacio(reservaAnteriorDTO).block();
-                    log.info("Espacio anterior restaurado");
-                } catch (Exception restoreException) {
-                    log.error("Error crítico: No se pudo restaurar el espacio anterior. Cita ID: {}", id, restoreException);
-                }
-                throw new IllegalStateException("El nuevo horario seleccionado ya no está disponible o no es válido.", e);
-            }
+            actualizarHorarioCita(cita, updateDTO, fechaHoraInicioAnterior, fechaHoraFinAnterior);
         }
         
         // Actualizar campos de la cita
@@ -376,92 +347,33 @@ public class CitaServiceImpl implements ICitaService {
         }
 
         try {
-            // Obtener datos del Dueño REAL de la mascota (no el usuario que realiza la acción)
-            UsuarioClienteDTO duenio = null;
-            try {
-                log.info("Obteniendo datos del dueño real (Dueño ID: {})...", duenioId);
-                duenio = authClient.obtenerUsuarioPorId(duenioId).block();
-                if (duenio != null) {
-                    log.info("Dueño obtenido: {} {} ({})", duenio.getNombre(), duenio.getApellido(), duenio.getCorreo());
-                } else {
-                    log.warn("No se pudo obtener datos del dueño. Dueño ID: {}", duenioId);
-                }
-            } catch (Exception e) {
-                log.error("Error al obtener datos del dueño. Dueño ID: {}, Error: {}", duenioId, e.getMessage(), e);
-            }
+            UsuarioClienteDTO duenio = obtenerDatosDuenio(duenioId);
+            String nombreMascota = obtenerNombreMascota(cita.getPetId());
+            String nombreVeterinario = obtenerNombreVeterinario(cita.getVeterinarianId());
 
-            // Obtener nombre de la Mascota
-            String nombreMascota = "Tu Mascota";
-            try {
-                log.info("Obteniendo datos de la mascota (Pet ID: {})...", cita.getPetId());
-                MascotaClienteDTO mascota = mascotaClient.findMascotaById(cita.getPetId()).block();
-                if (mascota != null && mascota.getNombre() != null) {
-                    nombreMascota = mascota.getNombre();
-                    log.info("Mascota obtenida: {}", nombreMascota);
-                } else {
-                    log.warn("No se pudo obtener nombre de la mascota. Pet ID: {}", cita.getPetId());
-                }
-            } catch (Exception e) {
-                log.error("Error al obtener datos de la mascota. Pet ID: {}, Error: {}", cita.getPetId(), e.getMessage(), e);
-            }
-
-            // Obtener datos del Veterinario para el mensaje
-            String nombreVeterinario = "Dr. ID " + cita.getVeterinarianId();
-            try {
-                log.info("Obteniendo datos del veterinario (Veterinario ID: {})...", cita.getVeterinarianId());
-                UsuarioClienteDTO veterinario = authClient.obtenerUsuarioPorId(cita.getVeterinarianId()).block();
-                if (veterinario != null) {
-                    nombreVeterinario = "Dr. " + veterinario.getNombre() + " " + veterinario.getApellido();
-                    log.info("Veterinario obtenido: {}", nombreVeterinario);
-                }
-            } catch (Exception e) {
-                log.warn("No se pudo obtener datos del veterinario. Veterinario ID: {}, Error: {}",
-                        cita.getVeterinarianId(), e.getMessage());
-            }
-
-            if (duenio != null && duenio.getCorreo() != null && !duenio.getCorreo().isEmpty()) {
-                Map<String, String> payload = new HashMap<>();
-                payload.put("correo", duenio.getCorreo());
-                String nombreCompletoDuenio = ((duenio.getNombre() != null ? duenio.getNombre() : "") + " " +
-                        (duenio.getApellido() != null ? duenio.getApellido() : "")).trim();
-                payload.put("nombreDuenio", nombreCompletoDuenio);
-                payload.put("nombreMascota", nombreMascota);
-                payload.put("fecha", cita.getFechaHoraInicio().toString().replace("T", " "));
-                payload.put("medico", nombreVeterinario);
-
-                NotificationRequestDTO notificacion = null;
-                NotificationType tipoNotificacion = null;
-
-                // Determinar el tipo de notificación según el nuevo estado
-                switch (cita.getEstado()) {
-                    case CANCELADA -> {
-                        tipoNotificacion = NotificationType.CITA_CANCELADA;
-                        payload.put("motivo", cita.getObservaciones() != null ? cita.getObservaciones() : "Sin motivo especificado");
-                    }
-                    case EN_PROGRESO -> {
-                        tipoNotificacion = NotificationType.CITA_EN_PROGRESO;
-                    }
-                    case FINALIZADA -> {
-                        tipoNotificacion = NotificationType.CITA_FINALIZADA;
-                    }
-                    case NO_ASISTIO -> {
-                        tipoNotificacion = NotificationType.CITA_NO_ASISTIO;
-                    }
-                    default -> {
-                        log.debug("No se envía notificación para el estado: {}", cita.getEstado());
-                        return;
-                    }
-                }
-
-                notificacion = new NotificationRequestDTO(tipoNotificacion, payload);
-
-                log.info("Enviando notificación de cambio de estado al dueño: {}", duenio.getCorreo());
-                kafkaProducer.enviarNotificacion(notificacion);
-                log.info("✅ Notificación de cambio de estado enviada para Cita ID: {}, Estado: {}", cita.getId(), cita.getEstado());
-            } else {
+            if (duenio == null || duenio.getCorreo() == null || duenio.getCorreo().isEmpty()) {
                 log.warn("No se puede enviar notificación. Dueño es null o no tiene correo. Cita ID: {}, Dueño ID: {}",
                         cita.getId(), duenioId);
+                return;
             }
+
+            NotificationType tipoNotificacion = determinarTipoNotificacion(cita.getEstado());
+            if (tipoNotificacion == null) {
+                log.debug("No se envía notificación para el estado: {}", cita.getEstado());
+                return;
+            }
+
+            Map<String, String> payload = construirPayloadBasico(duenio, nombreMascota, 
+                    cita.getFechaHoraInicio(), nombreVeterinario);
+            
+            if (cita.getEstado() == EstadoCita.CANCELADA) {
+                payload.put(MOTIVO_KEY, cita.getObservaciones() != null ? cita.getObservaciones() : SIN_MOTIVO_ESPECIFICADO);
+            }
+
+            NotificationRequestDTO notificacion = new NotificationRequestDTO(tipoNotificacion, payload);
+            log.info("Enviando notificación de cambio de estado al dueño: {}", duenio.getCorreo());
+            kafkaProducer.enviarNotificacion(notificacion);
+            log.info("✅ Notificación de cambio de estado enviada para Cita ID: {}, Estado: {}", cita.getId(), cita.getEstado());
         } catch (Exception e) {
             log.error("❌ Error al enviar notificación de cambio de estado. Cita ID: {}, Error: {}",
                     cita.getId(), e.getMessage(), e);
@@ -476,72 +388,29 @@ public class CitaServiceImpl implements ICitaService {
                 cita.getId(), horarioAnterior, cita.getFechaHoraInicio(), duenioId);
 
         try {
-            // Obtener datos del Dueño REAL de la mascota
-            UsuarioClienteDTO duenio = null;
-            try {
-                log.info("Obteniendo datos del dueño real (Dueño ID: {})...", duenioId);
-                duenio = authClient.obtenerUsuarioPorId(duenioId).block();
-                if (duenio != null) {
-                    log.info("Dueño obtenido: {} {} ({})", duenio.getNombre(), duenio.getApellido(), duenio.getCorreo());
-                } else {
-                    log.warn("No se pudo obtener datos del dueño. Dueño ID: {}", duenioId);
-                }
-            } catch (Exception e) {
-                log.error("Error al obtener datos del dueño. Dueño ID: {}, Error: {}", duenioId, e.getMessage(), e);
-            }
+            UsuarioClienteDTO duenio = obtenerDatosDuenio(duenioId);
+            String nombreMascota = obtenerNombreMascota(cita.getPetId());
+            String nombreVeterinario = obtenerNombreVeterinario(cita.getVeterinarianId());
 
-            // Obtener nombre de la Mascota
-            String nombreMascota = "Tu Mascota";
-            try {
-                log.info("Obteniendo datos de la mascota (Pet ID: {})...", cita.getPetId());
-                MascotaClienteDTO mascota = mascotaClient.findMascotaById(cita.getPetId()).block();
-                if (mascota != null && mascota.getNombre() != null) {
-                    nombreMascota = mascota.getNombre();
-                    log.info("Mascota obtenida: {}", nombreMascota);
-                } else {
-                    log.warn("No se pudo obtener nombre de la mascota. Pet ID: {}", cita.getPetId());
-                }
-            } catch (Exception e) {
-                log.error("Error al obtener datos de la mascota. Pet ID: {}, Error: {}", cita.getPetId(), e.getMessage(), e);
-            }
-
-            // Obtener datos del Veterinario
-            String nombreVeterinario = "Dr. ID " + cita.getVeterinarianId();
-            try {
-                log.info("Obteniendo datos del veterinario (Veterinario ID: {})...", cita.getVeterinarianId());
-                UsuarioClienteDTO veterinario = authClient.obtenerUsuarioPorId(cita.getVeterinarianId()).block();
-                if (veterinario != null) {
-                    nombreVeterinario = "Dr. " + veterinario.getNombre() + " " + veterinario.getApellido();
-                    log.info("Veterinario obtenido: {}", nombreVeterinario);
-                }
-            } catch (Exception e) {
-                log.warn("No se pudo obtener datos del veterinario. Veterinario ID: {}, Error: {}",
-                        cita.getVeterinarianId(), e.getMessage());
-            }
-
-            if (duenio != null && duenio.getCorreo() != null && !duenio.getCorreo().isEmpty()) {
-                Map<String, String> payload = new HashMap<>();
-                payload.put("correo", duenio.getCorreo());
-                String nombreCompletoDuenio = ((duenio.getNombre() != null ? duenio.getNombre() : "") + " " +
-                        (duenio.getApellido() != null ? duenio.getApellido() : "")).trim();
-                payload.put("nombreDuenio", nombreCompletoDuenio);
-                payload.put("nombreMascota", nombreMascota);
-                payload.put("fechaAnterior", horarioAnterior.toString().replace("T", " "));
-                payload.put("fechaNueva", cita.getFechaHoraInicio().toString().replace("T", " "));
-                payload.put("medico", nombreVeterinario);
-
-                NotificationRequestDTO notificacion = new NotificationRequestDTO(
-                        NotificationType.CITA_HORARIO_REASIGNADO,
-                        payload
-                );
-
-                log.info("Enviando notificación de cambio de horario al dueño: {}", duenio.getCorreo());
-                kafkaProducer.enviarNotificacion(notificacion);
-                log.info("✅ Notificación de cambio de horario enviada para Cita ID: {}", cita.getId());
-            } else {
+            if (duenio == null || duenio.getCorreo() == null || duenio.getCorreo().isEmpty()) {
                 log.warn("No se puede enviar notificación. Dueño es null o no tiene correo. Cita ID: {}, Dueño ID: {}",
                         cita.getId(), duenioId);
+                return;
             }
+
+            Map<String, String> payload = construirPayloadBasico(duenio, nombreMascota, 
+                    cita.getFechaHoraInicio(), nombreVeterinario);
+            payload.put(FECHA_ANTERIOR_KEY, horarioAnterior.toString().replace("T", " "));
+            payload.put(FECHA_NUEVA_KEY, cita.getFechaHoraInicio().toString().replace("T", " "));
+
+            NotificationRequestDTO notificacion = new NotificationRequestDTO(
+                    NotificationType.CITA_HORARIO_REASIGNADO,
+                    payload
+            );
+
+            log.info("Enviando notificación de cambio de horario al dueño: {}", duenio.getCorreo());
+            kafkaProducer.enviarNotificacion(notificacion);
+            log.info("✅ Notificación de cambio de horario enviada para Cita ID: {}", cita.getId());
         } catch (Exception e) {
             log.error("❌ Error al enviar notificación de cambio de horario. Cita ID: {}, Error: {}",
                     cita.getId(), e.getMessage(), e);
@@ -555,50 +424,10 @@ public class CitaServiceImpl implements ICitaService {
         log.info("Cita ID: {}, Usuario ID: {}, Veterinario ID: {}, Pet ID: {}",
                 cita.getId(), usuarioId, cita.getVeterinarianId(), cita.getPetId());
 
-        // 1. Obtener datos del Dueño (Síncrono/Bloqueante para simplificar el flujo)
-        UsuarioClienteDTO duenio = null;
-        try {
-            log.info("Obteniendo datos del dueño (Usuario ID: {})...", usuarioId);
-            duenio = authClient.obtenerUsuarioPorId(usuarioId).block();
-            if (duenio != null) {
-                log.info("Dueño obtenido: {} {} ({})", duenio.getNombre(), duenio.getApellido(), duenio.getCorreo());
-            } else {
-                log.warn("No se pudo obtener datos del dueño. Usuario ID: {}", usuarioId);
-            }
-        } catch (Exception e) {
-            log.error("Error al obtener datos del dueño. Usuario ID: {}, Error: {}", usuarioId, e.getMessage(), e);
-        }
+        UsuarioClienteDTO duenio = obtenerDatosDuenio(usuarioId);
+        UsuarioClienteDTO veterinario = obtenerDatosVeterinario(cita.getVeterinarianId());
+        String nombreMascota = obtenerNombreMascota(cita.getPetId());
 
-        // 2. Obtener datos del Veterinario
-        UsuarioClienteDTO veterinario = null;
-        try {
-            log.info("Obteniendo datos del veterinario (Veterinario ID: {})...", cita.getVeterinarianId());
-            veterinario = authClient.obtenerUsuarioPorId(cita.getVeterinarianId()).block();
-            if (veterinario != null) {
-                log.info("Veterinario obtenido: {} {} ({})", veterinario.getNombre(), veterinario.getApellido(), veterinario.getCorreo());
-            } else {
-                log.warn("No se pudo obtener datos del veterinario. Veterinario ID: {}", cita.getVeterinarianId());
-            }
-        } catch (Exception e) {
-            log.error("Error al obtener datos del veterinario. Veterinario ID: {}, Error: {}", cita.getVeterinarianId(), e.getMessage(), e);
-        }
-
-        // 3. Obtener nombre de la Mascota (Best effort)
-        String nombreMascota = "Tu Mascota";
-        try {
-            log.info("Obteniendo datos de la mascota (Pet ID: {})...", cita.getPetId());
-            MascotaClienteDTO mascota = mascotaClient.findMascotaById(cita.getPetId()).block();
-            if (mascota != null && mascota.getNombre() != null) {
-                nombreMascota = mascota.getNombre(); // Usar el nombre real de la mascota
-                log.info("Mascota obtenida: {}", nombreMascota);
-            } else {
-                log.warn("No se pudo obtener nombre de la mascota. Pet ID: {}", cita.getPetId());
-            }
-        } catch (Exception e) {
-            log.error("Error al obtener datos de la mascota. Pet ID: {}, Error: {}", cita.getPetId(), e.getMessage(), e);
-        }
-
-        // Verificar si el dueño y el veterinario son la misma persona
         boolean mismoUsuario = duenio != null && veterinario != null &&
                 usuarioId.equals(cita.getVeterinarianId());
 
@@ -606,77 +435,108 @@ public class CitaServiceImpl implements ICitaService {
             log.info("⚠️ Dueño y veterinario son la misma persona (ID: {}). Enviando solo un correo combinado.", usuarioId);
         }
 
-        // 4. Enviar correo al Dueño (solo si es diferente del veterinario)
-        if (!mismoUsuario && duenio != null && duenio.getCorreo() != null && !duenio.getCorreo().isEmpty()) {
-            try {
-                Map<String, String> payloadDuenio = new HashMap<>();
-                payloadDuenio.put("correo", duenio.getCorreo());
-                String nombreCompletoDuenio = ((duenio.getNombre() != null ? duenio.getNombre() : "") + " " +
-                        (duenio.getApellido() != null ? duenio.getApellido() : "")).trim();
-                payloadDuenio.put("nombreDuenio", nombreCompletoDuenio);
-                payloadDuenio.put("nombreMascota", nombreMascota);
-                payloadDuenio.put("fecha", cita.getFechaHoraInicio().toString().replace("T", " "));
-                payloadDuenio.put("medico", veterinario != null ?
-                        "Dr. " + veterinario.getNombre() + " " + veterinario.getApellido() :
-                        "Dr. ID " + cita.getVeterinarianId());
-                payloadDuenio.put("tipoDestinatario", "DUENIO");
-                // Agregar link de confirmación con el token
-                if (cita.getTokenConfirmacion() != null) {
-                    payloadDuenio.put("linkConfirmacion", cita.getTokenConfirmacion());
-                }
-
-                NotificationRequestDTO notificacionDuenio = new NotificationRequestDTO(
-                        NotificationType.CITA_CONFIRMACION,
-                        payloadDuenio
-                );
-
-                log.info("Enviando notificación al dueño: {}", duenio.getCorreo());
-                kafkaProducer.enviarNotificacion(notificacionDuenio);
-                log.info("✅ Solicitud de notificación enviada al dueño para Cita ID: {}", cita.getId());
-            } catch (Exception e) {
-                log.error("Error al enviar notificación al dueño. Cita ID: {}, Error: {}", cita.getId(), e.getMessage(), e);
-            }
-        } else if (mismoUsuario) {
-            log.info("⏭️ Omitiendo correo al dueño (mismo que veterinario)");
-        } else {
-            log.warn("No se puede enviar correo al dueño. Dueño es null o no tiene correo. Cita ID: {}", cita.getId());
-        }
-
-        // 5. Enviar correo al Veterinario (siempre, pero con mensaje especial si es el mismo que el dueño)
-        if (veterinario != null && veterinario.getCorreo() != null && !veterinario.getCorreo().isEmpty()) {
-            try {
-                Map<String, String> payloadVeterinario = new HashMap<>();
-                payloadVeterinario.put("correo", veterinario.getCorreo());
-                String nombreCompletoCliente = duenio != null ?
-                        ((duenio.getNombre() != null ? duenio.getNombre() : "") + " " +
-                                (duenio.getApellido() != null ? duenio.getApellido() : "")).trim() : "Cliente";
-                payloadVeterinario.put("nombreDuenio", nombreCompletoCliente);
-                payloadVeterinario.put("nombreMascota", nombreMascota);
-                payloadVeterinario.put("fecha", cita.getFechaHoraInicio().toString().replace("T", " "));
-                payloadVeterinario.put("medico", "Dr. " + veterinario.getNombre() + " " + veterinario.getApellido());
-                payloadVeterinario.put("tipoDestinatario", "VETERINARIO");
-                // Agregar flag si es el mismo usuario
-                if (mismoUsuario) {
-                    payloadVeterinario.put("esMismoUsuario", "true");
-                    log.info("📧 Enviando correo combinado (dueño y veterinario son la misma persona)");
-                }
-
-                NotificationRequestDTO notificacionVeterinario = new NotificationRequestDTO(
-                        NotificationType.CITA_CONFIRMACION,
-                        payloadVeterinario
-                );
-
-                log.info("Enviando notificación al veterinario: {}", veterinario.getCorreo());
-                kafkaProducer.enviarNotificacion(notificacionVeterinario);
-                log.info("✅ Solicitud de notificación enviada al veterinario para Cita ID: {}", cita.getId());
-            } catch (Exception e) {
-                log.error("Error al enviar notificación al veterinario. Cita ID: {}, Error: {}", cita.getId(), e.getMessage(), e);
-            }
-        } else {
-            log.warn("No se puede enviar correo al veterinario. Veterinario es null o no tiene correo. Cita ID: {}", cita.getId());
-        }
+        enviarNotificacionAlDuenio(cita, duenio, veterinario, nombreMascota, mismoUsuario);
+        enviarNotificacionAlVeterinario(cita, duenio, veterinario, nombreMascota, mismoUsuario);
 
         log.info("=== FINALIZANDO ENVÍO DE NOTIFICACIONES ===");
+    }
+    
+    /**
+     * Envía notificación de confirmación de cita al dueño.
+     */
+    private void enviarNotificacionAlDuenio(Cita cita, UsuarioClienteDTO duenio, UsuarioClienteDTO veterinario,
+                                           String nombreMascota, boolean mismoUsuario) {
+        if (mismoUsuario) {
+            log.info("⏭️ Omitiendo correo al dueño (mismo que veterinario)");
+            return;
+        }
+        
+        if (duenio == null || duenio.getCorreo() == null || duenio.getCorreo().isEmpty()) {
+            log.warn("No se puede enviar correo al dueño. Dueño es null o no tiene correo. Cita ID: {}", cita.getId());
+            return;
+        }
+
+        try {
+            String nombreVeterinario = veterinario != null ?
+                    DR_PREFIX + veterinario.getNombre() + " " + veterinario.getApellido() :
+                    DR_ID_PREFIX + cita.getVeterinarianId();
+            
+            Map<String, String> payload = construirPayloadBasico(duenio, nombreMascota, 
+                    cita.getFechaHoraInicio(), nombreVeterinario);
+            payload.put(TIPO_DESTINATARIO_KEY, "DUENIO");
+            
+            if (cita.getTokenConfirmacion() != null) {
+                payload.put(LINK_CONFIRMACION_KEY, cita.getTokenConfirmacion());
+            }
+
+            NotificationRequestDTO notificacion = new NotificationRequestDTO(
+                    NotificationType.CITA_CONFIRMACION,
+                    payload
+            );
+
+            log.info("Enviando notificación al dueño: {}", duenio.getCorreo());
+            kafkaProducer.enviarNotificacion(notificacion);
+            log.info("✅ Solicitud de notificación enviada al dueño para Cita ID: {}", cita.getId());
+        } catch (Exception e) {
+            log.error("Error al enviar notificación al dueño. Cita ID: {}, Error: {}", cita.getId(), e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * Envía notificación de confirmación de cita al veterinario.
+     */
+    private void enviarNotificacionAlVeterinario(Cita cita, UsuarioClienteDTO duenio, UsuarioClienteDTO veterinario,
+                                                 String nombreMascota, boolean mismoUsuario) {
+        if (veterinario == null || veterinario.getCorreo() == null || veterinario.getCorreo().isEmpty()) {
+            log.warn("No se puede enviar correo al veterinario. Veterinario es null o no tiene correo. Cita ID: {}", cita.getId());
+            return;
+        }
+
+        try {
+            String nombreVeterinario = DR_PREFIX + veterinario.getNombre() + " " + veterinario.getApellido();
+            Map<String, String> payload = new HashMap<>();
+            payload.put(CORREO_KEY, veterinario.getCorreo());
+            payload.put(NOMBRE_DUENIO_KEY, construirNombreCompletoDuenio(duenio));
+            payload.put(NOMBRE_MASCOTA_KEY, nombreMascota);
+            payload.put(FECHA_KEY, cita.getFechaHoraInicio().toString().replace("T", " "));
+            payload.put(MEDICO_KEY, nombreVeterinario);
+            payload.put(TIPO_DESTINATARIO_KEY, "VETERINARIO");
+            
+            if (mismoUsuario) {
+                payload.put("esMismoUsuario", "true");
+                log.info("📧 Enviando correo combinado (dueño y veterinario son la misma persona)");
+            }
+
+            NotificationRequestDTO notificacion = new NotificationRequestDTO(
+                    NotificationType.CITA_CONFIRMACION,
+                    payload
+            );
+
+            log.info("Enviando notificación al veterinario: {}", veterinario.getCorreo());
+            kafkaProducer.enviarNotificacion(notificacion);
+            log.info("✅ Solicitud de notificación enviada al veterinario para Cita ID: {}", cita.getId());
+        } catch (Exception e) {
+            log.error("Error al enviar notificación al veterinario. Cita ID: {}, Error: {}", cita.getId(), e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * Obtiene los datos de un veterinario por su ID.
+     * Retorna null si no se puede obtener.
+     */
+    private UsuarioClienteDTO obtenerDatosVeterinario(Long veterinarioId) {
+        try {
+            log.info(LOG_OBTENIENDO_DATOS_VETERINARIO, veterinarioId);
+            UsuarioClienteDTO veterinario = authClient.obtenerUsuarioPorId(veterinarioId).block();
+            if (veterinario != null) {
+                log.info("Veterinario obtenido: {} {} ({})", veterinario.getNombre(), veterinario.getApellido(), veterinario.getCorreo());
+                return veterinario;
+            }
+            log.warn("No se pudo obtener datos del veterinario. Veterinario ID: {}", veterinarioId);
+        } catch (Exception e) {
+            log.error("Error al obtener datos del veterinario. Veterinario ID: {}, Error: {}", veterinarioId, e.getMessage(), e);
+        }
+        return null;
     }
 
     @Override
@@ -752,35 +612,9 @@ public class CitaServiceImpl implements ICitaService {
      * Obtiene datos de mascota y veterinario desde otros servicios.
      */
     private CitaConfirmacionResponseDTO construirRespuestaConfirmacion(Cita cita, String mensaje) {
-        // Obtener nombre de la Mascota
-        String nombreMascota = "N/A";
-        try {
-            log.info("Obteniendo datos de la mascota (Pet ID: {})...", cita.getPetId());
-            MascotaClienteDTO mascota = mascotaClient.findMascotaByIdPublico(cita.getPetId()).block();
-            if (mascota != null && mascota.getNombre() != null) {
-                nombreMascota = mascota.getNombre();
-                log.info("Mascota obtenida: {}", nombreMascota);
-            }
-        } catch (Exception e) {
-            log.warn("No se pudo obtener nombre de la mascota. Pet ID: {}, Error: {}", 
-                    cita.getPetId(), e.getMessage());
-        }
+        String nombreMascota = obtenerNombreMascotaPublico(cita.getPetId());
+        String nombreVeterinario = obtenerNombreVeterinarioPublico(cita.getVeterinarianId());
         
-        // Obtener datos del Veterinario
-        String nombreVeterinario = "N/A";
-        try {
-            log.info("Obteniendo datos del veterinario (Veterinario ID: {})...", cita.getVeterinarianId());
-            UsuarioClienteDTO veterinario = authClient.obtenerUsuarioPorIdPublico(cita.getVeterinarianId()).block();
-            if (veterinario != null) {
-                nombreVeterinario = "Dr. " + veterinario.getNombre() + " " + veterinario.getApellido();
-                log.info("Veterinario obtenido: {}", nombreVeterinario);
-            }
-        } catch (Exception e) {
-            log.warn("No se pudo obtener datos del veterinario. Veterinario ID: {}, Error: {}",
-                    cita.getVeterinarianId(), e.getMessage());
-        }
-        
-        // Construir respuesta
         return CitaConfirmacionResponseDTO.builder()
                 .id(cita.getId())
                 .estado(cita.getEstado())
@@ -854,7 +688,7 @@ public class CitaServiceImpl implements ICitaService {
             estadoEnum = EstadoCita.valueOf(estado.toUpperCase());
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Estado de cita inválido: " + estado + 
-                    ". Estados válidos: ESPERA, CONFIRMADA, EN_PROGRESO, FINALIZADA, CANCELADA, NO_ASISTIO");
+                    ". Estados válidos: " + ESTADOS_VALIDOS);
         }
         
         List<Cita> citas = citaRepository.findByVeterinarianIdAndEstado(veterinarioId, estadoEnum);
@@ -880,7 +714,7 @@ public class CitaServiceImpl implements ICitaService {
             estadoEnum = EstadoCita.valueOf(estado.toUpperCase());
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Estado de cita inválido: " + estado + 
-                    ". Estados válidos: ESPERA, CONFIRMADA, EN_PROGRESO, FINALIZADA, CANCELADA, NO_ASISTIO");
+                    ". Estados válidos: " + ESTADOS_VALIDOS);
         }
         
         // Fecha y hora actual para filtrar solo citas futuras
@@ -897,5 +731,232 @@ public class CitaServiceImpl implements ICitaService {
                 .sorted((c1, c2) -> c1.getFechaHoraInicio().compareTo(c2.getFechaHoraInicio()))
                 .map(mapper::mapToResponseDTO)
                 .toList();
+    }
+    
+    // ========== MÉTODOS AUXILIARES PARA REDUCIR COMPLEJIDAD ==========
+    
+    /**
+     * Obtiene el nombre de una mascota por su ID.
+     * Retorna un valor por defecto si no se puede obtener.
+     */
+    private String obtenerNombreMascota(Long petId) {
+        try {
+            log.info(LOG_OBTENIENDO_DATOS_MASCOTA, petId);
+            MascotaClienteDTO mascota = mascotaClient.findMascotaById(petId).block();
+            if (mascota != null && mascota.getNombre() != null) {
+                log.info(LOG_MASCOTA_OBTENIDA, mascota.getNombre());
+                return mascota.getNombre();
+            }
+            log.warn(LOG_NO_PUDO_OBTENER_MASCOTA, petId);
+        } catch (Exception e) {
+            log.error(LOG_ERROR_OBTENER_MASCOTA, petId, e.getMessage(), e);
+        }
+        return NOMBRE_MASCOTA_DEFAULT;
+    }
+    
+    /**
+     * Obtiene el nombre de una mascota por su ID (versión pública para confirmación).
+     * Retorna "N/A" si no se puede obtener.
+     */
+    private String obtenerNombreMascotaPublico(Long petId) {
+        try {
+            log.info(LOG_OBTENIENDO_DATOS_MASCOTA, petId);
+            MascotaClienteDTO mascota = mascotaClient.findMascotaByIdPublico(petId).block();
+            if (mascota != null && mascota.getNombre() != null) {
+                log.info(LOG_MASCOTA_OBTENIDA, mascota.getNombre());
+                return mascota.getNombre();
+            }
+        } catch (Exception e) {
+            log.warn(LOG_NO_PUDO_OBTENER_MASCOTA + ". Error: {}", petId, e.getMessage());
+        }
+        return NOMBRE_MASCOTA_NA;
+    }
+    
+    /**
+     * Obtiene el nombre completo de un veterinario por su ID.
+     * Retorna un valor por defecto si no se puede obtener.
+     */
+    private String obtenerNombreVeterinario(Long veterinarioId) {
+        try {
+            log.info(LOG_OBTENIENDO_DATOS_VETERINARIO, veterinarioId);
+            UsuarioClienteDTO veterinario = authClient.obtenerUsuarioPorId(veterinarioId).block();
+            if (veterinario != null) {
+                String nombreCompleto = DR_PREFIX + veterinario.getNombre() + " " + veterinario.getApellido();
+                log.info(LOG_VETERINARIO_OBTENIDO, nombreCompleto);
+                return nombreCompleto;
+            }
+        } catch (Exception e) {
+            log.warn(LOG_ERROR_OBTENER_VETERINARIO, veterinarioId, e.getMessage());
+        }
+        return DR_ID_PREFIX + veterinarioId;
+    }
+    
+    /**
+     * Obtiene el nombre completo de un veterinario por su ID (versión pública para confirmación).
+     * Retorna "N/A" si no se puede obtener.
+     */
+    private String obtenerNombreVeterinarioPublico(Long veterinarioId) {
+        try {
+            log.info(LOG_OBTENIENDO_DATOS_VETERINARIO, veterinarioId);
+            UsuarioClienteDTO veterinario = authClient.obtenerUsuarioPorIdPublico(veterinarioId).block();
+            if (veterinario != null) {
+                String nombreCompleto = DR_PREFIX + veterinario.getNombre() + " " + veterinario.getApellido();
+                log.info(LOG_VETERINARIO_OBTENIDO, nombreCompleto);
+                return nombreCompleto;
+            }
+        } catch (Exception e) {
+            log.warn(LOG_ERROR_OBTENER_VETERINARIO, veterinarioId, e.getMessage());
+        }
+        return NOMBRE_MASCOTA_NA;
+    }
+    
+    /**
+     * Obtiene los datos de un dueño por su ID.
+     * Retorna null si no se puede obtener.
+     */
+    private UsuarioClienteDTO obtenerDatosDuenio(Long duenioId) {
+        try {
+            log.info(LOG_OBTENIENDO_DATOS_DUENIO, duenioId);
+            UsuarioClienteDTO duenio = authClient.obtenerUsuarioPorId(duenioId).block();
+            if (duenio != null) {
+                log.info(LOG_DUENIO_OBTENIDO, duenio.getNombre(), duenio.getApellido(), duenio.getCorreo());
+                return duenio;
+            }
+            log.warn(LOG_NO_PUDO_OBTENER_DUENIO, duenioId);
+        } catch (Exception e) {
+            log.error(LOG_ERROR_OBTENER_DUENIO, duenioId, e.getMessage(), e);
+        }
+        return null;
+    }
+    
+    /**
+     * Construye el nombre completo de un dueño a partir de sus datos.
+     */
+    private String construirNombreCompletoDuenio(UsuarioClienteDTO duenio) {
+        if (duenio == null) {
+            return CLIENTE_DEFAULT;
+        }
+        String nombre = duenio.getNombre() != null ? duenio.getNombre() : "";
+        String apellido = duenio.getApellido() != null ? duenio.getApellido() : "";
+        return (nombre + " " + apellido).trim();
+    }
+    
+    /**
+     * Construye un payload básico para notificaciones de citas.
+     */
+    private Map<String, String> construirPayloadBasico(UsuarioClienteDTO duenio, String nombreMascota, 
+                                                       LocalDateTime fechaHoraInicio, String nombreVeterinario) {
+        Map<String, String> payload = new HashMap<>();
+        payload.put(CORREO_KEY, duenio.getCorreo());
+        payload.put(NOMBRE_DUENIO_KEY, construirNombreCompletoDuenio(duenio));
+        payload.put(NOMBRE_MASCOTA_KEY, nombreMascota);
+        payload.put(FECHA_KEY, fechaHoraInicio.toString().replace("T", " "));
+        payload.put(MEDICO_KEY, nombreVeterinario);
+        return payload;
+    }
+    
+    /**
+     * Determina el tipo de notificación según el estado de la cita.
+     */
+    private NotificationType determinarTipoNotificacion(EstadoCita estado) {
+        return switch (estado) {
+            case CANCELADA -> NotificationType.CITA_CANCELADA;
+            case EN_PROGRESO -> NotificationType.CITA_EN_PROGRESO;
+            case FINALIZADA -> NotificationType.CITA_FINALIZADA;
+            case NO_ASISTIO -> NotificationType.CITA_NO_ASISTIO;
+            default -> null;
+        };
+    }
+    
+    /**
+     * Actualiza el horario de una cita, liberando el espacio anterior y reservando el nuevo.
+     */
+    private void actualizarHorarioCita(Cita cita, CitaUpdateDTO updateDTO, 
+                                      LocalDateTime fechaHoraInicioAnterior, LocalDateTime fechaHoraFinAnterior) {
+        LocalDateTime nuevaFechaHoraFin = calcularNuevaFechaFin(cita, updateDTO, fechaHoraInicioAnterior, fechaHoraFinAnterior);
+        updateDTO.setFechaHoraFin(nuevaFechaHoraFin);
+        
+        liberarEspacioAnterior(cita.getId());
+        reservarNuevoEspacio(cita, updateDTO, nuevaFechaHoraFin, fechaHoraInicioAnterior, fechaHoraFinAnterior);
+    }
+    
+    /**
+     * Calcula la nueva fecha de fin basándose en la duración del servicio o la duración anterior.
+     */
+    private LocalDateTime calcularNuevaFechaFin(Cita cita, CitaUpdateDTO updateDTO,
+                                               LocalDateTime fechaHoraInicioAnterior, LocalDateTime fechaHoraFinAnterior) {
+        if (updateDTO.getFechaHoraFin() != null) {
+            return updateDTO.getFechaHoraFin();
+        }
+        
+        try {
+            ServicioClienteDTO servicio = agendamientoClient.getServicioById(cita.getServicioId())
+                    .blockOptional()
+                    .orElseThrow(() -> new EntityNotFoundException("Servicio no encontrado: " + cita.getServicioId()));
+            return updateDTO.getFechaHoraInicio().plusMinutes(servicio.getDuracionPromedioMinutos());
+        } catch (Exception e) {
+            log.error("Error al obtener duración del servicio. Usando duración del horario anterior.", e);
+            long duracionMinutos = java.time.Duration.between(fechaHoraInicioAnterior, fechaHoraFinAnterior).toMinutes();
+            return updateDTO.getFechaHoraInicio().plusMinutes(duracionMinutos);
+        }
+    }
+    
+    /**
+     * Libera el espacio anterior en el servicio de agendamiento.
+     */
+    private void liberarEspacioAnterior(Long citaId) {
+        try {
+            log.info("Liberando espacio anterior en agendamiento para Cita ID: {}", citaId);
+            agendamientoClient.liberarEspacio(citaId).block();
+            log.info("Espacio anterior liberado exitosamente");
+        } catch (Exception e) {
+            log.error("Error al liberar espacio anterior. Continuando con la actualización. Error: {}", e.getMessage());
+        }
+    }
+    
+    /**
+     * Reserva el nuevo espacio en el servicio de agendamiento.
+     * Si falla, intenta restaurar el espacio anterior.
+     */
+    private void reservarNuevoEspacio(Cita cita, CitaUpdateDTO updateDTO, LocalDateTime nuevaFechaHoraFin,
+                                     LocalDateTime fechaHoraInicioAnterior, LocalDateTime fechaHoraFinAnterior) {
+        try {
+            OcupacionRequestDTO nuevaReservaDTO = OcupacionRequestDTO.builder()
+                    .veterinarioId(cita.getVeterinarianId())
+                    .fechaInicio(updateDTO.getFechaHoraInicio())
+                    .fechaFin(nuevaFechaHoraFin)
+                    .tipo(TIPO_CITA)
+                    .referenciaExternaId(cita.getId())
+                    .observacion("Cita reasignada para mascota ID: " + cita.getPetId())
+                    .build();
+            
+            log.info("Reservando nuevo espacio en agendamiento para Cita ID: {}", cita.getId());
+            agendamientoClient.reservarEspacio(nuevaReservaDTO).block();
+            log.info("Nuevo espacio reservado exitosamente");
+        } catch (Exception e) {
+            log.error("Error al reservar nuevo espacio. Revirtiendo liberación del espacio anterior.", e);
+            restaurarEspacioAnterior(cita, fechaHoraInicioAnterior, fechaHoraFinAnterior);
+            throw new IllegalStateException("El nuevo horario seleccionado ya no está disponible o no es válido.", e);
+        }
+    }
+    
+    /**
+     * Intenta restaurar el espacio anterior cuando falla la reserva del nuevo espacio.
+     */
+    private void restaurarEspacioAnterior(Cita cita, LocalDateTime fechaHoraInicioAnterior, LocalDateTime fechaHoraFinAnterior) {
+        try {
+            OcupacionRequestDTO reservaAnteriorDTO = OcupacionRequestDTO.builder()
+                    .veterinarioId(cita.getVeterinarianId())
+                    .fechaInicio(fechaHoraInicioAnterior)
+                    .fechaFin(fechaHoraFinAnterior)
+                    .tipo(TIPO_CITA)
+                    .referenciaExternaId(cita.getId())
+                    .observacion("Restauración de cita para mascota ID: " + cita.getPetId())
+                    .build();
+            agendamientoClient.reservarEspacio(reservaAnteriorDTO).block();
+            log.info("Espacio anterior restaurado");
+        } catch (Exception restoreException) {
+            log.error("Error crítico: No se pudo restaurar el espacio anterior. Cita ID: {}", cita.getId(), restoreException);
+        }
     }
 }

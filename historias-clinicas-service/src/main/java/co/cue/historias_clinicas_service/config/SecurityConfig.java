@@ -24,7 +24,6 @@ import java.util.Base64;
 @EnableMethodSecurity
 public class SecurityConfig {
 
-
     private static final String ADMIN_ROLE = "ADMIN";
     private static final String VETERINARIO_ROLE = "VETERINARIO";
     private static final String DUENIO_ROLE = "DUENIO";
@@ -35,12 +34,8 @@ public class SecurityConfig {
     private String secretKey;
 
     /**
-     * (Colega Senior): Bean idéntico al esqueleto.
-     * Lee la clave secreta y crea el decodificador de JWT.
-     */
-
-    /**
      * Decodifica el JWT usando una clave secreta HMAC.
+     * Lee la clave secreta y crea el decodificador de JWT.
      */
     @Bean
     public JwtDecoder jwtDecoder() {
@@ -50,12 +45,8 @@ public class SecurityConfig {
     }
 
     /**
-     * (Arquitecto): Esta es la lógica de autorización adaptada
-     * a nuestras reglas de negocio.
-     */
-
-    /**
      * Configuración general de seguridad para el servicio.
+     * Esta es la lógica de autorización adaptada a nuestras reglas de negocio.
      */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -99,6 +90,7 @@ public class SecurityConfig {
 
         return http.build();
     }
+    
     /**
      * Convierte el claim "roles" del JWT en autoridades de Spring Security.
      */

@@ -83,11 +83,11 @@ public class AuthController {
      * Busca un usuario específico por su identificador único (ID).
      * Utilizado para cargar perfiles de usuario o validar existencias.
      * Requiere autenticación previa.
+     * Reutiliza la lógica del endpoint público para evitar duplicación.
      */
     @GetMapping("/{id}")
     public ResponseEntity<Usuario> obtenerUsuarioPorId(@PathVariable Long id) {
-        Usuario usuario = authService.obtenerUsuarioPorId(id);
-        return ResponseEntity.ok(usuario);
+        return obtenerUsuarioPorIdPublico(id);
     }
 
     /**

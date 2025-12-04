@@ -15,45 +15,55 @@ import java.util.Map;
 @Slf4j
 public class CitaEmailNotificationStrategy implements NotificationStrategy {
 
+    // Constantes para claves del payload
+    private static final String KEY_CORREO = "correo";
+    private static final String KEY_MEDICO = "medico";
+    private static final String KEY_NOMBRE_DUENIO = "nombreDuenio";
+    private static final String KEY_NOMBRE_MASCOTA = "nombreMascota";
+    private static final String KEY_FECHA = "fecha";
+    private static final String KEY_TIPO_DESTINATARIO = "tipoDestinatario";
+    private static final String KEY_LINK_CONFIRMACION = "linkConfirmacion";
+    private static final String TIPO_DESTINATARIO_VETERINARIO = "VETERINARIO";
+
     private final EmailService emailService;
 
     @Override
     public void enviar(NotificationRequestDTO request) {
         log.info("Ejecutando Estrategia CITA_CONFIRMACION...");
         Map<String, String> data = request.getPayload();
-        String tipoDestinatario = data.get("tipoDestinatario");
+        String tipoDestinatario = data.get(KEY_TIPO_DESTINATARIO);
 
-        if ("VETERINARIO".equals(tipoDestinatario)) {
+        if (TIPO_DESTINATARIO_VETERINARIO.equals(tipoDestinatario)) {
             // Enviar correo al veterinario
             emailService.enviarConfirmacionCitaVeterinario(
-                    data.get("correo"),
-                    data.get("medico"), // Nombre del veterinario
-                    data.get("nombreDuenio"),
-                    data.get("nombreMascota"),
-                    data.get("fecha")
+                    data.get(KEY_CORREO),
+                    data.get(KEY_MEDICO),
+                    data.get(KEY_NOMBRE_DUENIO),
+                    data.get(KEY_NOMBRE_MASCOTA),
+                    data.get(KEY_FECHA)
             );
         } else {
             // Enviar correo al dueño (por defecto)
             // Verificar si hay un link de confirmación (para citas nuevas en estado ESPERA)
-            String linkConfirmacion = data.get("linkConfirmacion");
+            String linkConfirmacion = data.get(KEY_LINK_CONFIRMACION);
             if (linkConfirmacion != null && !linkConfirmacion.isEmpty()) {
                 // Enviar correo con link de confirmación
                 emailService.enviarConfirmacionCitaConLink(
-                        data.get("correo"),
-                        data.get("nombreDuenio"),
-                        data.get("nombreMascota"),
-                        data.get("fecha"),
-                        data.get("medico"),
+                        data.get(KEY_CORREO),
+                        data.get(KEY_NOMBRE_DUENIO),
+                        data.get(KEY_NOMBRE_MASCOTA),
+                        data.get(KEY_FECHA),
+                        data.get(KEY_MEDICO),
                         linkConfirmacion
                 );
             } else {
                 // Enviar correo de confirmación normal (cita ya confirmada)
                 emailService.enviarConfirmacionCita(
-                        data.get("correo"),
-                        data.get("nombreDuenio"),
-                        data.get("nombreMascota"),
-                        data.get("fecha"),
-                        data.get("medico")
+                        data.get(KEY_CORREO),
+                        data.get(KEY_NOMBRE_DUENIO),
+                        data.get(KEY_NOMBRE_MASCOTA),
+                        data.get(KEY_FECHA),
+                        data.get(KEY_MEDICO)
                 );
             }
         }

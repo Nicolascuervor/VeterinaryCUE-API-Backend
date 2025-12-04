@@ -64,4 +64,13 @@ public interface IServicioAdminService {
      * @return DTO con los servicios creados exitosamente y los errores ocurridos
      */
     BulkServicioResponseDTO crearServiciosMasivo(List<ServicioRequestDTO> servicios);
+    
+    /**
+     * Crea un servicio según su tipo en una transacción separada.
+     * Método interno para permitir transacciones independientes en creación masiva.
+     * 
+     * @param dto DTO del servicio a crear
+     * @return DTO del servicio creado
+     */
+    ServicioResponseDTO crearServicioPorTipoTransaccional(ServicioRequestDTO dto);
 }

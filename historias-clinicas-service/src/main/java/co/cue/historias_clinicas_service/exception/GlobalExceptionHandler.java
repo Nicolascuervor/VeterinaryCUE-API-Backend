@@ -18,6 +18,10 @@ import java.util.Map;
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
+    
+    // Constantes para claves de respuesta de error
+    private static final String KEY_ERROR = "error";
+    private static final String KEY_MENSAJE = "mensaje";
 
     /**
      * Maneja errores de deserialización JSON (formato incorrecto, campos faltantes, etc.)
@@ -26,8 +30,8 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, String>> handleHttpMessageNotReadableException(HttpMessageNotReadableException e) {
         log.error("Error al deserializar el JSON: {}", e.getMessage());
         Map<String, String> error = new HashMap<>();
-        error.put("error", "Error en el formato de la petición");
-        error.put("mensaje", "El JSON enviado no es válido. Verifica el formato de los datos, especialmente las fechas (formato: YYYY-MM-DD)");
+        error.put(KEY_ERROR, "Error en el formato de la petición");
+        error.put(KEY_MENSAJE, "El JSON enviado no es válido. Verifica el formato de los datos, especialmente las fechas (formato: YYYY-MM-DD)");
         error.put("detalle", e.getMessage());
         return ResponseEntity.badRequest().body(error);
     }
@@ -39,8 +43,8 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, String>> handleMethodArgumentNotValidException(MethodArgumentNotValidException e) {
         log.error("Error de validación: {}", e.getMessage());
         Map<String, String> error = new HashMap<>();
-        error.put("error", "Error de validación");
-        error.put("mensaje", "Los datos enviados no cumplen con las validaciones requeridas");
+        error.put(KEY_ERROR, "Error de validación");
+        error.put(KEY_MENSAJE, "Los datos enviados no cumplen con las validaciones requeridas");
         return ResponseEntity.badRequest().body(error);
     }
 
@@ -51,8 +55,8 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, String>> handleIllegalArgumentException(IllegalArgumentException e) {
         log.error("Error de validación de negocio: {}", e.getMessage());
         Map<String, String> error = new HashMap<>();
-        error.put("error", "Error de validación");
-        error.put("mensaje", e.getMessage());
+        error.put(KEY_ERROR, "Error de validación");
+        error.put(KEY_MENSAJE, e.getMessage());
         return ResponseEntity.badRequest().body(error);
     }
 
@@ -63,8 +67,8 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, String>> handleGenericException(Exception e) {
         log.error("Error inesperado: {}", e.getMessage(), e);
         Map<String, String> error = new HashMap<>();
-        error.put("error", "Error interno del servidor");
-        error.put("mensaje", "Ocurrió un error al procesar la petición");
+        error.put(KEY_ERROR, "Error interno del servidor");
+        error.put(KEY_MENSAJE, "Ocurrió un error al procesar la petición");
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }
 }

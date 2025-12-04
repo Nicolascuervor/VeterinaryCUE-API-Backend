@@ -3,22 +3,19 @@ FROM maven:3.9.9-eclipse-temurin-21-alpine AS builder
 WORKDIR /app
 
 COPY pom.xml .
-RUN sed -i '/<modules>/,/<\/modules>/d' pom.xml
-RUN mvn -N install
+RUN sed -i '/<modules>/,/<\/modules>/d' pom.xml && \
+    mvn -N install
 
-COPY agendamiento-service/pom.xml agendamiento-service/
-COPY agendamiento-service/src agendamiento-service/src
+COPY agendamiento-service/pom.xml agendamiento-service/ \
+     agendamiento-service/src agendamiento-service/src
 
 RUN mvn install -DskipTests -Dspring-boot.repackage.skip=true -f agendamiento-service/pom.xml
 
 COPY citas-service/pom.xml citas-service/
 
-
 RUN mvn dependency:go-offline -f citas-service/pom.xml
 
-
 COPY citas-service/src citas-service/src
-
 
 RUN mvn package -DskipTests -f citas-service/pom.xml
 

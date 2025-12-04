@@ -10,7 +10,6 @@ import co.cue.agendamiento_service.models.entities.dtos.serviciosdtos.responsedt
 import co.cue.agendamiento_service.models.entities.dtos.serviciosdtos.responsedtos.ServicioResponseDTO;
 import co.cue.agendamiento_service.models.entities.servicios.*;
 import co.cue.agendamiento_service.repository.ServicioRepository;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,12 +19,21 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Service  // Marca la clase como un servicio de Spring para inyección de dependencias
-@AllArgsConstructor  // Genera un constructor con todos los campos (inyección de repositorios y mapper)
 @Slf4j
 public class ServicioAdminServiceImpl implements IServicioAdminService {
 
     private final ServicioRepository servicioRepository;  // Repositorio para acceder a la entidad Servicio
     private final ServicioMapper mapper;                 // Mapper para convertir entre entidades y DTOs
+    private final IServicioAdminService self;            // Auto-inyección para permitir llamadas transaccionales
+    
+    // Constructor con auto-inyección para permitir llamadas transaccionales
+    public ServicioAdminServiceImpl(ServicioRepository servicioRepository, 
+                                    ServicioMapper mapper,
+                                    IServicioAdminService self) {
+        this.servicioRepository = servicioRepository;
+        this.mapper = mapper;
+        this.self = self;
+    }
 
 
     /**
@@ -261,8 +269,8 @@ public class ServicioAdminServiceImpl implements IServicioAdminService {
                 // Validar campos requeridos
                 validarServicioDTO(servicioDTO, i);
                 
-                // Crear servicio en su propia transacción
-                ServicioResponseDTO servicioCreado = crearServicioPorTipoTransaccional(servicioDTO);
+                // Crear servicio en su propia transacción usando auto-inyección
+                ServicioResponseDTO servicioCreado = self.crearServicioPorTipoTransaccional(servicioDTO);
                 serviciosCreados.add(servicioCreado);
                 log.debug("Servicio {} (índice {}) creado exitosamente: {}", nombreServicio, i, servicioCreado.getId());
             } catch (Exception e) {
@@ -300,9 +308,11 @@ public class ServicioAdminServiceImpl implements IServicioAdminService {
     /**
      * Crea un servicio según su tipo en una transacción separada.
      * Esto permite que cada servicio se cree independientemente.
+     * Método público para permitir la anotación @Transactional y cumplir con la interfaz.
      */
+    @Override
     @Transactional(rollbackFor = Exception.class)
-    private ServicioResponseDTO crearServicioPorTipoTransaccional(ServicioRequestDTO dto) {
+    public ServicioResponseDTO crearServicioPorTipoTransaccional(ServicioRequestDTO dto) {
         return crearServicioPorTipo(dto);
     }
     
@@ -321,16 +331,17 @@ public class ServicioAdminServiceImpl implements IServicioAdminService {
 
     /**
      * Crea un servicio según su tipo específico.
+     * Usa auto-inyección para garantizar que las transacciones funcionen correctamente.
      */
     private ServicioResponseDTO crearServicioPorTipo(ServicioRequestDTO dto) {
         if (dto instanceof ConsultaRequestDTO consultaDTO) {
-            return crearConsulta(consultaDTO);
+            return self.crearConsulta(consultaDTO);
         } else if (dto instanceof CirugiaRequestDTO cirugiaDTO) {
-            return crearCirugia(cirugiaDTO);
+            return self.crearCirugia(cirugiaDTO);
         } else if (dto instanceof EsteticaRequestDTO esteticaDTO) {
-            return crearEstetica(esteticaDTO);
+            return self.crearEstetica(esteticaDTO);
         } else if (dto instanceof VacunacionRequestDTO vacunacionDTO) {
-            return crearVacunacion(vacunacionDTO);
+            return self.crearVacunacion(vacunacionDTO);
         } else {
             throw new IllegalArgumentException("Tipo de servicio no reconocido: " + dto.getClass().getSimpleName());
         }

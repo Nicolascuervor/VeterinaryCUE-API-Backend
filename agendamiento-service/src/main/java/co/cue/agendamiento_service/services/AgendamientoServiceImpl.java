@@ -7,7 +7,6 @@ import co.cue.agendamiento_service.models.entities.dtos.*;
 import co.cue.agendamiento_service.models.entities.enums.TipoOcupacion;
 import co.cue.agendamiento_service.repository.JornadaLaboralRepository;
 import co.cue.agendamiento_service.repository.OcupacionAgendaRepository;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

@@ -32,6 +32,10 @@ import java.util.Map;
 @AllArgsConstructor
 @Slf4j
 public class HistorialClinicoServiceImpl implements IHistorialClinicoService {
+    
+    // Constantes para strings duplicados
+    private static final String DIAGNOSTICO_POR_DEFECTO = "Sin diagnóstico registrado";
+    
     private final HistorialClinicoRepository historialClinicoRepository;
     private final HistorialClinicoMapper mapper;
     private final MascotaServiceClient mascotaClient;
@@ -68,7 +72,7 @@ public class HistorialClinicoServiceImpl implements IHistorialClinicoService {
         
         // Asegurar que el diagnóstico no sea null (requerido por la BD)
         if (nuevoHistorial.getDiagnostico() == null || nuevoHistorial.getDiagnostico().trim().isEmpty()) {
-            nuevoHistorial.setDiagnostico("Sin diagnóstico registrado");
+            nuevoHistorial.setDiagnostico(DIAGNOSTICO_POR_DEFECTO);
             log.info("Se estableció diagnóstico por defecto para Cita ID: {}", event.getCitaId());
         }
         
@@ -127,7 +131,7 @@ public class HistorialClinicoServiceImpl implements IHistorialClinicoService {
         
         // Asegurar que el diagnóstico no sea null (requerido por la BD)
         if (nuevoHistorial.getDiagnostico() == null || nuevoHistorial.getDiagnostico().trim().isEmpty()) {
-            nuevoHistorial.setDiagnostico("Sin diagnóstico registrado");
+            nuevoHistorial.setDiagnostico(DIAGNOSTICO_POR_DEFECTO);
             log.info("Se estableció diagnóstico por defecto para mascota ID: {}", requestDTO.getPetId());
         }
         
@@ -253,7 +257,7 @@ public class HistorialClinicoServiceImpl implements IHistorialClinicoService {
             payload.put("nombreMascota", mascota.getNombre() != null ? mascota.getNombre() : "Tu mascota");
             payload.put("fecha", historial.getFecha() != null ? 
                     historial.getFecha().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) : "N/A");
-            payload.put("diagnostico", historial.getDiagnostico() != null ? historial.getDiagnostico() : "Sin diagnóstico registrado");
+            payload.put("diagnostico", historial.getDiagnostico() != null ? historial.getDiagnostico() : DIAGNOSTICO_POR_DEFECTO);
             
             // Crear y enviar la notificación
             NotificationRequestDTO notificationRequest = new NotificationRequestDTO(

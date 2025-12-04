@@ -6,11 +6,10 @@ WORKDIR /app
 COPY pom.xml .
 
 # [FIX] Eliminamos los módulos para romper la dependencia de las carpetas que no existen
-RUN sed -i '/<modules>/,/<\/modules>/d' pom.xml
-
 # [NUEVO] Instalamos el POM padre en el repo local (.m2) del contenedor.
 # La opción -N (Non-recursive) es clave para que no busque hijos.
-RUN mvn -N install
+RUN sed -i '/<modules>/,/<\/modules>/d' pom.xml && \
+    mvn -N install
 
 # 2. Copiamos el POM del microservicio específico
 COPY agendamiento-service/pom.xml agendamiento-service/
@@ -23,13 +22,11 @@ RUN mvn dependency:go-offline -f agendamiento-service/pom.xml
 # 4. Copiamos el código fuente
 COPY agendamiento-service/src agendamiento-service/src
 
-# 5. Compilamos
-# [CAMBIO CLAVE] Compilamos directamente el hijo.
-RUN mvn package -DskipTests -f agendamiento-service/pom.xml
-
-# 6. Extraemos capas
-WORKDIR /app/agendamiento-service/target
-RUN java -Djarmode=layertools -jar ./*.jar extract
+# 5. Compilamos y extraemos capas
+# [CAMBIO CLAVE] Compilamos directamente el hijo y extraemos las capas en una sola instrucción.
+RUN mvn package -DskipTests -f agendamiento-service/pom.xml && \
+    cd /app/agendamiento-service/target && \
+    java -Djarmode=layertools -jar ./*.jar extract
 
 # ==========================================
 # Etapa 2: Runner
