@@ -5,6 +5,7 @@ import co.cue.citas_service.client.AuthServiceClient;
 import co.cue.citas_service.client.MascotaServiceClient;
 import co.cue.citas_service.dtos.*;
 import co.cue.citas_service.dtos.enums.NotificationType;
+import co.cue.citas_service.dtos.CitaConfirmacionResponseDTO;
 import co.cue.citas_service.entity.Cita;
 import co.cue.citas_service.entity.EstadoCita;
 import co.cue.citas_service.events.CitaCompletadaEventDTO;
@@ -708,7 +709,7 @@ public class CitaServiceImpl implements ICitaService {
 
     @Override
     @Transactional
-    public void confirmarCitaPorToken(String token) {
+    public CitaConfirmacionResponseDTO confirmarCitaPorToken(String token) {
         log.info("Confirmando cita con token: {}", token);
         
         // Buscar la cita por token
@@ -725,9 +726,74 @@ public class CitaServiceImpl implements ICitaService {
         estadoEspera.confirmar(cita);
         
         // Guardar la cita confirmada
-        citaRepository.save(cita);
+        Cita citaConfirmada = citaRepository.save(cita);
         
-        log.info("Cita ID: {} confirmada exitosamente mediante token", cita.getId());
+        log.info("Cita ID: {} confirmada exitosamente mediante token", citaConfirmada.getId());
+        
+        // Obtener información completa para la respuesta
+        return construirRespuestaConfirmacion(citaConfirmada, "Cita confirmada exitosamente");
+    }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public CitaConfirmacionResponseDTO obtenerInformacionCitaPorToken(String token) {
+        log.info("Obteniendo información de cita con token: {}", token);
+        
+        // Buscar la cita por token
+        Cita cita = citaRepository.findByTokenConfirmacion(token)
+                .orElseThrow(() -> new EntityNotFoundException("Token de confirmación inválido o cita no encontrada"));
+        
+        // Construir respuesta con información de la cita (sin confirmarla)
+        return construirRespuestaConfirmacion(cita, "Información de la cita");
+    }
+    
+    /**
+     * Construye la respuesta de confirmación con información completa de la cita.
+     * Obtiene datos de mascota y veterinario desde otros servicios.
+     */
+    private CitaConfirmacionResponseDTO construirRespuestaConfirmacion(Cita cita, String mensaje) {
+        // Obtener nombre de la Mascota
+        String nombreMascota = "N/A";
+        try {
+            log.info("Obteniendo datos de la mascota (Pet ID: {})...", cita.getPetId());
+            MascotaClienteDTO mascota = mascotaClient.findMascotaByIdPublico(cita.getPetId()).block();
+            if (mascota != null && mascota.getNombre() != null) {
+                nombreMascota = mascota.getNombre();
+                log.info("Mascota obtenida: {}", nombreMascota);
+            }
+        } catch (Exception e) {
+            log.warn("No se pudo obtener nombre de la mascota. Pet ID: {}, Error: {}", 
+                    cita.getPetId(), e.getMessage());
+        }
+        
+        // Obtener datos del Veterinario
+        String nombreVeterinario = "N/A";
+        try {
+            log.info("Obteniendo datos del veterinario (Veterinario ID: {})...", cita.getVeterinarianId());
+            UsuarioClienteDTO veterinario = authClient.obtenerUsuarioPorIdPublico(cita.getVeterinarianId()).block();
+            if (veterinario != null) {
+                nombreVeterinario = "Dr. " + veterinario.getNombre() + " " + veterinario.getApellido();
+                log.info("Veterinario obtenido: {}", nombreVeterinario);
+            }
+        } catch (Exception e) {
+            log.warn("No se pudo obtener datos del veterinario. Veterinario ID: {}, Error: {}",
+                    cita.getVeterinarianId(), e.getMessage());
+        }
+        
+        // Construir respuesta
+        return CitaConfirmacionResponseDTO.builder()
+                .id(cita.getId())
+                .estado(cita.getEstado())
+                .mensaje(mensaje)
+                .nombreMascota(nombreMascota)
+                .petId(cita.getPetId())
+                .nombreVeterinario(nombreVeterinario)
+                .veterinarianId(cita.getVeterinarianId())
+                .fechaHoraInicio(cita.getFechaHoraInicio())
+                .fechaHoraFin(cita.getFechaHoraFin())
+                .nombreServicio(cita.getNombreServicio())
+                .motivoConsulta(cita.getMotivoConsulta())
+                .build();
     }
 
     @Override

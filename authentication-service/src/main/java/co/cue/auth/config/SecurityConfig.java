@@ -152,6 +152,8 @@ public class SecurityConfig {
                         // Rutas Públicas de Registro inicial y Login
                         .requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
+                        // Endpoint público para obtener información básica de usuario (para confirmación de citas)
+                        .requestMatchers(HttpMethod.GET, "/api/auth/public/**").permitAll()
 
                         //Rutas Administrativas (Solo ADMIN)
                         .requestMatchers(HttpMethod.GET, "/api/auth/active/users").hasAnyRole(ADMIN_ROLE, VETERINARIO_ROLE, DUENIO_ROLE)

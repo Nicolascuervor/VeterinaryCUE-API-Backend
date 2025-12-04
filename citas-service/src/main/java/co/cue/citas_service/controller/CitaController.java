@@ -4,6 +4,7 @@ import co.cue.citas_service.dtos.CitaDetailDTO;
 import co.cue.citas_service.dtos.CitaRequestDTO;
 import co.cue.citas_service.dtos.CitaResponseDTO;
 import co.cue.citas_service.dtos.CitaUpdateDTO;
+import co.cue.citas_service.dtos.CitaConfirmacionResponseDTO;
 import co.cue.citas_service.service.ICitaService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -91,17 +92,20 @@ public class CitaController {
         return ResponseEntity.ok(citaService.getAllCitasDetails());
     }
     
+    // Endpoint público para obtener información de una cita por token (sin confirmarla)
+    @GetMapping("/public/informacion/{token}")
+    public ResponseEntity<CitaConfirmacionResponseDTO> obtenerInformacionCitaPorToken(@PathVariable String token) {
+        log.info("Solicitud de información de cita recibida con token: {}", token);
+        CitaConfirmacionResponseDTO informacion = citaService.obtenerInformacionCitaPorToken(token);
+        return ResponseEntity.ok(informacion);
+    }
+    
     // Endpoint público para confirmar una cita mediante token (sin autenticación)
     @GetMapping("/public/confirmar/{token}")
-    public ResponseEntity<Map<String, String>> confirmarCitaPorToken(@PathVariable String token) {
+    public ResponseEntity<CitaConfirmacionResponseDTO> confirmarCitaPorToken(@PathVariable String token) {
         log.info("Solicitud de confirmación de cita recibida con token: {}", token);
-        citaService.confirmarCitaPorToken(token);
-        
-        Map<String, String> response = new HashMap<>();
-        response.put("mensaje", "Cita confirmada exitosamente");
-        response.put("estado", "CONFIRMADA");
-        
-        return ResponseEntity.ok(response);
+        CitaConfirmacionResponseDTO respuesta = citaService.confirmarCitaPorToken(token);
+        return ResponseEntity.ok(respuesta);
     }
     
     // Obtener calendario completo de citas futuras/pendientes del veterinario autenticado

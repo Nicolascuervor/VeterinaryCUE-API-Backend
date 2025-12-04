@@ -3,6 +3,7 @@ import co.cue.citas_service.dtos.CitaDetailDTO;
 import co.cue.citas_service.dtos.CitaRequestDTO;
 import co.cue.citas_service.dtos.CitaResponseDTO;
 import co.cue.citas_service.dtos.CitaUpdateDTO;
+import co.cue.citas_service.dtos.CitaConfirmacionResponseDTO;
 import co.cue.citas_service.entity.Cita;
 import co.cue.citas_service.service.ICitaService;
 import lombok.extern.slf4j.Slf4j;
@@ -120,11 +121,18 @@ public class CitaServiceCacheProxy implements ICitaService {
     }
 
     @Override
-    public void confirmarCitaPorToken(String token) {
+    public CitaConfirmacionResponseDTO confirmarCitaPorToken(String token) {
         log.debug("PROXY CACHE: (Write) Delegando confirmarCitaPorToken al servicio real...");
-        realService.confirmarCitaPorToken(token);
+        CitaConfirmacionResponseDTO respuesta = realService.confirmarCitaPorToken(token);
         log.info("PROXY CACHE: (Invalidate 🗑️) Confirmación de cita detectada. Limpiando caché para {}.", LocalDate.now());
         cache.remove(LocalDate.now());
+        return respuesta;
+    }
+
+    @Override
+    public CitaConfirmacionResponseDTO obtenerInformacionCitaPorToken(String token) {
+        log.debug("PROXY CACHE: (Bypass) Delegando solicitud de información de cita por token al servicio real.");
+        return realService.obtenerInformacionCitaPorToken(token);
     }
 
     @Override

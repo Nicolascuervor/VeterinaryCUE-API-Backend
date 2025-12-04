@@ -69,6 +69,17 @@ public class AuthController {
     }
 
     /**
+     * Endpoint público para obtener información básica de un usuario por ID.
+     * Utilizado para confirmación de citas y otros flujos públicos.
+     * Solo retorna información básica (nombre, apellido) sin datos sensibles.
+     */
+    @GetMapping("/public/{id}")
+    public ResponseEntity<Usuario> obtenerUsuarioPorIdPublico(@PathVariable Long id) {
+        Usuario usuario = authService.obtenerUsuarioPorId(id);
+        return ResponseEntity.ok(usuario);
+    }
+    
+    /**
      * Busca un usuario específico por su identificador único (ID).
      * Utilizado para cargar perfiles de usuario o validar existencias.
      * Requiere autenticación previa.

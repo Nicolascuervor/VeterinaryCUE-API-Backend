@@ -42,4 +42,21 @@ public class AuthServiceClient {
         }
         throw new IllegalStateException("No se pudo obtener el token JWT del contexto de seguridad");
     }
+    
+    /**
+     * Obtiene información básica de un usuario por ID sin requerir autenticación.
+     * Útil para endpoints públicos como confirmación de citas.
+     */
+    public Mono<UsuarioClienteDTO> obtenerUsuarioPorIdPublico(Long id) {
+        String url = AUTH_SERVICE_URL + "/api/auth/public/" + id;
+        
+        log.info("Consultando datos del usuario ID: {} en authentication-service (público)", id);
+        
+        return webClientBuilder.build()
+                .get()
+                .uri(url)
+                .retrieve()
+                .bodyToMono(UsuarioClienteDTO.class)
+                .doOnError(e -> log.error("Error obteniendo usuario público: {}", e.getMessage()));
+    }
 }

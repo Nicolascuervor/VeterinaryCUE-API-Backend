@@ -47,4 +47,21 @@ public class MascotaServiceClient {
         // Para este caso de uso (crear cita), siempre hay un usuario.
         return "";
     }
+    
+    /**
+     * Obtiene información básica de una mascota por ID sin requerir autenticación.
+     * Útil para endpoints públicos como confirmación de citas.
+     */
+    public Mono<MascotaClienteDTO> findMascotaByIdPublico(Long mascotaId) {
+        String url = MASCOTAS_SERVICE_URL + "/api/mascotas/public/" + mascotaId;
+        
+        log.info("Consultando mascota ID: {} en mascotas-service (público)", mascotaId);
+        
+        return webClientBuilder.build()
+                .get()
+                .uri(url)
+                .retrieve()
+                .bodyToMono(MascotaClienteDTO.class)
+                .doOnError(e -> log.error("Error consultando mascota pública: {}", e.getMessage()));
+    }
 }

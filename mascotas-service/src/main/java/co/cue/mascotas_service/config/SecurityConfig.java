@@ -68,6 +68,8 @@ public class SecurityConfig {
         http
                 // Define permisos por tipo de petición y rol.
                 .authorizeHttpRequests(authz -> authz
+                        // Endpoint público para obtener información básica de mascota (para confirmación de citas)
+                        .requestMatchers(HttpMethod.GET, "/api/mascotas/public/**").permitAll()
                         .requestMatchers(HttpMethod.GET, MASCOTAS_API_PATH).authenticated()
                         .requestMatchers(HttpMethod.POST, MASCOTAS_API_PATH).hasAnyRole(ADMIN_ROLE,  DUENIO_ROLE,  VETERINARIO_ROLE)
                         .requestMatchers(HttpMethod.PUT, MASCOTAS_API_PATH).hasRole(ADMIN_ROLE)

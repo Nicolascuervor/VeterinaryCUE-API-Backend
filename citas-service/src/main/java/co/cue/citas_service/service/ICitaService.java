@@ -4,6 +4,7 @@ import co.cue.citas_service.dtos.CitaDetailDTO;
 import co.cue.citas_service.dtos.CitaRequestDTO;
 import co.cue.citas_service.dtos.CitaResponseDTO;
 import co.cue.citas_service.dtos.CitaUpdateDTO;
+import co.cue.citas_service.dtos.CitaConfirmacionResponseDTO;
 import co.cue.citas_service.entity.Cita;
 
 import java.time.LocalDate;
@@ -37,7 +38,10 @@ public interface ICitaService {
     List<CitaDetailDTO> getAllCitasDetails();
 
     // Confirmar una cita mediante token (endpoint público)
-    void confirmarCitaPorToken(String token);
+    CitaConfirmacionResponseDTO confirmarCitaPorToken(String token);
+    
+    // Obtener información de una cita por token (sin confirmarla, endpoint público)
+    CitaConfirmacionResponseDTO obtenerInformacionCitaPorToken(String token);
 
     // Obtener citas futuras/pendientes del veterinario autenticado
     List<CitaResponseDTO> obtenerCitasFuturasPorVeterinario(Long veterinarioId);

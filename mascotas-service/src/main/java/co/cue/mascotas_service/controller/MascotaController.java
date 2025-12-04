@@ -29,6 +29,15 @@ public class MascotaController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    @GetMapping("/public/{id}")
+    // Endpoint público para obtener información básica de una mascota por ID.
+    // Utilizado para confirmación de citas y otros flujos públicos.
+    public ResponseEntity<MascotaResponseDTO> getMascotaByIdPublico(@PathVariable Long id) {
+        log.info("GET /api/mascotas/public/{} - Obtener mascota por ID (público)", id);
+        MascotaResponseDTO response = mascotaService.getMascotaById(id);
+        return ResponseEntity.ok(response);
+    }
+    
     @GetMapping("/{id}")
     // Obtiene una mascota por su ID.
     public ResponseEntity<MascotaResponseDTO> getMascotaById(@PathVariable Long id) {
