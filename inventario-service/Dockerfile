@@ -27,13 +27,16 @@ FROM eclipse-temurin:21-jre-alpine
 
 WORKDIR /app
 
-RUN addgroup -S spring && adduser -S spring -G spring
-USER spring:spring
+RUN addgroup -S spring && adduser -S spring -G spring && \
+    mkdir -p /app/uploads/productos && \
+    chown -R spring:spring /app/uploads
 
 COPY --from=builder /app/inventario-service/target/dependencies/ ./
 COPY --from=builder /app/inventario-service/target/spring-boot-loader/ ./
 COPY --from=builder /app/inventario-service/target/snapshot-dependencies/ ./
 COPY --from=builder /app/inventario-service/target/application/ ./
+
+USER spring:spring
 
 ENV JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=75"
 

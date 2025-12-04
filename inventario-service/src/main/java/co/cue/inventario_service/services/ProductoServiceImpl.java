@@ -326,10 +326,9 @@ public class ProductoServiceImpl implements IProductoService {
     }
 
     @Override
-    @Transactional
     public String subirFotoProducto(Long productoId, MultipartFile file) {
         // A. Validaciones básicas
-        if (file.isEmpty()) {
+        if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("No se puede subir un archivo vacío");
         }
 
@@ -348,10 +347,18 @@ public class ProductoServiceImpl implements IProductoService {
         Path rootLocation = getRootLocation();
         try {
             if (!Files.exists(rootLocation)) {
+                log.info("Creando directorio de uploads: {}", rootLocation);
                 Files.createDirectories(rootLocation);
             }
+            // Verificar permisos de escritura
+            if (!Files.isWritable(rootLocation)) {
+                throw new FileStorageException("No se tienen permisos de escritura en el directorio: " + rootLocation);
+            }
+        } catch (FileStorageException e) {
+            throw e;
         } catch (Exception e) {
-            throw new FileStorageException("No se pudo inicializar la carpeta de uploads", e);
+            log.error("Error al crear directorio de uploads: {}", rootLocation, e);
+            throw new FileStorageException("No se pudo inicializar la carpeta de uploads: " + e.getMessage(), e);
         }
 
         // C. Generar nombre único
@@ -364,22 +371,53 @@ public class ProductoServiceImpl implements IProductoService {
         Path destinationFile = rootLocation.resolve(Paths.get(filename))
                 .normalize().toAbsolutePath();
 
-        // D. Guardar el archivo
-        try {
-            Files.copy(file.getInputStream(), destinationFile, StandardCopyOption.REPLACE_EXISTING);
-        } catch (Exception e) {
-            throw new FileStorageException("Fallo al guardar el archivo físico", e);
+        // Validar que el archivo no salga del directorio permitido (seguridad)
+        if (!destinationFile.startsWith(rootLocation.toAbsolutePath())) {
+            throw new FileStorageException("Ruta de archivo inválida: intento de acceso fuera del directorio permitido");
         }
 
-        // E. Actualizar la Entidad Producto
-        Producto producto = findProductoActivoById(productoId);
+        // D. Guardar el archivo
+        try {
+            log.debug("Guardando archivo en: {}", destinationFile);
+            Files.copy(file.getInputStream(), destinationFile, StandardCopyOption.REPLACE_EXISTING);
+            log.info("Archivo guardado exitosamente: {}", filename);
+        } catch (java.io.IOException e) {
+            log.error("Error al guardar archivo: {}", destinationFile, e);
+            throw new FileStorageException("Fallo al guardar el archivo físico: " + e.getMessage(), e);
+        } catch (Exception e) {
+            log.error("Error inesperado al guardar archivo: {}", destinationFile, e);
+            throw new FileStorageException("Fallo al guardar el archivo físico: " + e.getMessage(), e);
+        }
 
+        // E. Actualizar la Entidad Producto (en transacción separada)
+        try {
+            return actualizarFotoProductoEnBD(productoId, filename);
+        } catch (Exception e) {
+            // Si falla la actualización en BD, intentar eliminar el archivo físico
+            try {
+                Files.deleteIfExists(destinationFile);
+                log.warn("Archivo físico eliminado después de error en BD: {}", filename);
+            } catch (Exception deleteEx) {
+                log.error("No se pudo eliminar el archivo físico después de error: {}", filename, deleteEx);
+            }
+            throw e;
+        }
+    }
+
+    /**
+     * Actualiza la foto del producto en la base de datos (en transacción separada).
+     */
+    @Transactional
+    private String actualizarFotoProductoEnBD(Long productoId, String filename) {
+        Producto producto = findProductoActivoById(productoId);
+        
         // Construimos la URL relativa
         String relativePath = "/api/inventario/uploads/" + filename;
-
+        
         producto.setFoto(relativePath);
         productoRepository.save(producto);
-
+        
+        log.info("Foto actualizada en BD para producto {}: {}", productoId, relativePath);
         return relativePath;
     }
 

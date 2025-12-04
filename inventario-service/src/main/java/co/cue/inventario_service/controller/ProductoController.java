@@ -241,11 +241,30 @@ public class ProductoController {
      * Solo administradores pueden subir imágenes
      */
     @PostMapping(value = "/{id}/upload-photo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<String> subirFotoProducto(
+    public ResponseEntity<?> subirFotoProducto(
             @PathVariable Long id,
             @RequestParam("file") MultipartFile file) {
-        String fotoUrl = productoService.subirFotoProducto(id, file);
-        return ResponseEntity.ok(fotoUrl);
+        try {
+            if (file == null || file.isEmpty()) {
+                log.warn("Intento de subir archivo vacío o null para producto {}", id);
+                return ResponseEntity.badRequest().body("El archivo no puede estar vacío");
+            }
+            
+            log.info("Intentando subir foto para producto {}", id);
+            String fotoUrl = productoService.subirFotoProducto(id, file);
+            log.info("Foto subida exitosamente para producto {}: {}", id, fotoUrl);
+            return ResponseEntity.ok(fotoUrl);
+        } catch (IllegalArgumentException e) {
+            log.error("Error de validación al subir foto para producto {}: {}", id, e.getMessage());
+            return ResponseEntity.badRequest().body("Error de validación: " + e.getMessage());
+        } catch (jakarta.persistence.EntityNotFoundException e) {
+            log.error("Producto no encontrado al subir foto: {}", id);
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            log.error("Error inesperado al subir foto para producto {}: {}", id, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error al subir la imagen: " + e.getMessage());
+        }
     }
 
     /**
