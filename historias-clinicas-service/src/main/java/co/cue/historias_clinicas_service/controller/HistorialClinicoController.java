@@ -52,9 +52,14 @@ public class HistorialClinicoController {
     public ResponseEntity<HistorialClinicoResponseDTO> crearHistorialClinico(
             @RequestBody HistorialClinicoRequestDTO requestDTO,
             @RequestHeader(value = "X-Usuario-Id") Long veterinarioId) {
-
-        HistorialClinicoResponseDTO nuevoHistorial = historialClinicoService.createHistorialMedico(requestDTO, veterinarioId);
-        return new ResponseEntity<>(nuevoHistorial, HttpStatus.CREATED);
+        try {
+            HistorialClinicoResponseDTO nuevoHistorial = historialClinicoService.createHistorialMedico(requestDTO, veterinarioId);
+            return new ResponseEntity<>(nuevoHistorial, HttpStatus.CREATED);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
     /**

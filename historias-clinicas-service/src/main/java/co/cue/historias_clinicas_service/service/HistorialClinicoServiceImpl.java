@@ -75,8 +75,14 @@ public class HistorialClinicoServiceImpl implements IHistorialClinicoService {
         HistorialClinico guardado = historialClinicoRepository.save(nuevoHistorial);
         log.info("Historial clínico creado exitosamente para Cita ID: {}", event.getCitaId());
         
-        // Enviar notificación al dueño de la mascota
-        enviarNotificacionHistorialCreado(guardado);
+        // Enviar notificación al dueño de la mascota (fuera de la transacción para no afectar el guardado)
+        try {
+            enviarNotificacionHistorialCreado(guardado);
+        } catch (Exception e) {
+            log.error("Error al enviar notificación de historial clínico creado. El historial fue guardado correctamente. Cita ID: {}", 
+                    event.getCitaId(), e);
+            // No lanzamos la excepción para que la creación del historial no falle si la notificación falla
+        }
     }
 
 
@@ -107,12 +113,35 @@ public class HistorialClinicoServiceImpl implements IHistorialClinicoService {
     @Transactional
     public HistorialClinicoResponseDTO createHistorialMedico(HistorialClinicoRequestDTO requestDTO, Long veterinarioId) {
         log.info("Veterinario {} creando historial manual para mascota {}", veterinarioId, requestDTO.getPetId());
+        
+        // Validar campos requeridos
+        if (requestDTO.getPetId() == null) {
+            throw new IllegalArgumentException("El ID de la mascota es obligatorio");
+        }
+        if (requestDTO.getFecha() == null) {
+            throw new IllegalArgumentException("La fecha es obligatoria");
+        }
+        
         HistorialClinico nuevoHistorial = mapper.mapRequestToEntity(requestDTO);
         nuevoHistorial.setVeterinarianId(veterinarioId); // Asignamos el ID del Vet que crea
-        HistorialClinico guardado = historialClinicoRepository.save(nuevoHistorial);
         
-        // Enviar notificación al dueño de la mascota
-        enviarNotificacionHistorialCreado(guardado);
+        // Asegurar que el diagnóstico no sea null (requerido por la BD)
+        if (nuevoHistorial.getDiagnostico() == null || nuevoHistorial.getDiagnostico().trim().isEmpty()) {
+            nuevoHistorial.setDiagnostico("Sin diagnóstico registrado");
+            log.info("Se estableció diagnóstico por defecto para mascota ID: {}", requestDTO.getPetId());
+        }
+        
+        HistorialClinico guardado = historialClinicoRepository.save(nuevoHistorial);
+        log.info("Historial clínico creado exitosamente con ID: {}", guardado.getId());
+        
+        // Enviar notificación al dueño de la mascota (fuera de la transacción para no afectar el guardado)
+        try {
+            enviarNotificacionHistorialCreado(guardado);
+        } catch (Exception e) {
+            log.error("Error al enviar notificación de historial clínico creado. El historial fue guardado correctamente. ID: {}", 
+                    guardado.getId(), e);
+            // No lanzamos la excepción para que la creación del historial no falle si la notificación falla
+        }
         
         return mapper.mapEntityToResponseDTO(guardado);
     }
