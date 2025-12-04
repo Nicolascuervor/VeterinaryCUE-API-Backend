@@ -129,8 +129,8 @@ public class EmailService {
             message.setTo(correo);
             message.setSubject("¡Confirma tu Cita - Veterinaria CUE");
             
-            // Construir la URL completa del link de confirmación
-            String urlConfirmacion = "https://api.veterinariacue.com/api/citas/public/confirmar/" + linkConfirmacion;
+            // Construir la URL completa del link de confirmación (URL del frontend)
+            String urlConfirmacion = "https://veterinariacue.com/confirmar-cita/" + linkConfirmacion;
             
             message.setText(SALUDO + nombreDuenio + ",\n\n" +
                     "Se ha agendado una nueva cita para tu mascota.\n\n" +
