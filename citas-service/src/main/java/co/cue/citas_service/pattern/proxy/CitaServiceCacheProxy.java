@@ -134,4 +134,22 @@ public class CitaServiceCacheProxy implements ICitaService {
         return realService.obtenerCitasFuturasPorVeterinario(veterinarioId);
     }
 
+    @Override
+    public List<co.cue.citas_service.dtos.CitaResponseDTO> obtenerTodasLasCitasPorVeterinario(Long veterinarioId) {
+        log.debug("PROXY CACHE: (Bypass) Delegando solicitud de todas las citas al servicio real.");
+        return realService.obtenerTodasLasCitasPorVeterinario(veterinarioId);
+    }
+
+    @Override
+    public List<co.cue.citas_service.dtos.CitaResponseDTO> obtenerCitasPorVeterinarioYEstado(Long veterinarioId, String estado) {
+        log.debug("PROXY CACHE: (Bypass) Delegando solicitud de citas por estado al servicio real.");
+        return realService.obtenerCitasPorVeterinarioYEstado(veterinarioId, estado);
+    }
+
+    @Override
+    public List<co.cue.citas_service.dtos.CitaResponseDTO> obtenerCitasFuturasPorVeterinarioYEstado(Long veterinarioId, String estado) {
+        log.debug("PROXY CACHE: (Bypass) Delegando solicitud de citas futuras por estado al servicio real.");
+        return realService.obtenerCitasFuturasPorVeterinarioYEstado(veterinarioId, estado);
+    }
+
 }

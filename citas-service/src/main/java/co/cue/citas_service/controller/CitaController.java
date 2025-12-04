@@ -105,11 +105,61 @@ public class CitaController {
     }
     
     // Obtener calendario completo de citas futuras/pendientes del veterinario autenticado
+    // Parámetro opcional 'estado' para filtrar por un estado específico
     @GetMapping("/veterinario/calendario")
     public ResponseEntity<List<CitaResponseDTO>> obtenerCalendarioCompleto(
-            @RequestHeader(value = "X-Usuario-Id") Long usuarioId) {
-        log.info("Solicitud de calendario completo para veterinario ID: {}", usuarioId);
-        List<CitaResponseDTO> citas = citaService.obtenerCitasFuturasPorVeterinario(usuarioId);
+            @RequestHeader(value = "X-Usuario-Id") Long usuarioId,
+            @RequestParam(value = "estado", required = false) String estado) {
+        log.info("Solicitud de calendario completo para veterinario ID: {}, estado: {}", usuarioId, estado);
+        
+        List<CitaResponseDTO> citas;
+        if (estado != null && !estado.isEmpty()) {
+            // Filtrar por estado específico (solo citas futuras)
+            citas = citaService.obtenerCitasFuturasPorVeterinarioYEstado(usuarioId, estado);
+        } else {
+            // Sin filtro de estado (todas las citas futuras/pendientes)
+            citas = citaService.obtenerCitasFuturasPorVeterinario(usuarioId);
+        }
+        
+        return ResponseEntity.ok(citas);
+    }
+    
+    // Obtener todas las citas del veterinario (pasadas y futuras)
+    // Parámetro opcional 'estado' para filtrar por un estado específico
+    @GetMapping("/veterinario/todas")
+    public ResponseEntity<List<CitaResponseDTO>> obtenerTodasLasCitasPorVeterinario(
+            @RequestHeader(value = "X-Usuario-Id") Long usuarioId,
+            @RequestParam(value = "estado", required = false) String estado) {
+        log.info("Solicitud de todas las citas para veterinario ID: {}, estado: {}", usuarioId, estado);
+        
+        List<CitaResponseDTO> citas;
+        if (estado != null && !estado.isEmpty()) {
+            // Filtrar por estado específico (todas las citas, pasadas y futuras)
+            citas = citaService.obtenerCitasPorVeterinarioYEstado(usuarioId, estado);
+        } else {
+            // Sin filtro de estado (todas las citas)
+            citas = citaService.obtenerTodasLasCitasPorVeterinario(usuarioId);
+        }
+        
+        return ResponseEntity.ok(citas);
+    }
+    
+    // Endpoints específicos por estado para facilitar el uso
+    @GetMapping("/veterinario/estado/{estado}")
+    public ResponseEntity<List<CitaResponseDTO>> obtenerCitasPorEstado(
+            @RequestHeader(value = "X-Usuario-Id") Long usuarioId,
+            @PathVariable String estado,
+            @RequestParam(value = "soloFuturas", defaultValue = "false") boolean soloFuturas) {
+        log.info("Solicitud de citas para veterinario ID: {}, estado: {}, soloFuturas: {}", 
+                usuarioId, estado, soloFuturas);
+        
+        List<CitaResponseDTO> citas;
+        if (soloFuturas) {
+            citas = citaService.obtenerCitasFuturasPorVeterinarioYEstado(usuarioId, estado);
+        } else {
+            citas = citaService.obtenerCitasPorVeterinarioYEstado(usuarioId, estado);
+        }
+        
         return ResponseEntity.ok(citas);
     }
     

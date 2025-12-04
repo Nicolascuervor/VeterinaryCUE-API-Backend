@@ -27,4 +27,16 @@ public interface CitaRepository extends JpaRepository<Cita, Long> {
             Long veterinarianId, 
             LocalDateTime fechaActual, 
             List<EstadoCita> estados);
+    
+    // Buscar todas las citas de un veterinario por estado
+    List<Cita> findByVeterinarianIdAndEstado(Long veterinarianId, EstadoCita estado);
+    
+    // Buscar todas las citas de un veterinario (sin filtro de fecha ni estado)
+    List<Cita> findByVeterinarianId(Long veterinarianId);
+    
+    // Buscar citas de un veterinario por estado y fecha futura
+    List<Cita> findByVeterinarianIdAndEstadoAndFechaHoraInicioGreaterThanEqual(
+            Long veterinarianId, 
+            EstadoCita estado, 
+            LocalDateTime fechaActual);
 }

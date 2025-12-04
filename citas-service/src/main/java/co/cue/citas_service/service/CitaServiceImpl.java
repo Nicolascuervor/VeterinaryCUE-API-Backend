@@ -760,4 +760,76 @@ public class CitaServiceImpl implements ICitaService {
                 .map(mapper::mapToResponseDTO)
                 .toList();
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CitaResponseDTO> obtenerTodasLasCitasPorVeterinario(Long veterinarioId) {
+        log.info("Obteniendo todas las citas (pasadas y futuras) para veterinario ID: {}", veterinarioId);
+        
+        List<Cita> citas = citaRepository.findByVeterinarianId(veterinarioId);
+        
+        log.info("Se encontraron {} citas para veterinario ID: {}", citas.size(), veterinarioId);
+        
+        // Mapear a DTOs y ordenar por fecha de inicio (más recientes primero)
+        return citas.stream()
+                .sorted((c1, c2) -> c2.getFechaHoraInicio().compareTo(c1.getFechaHoraInicio()))
+                .map(mapper::mapToResponseDTO)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CitaResponseDTO> obtenerCitasPorVeterinarioYEstado(Long veterinarioId, String estado) {
+        log.info("Obteniendo citas para veterinario ID: {} con estado: {}", veterinarioId, estado);
+        
+        // Convertir string a enum
+        EstadoCita estadoEnum;
+        try {
+            estadoEnum = EstadoCita.valueOf(estado.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Estado de cita inválido: " + estado + 
+                    ". Estados válidos: ESPERA, CONFIRMADA, EN_PROGRESO, FINALIZADA, CANCELADA, NO_ASISTIO");
+        }
+        
+        List<Cita> citas = citaRepository.findByVeterinarianIdAndEstado(veterinarioId, estadoEnum);
+        
+        log.info("Se encontraron {} citas con estado {} para veterinario ID: {}", 
+                citas.size(), estado, veterinarioId);
+        
+        // Mapear a DTOs y ordenar por fecha de inicio (más recientes primero)
+        return citas.stream()
+                .sorted((c1, c2) -> c2.getFechaHoraInicio().compareTo(c1.getFechaHoraInicio()))
+                .map(mapper::mapToResponseDTO)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CitaResponseDTO> obtenerCitasFuturasPorVeterinarioYEstado(Long veterinarioId, String estado) {
+        log.info("Obteniendo citas futuras para veterinario ID: {} con estado: {}", veterinarioId, estado);
+        
+        // Convertir string a enum
+        EstadoCita estadoEnum;
+        try {
+            estadoEnum = EstadoCita.valueOf(estado.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Estado de cita inválido: " + estado + 
+                    ". Estados válidos: ESPERA, CONFIRMADA, EN_PROGRESO, FINALIZADA, CANCELADA, NO_ASISTIO");
+        }
+        
+        // Fecha y hora actual para filtrar solo citas futuras
+        LocalDateTime fechaActual = LocalDateTime.now();
+        
+        List<Cita> citas = citaRepository.findByVeterinarianIdAndEstadoAndFechaHoraInicioGreaterThanEqual(
+                veterinarioId, estadoEnum, fechaActual);
+        
+        log.info("Se encontraron {} citas futuras con estado {} para veterinario ID: {}", 
+                citas.size(), estado, veterinarioId);
+        
+        // Mapear a DTOs y ordenar por fecha de inicio (más próximas primero)
+        return citas.stream()
+                .sorted((c1, c2) -> c1.getFechaHoraInicio().compareTo(c2.getFechaHoraInicio()))
+                .map(mapper::mapToResponseDTO)
+                .toList();
+    }
 }

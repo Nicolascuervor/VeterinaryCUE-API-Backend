@@ -41,5 +41,14 @@ public interface ICitaService {
 
     // Obtener citas futuras/pendientes del veterinario autenticado
     List<CitaResponseDTO> obtenerCitasFuturasPorVeterinario(Long veterinarioId);
+    
+    // Obtener todas las citas del veterinario (pasadas y futuras)
+    List<CitaResponseDTO> obtenerTodasLasCitasPorVeterinario(Long veterinarioId);
+    
+    // Obtener citas del veterinario filtradas por estado
+    List<CitaResponseDTO> obtenerCitasPorVeterinarioYEstado(Long veterinarioId, String estado);
+    
+    // Obtener citas futuras del veterinario filtradas por estado
+    List<CitaResponseDTO> obtenerCitasFuturasPorVeterinarioYEstado(Long veterinarioId, String estado);
 
 }
