@@ -6,8 +6,8 @@ COPY pom.xml .
 RUN sed -i '/<modules>/,/<\/modules>/d' pom.xml && \
     mvn -N install
 
-COPY agendamiento-service/pom.xml agendamiento-service/ \
-     agendamiento-service/src agendamiento-service/src
+COPY agendamiento-service/pom.xml agendamiento-service/
+COPY agendamiento-service/src agendamiento-service/src
 
 RUN mvn install -DskipTests -Dspring-boot.repackage.skip=true -f agendamiento-service/pom.xml
 
