@@ -39,4 +39,7 @@ public interface ICitaService {
     // Confirmar una cita mediante token (endpoint público)
     void confirmarCitaPorToken(String token);
 
+    // Obtener citas futuras/pendientes del veterinario autenticado
+    List<CitaResponseDTO> obtenerCitasFuturasPorVeterinario(Long veterinarioId);
+
 }

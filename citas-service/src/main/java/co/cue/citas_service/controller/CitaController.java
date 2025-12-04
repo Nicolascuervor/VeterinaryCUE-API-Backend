@@ -104,4 +104,13 @@ public class CitaController {
         return ResponseEntity.ok(response);
     }
     
+    // Obtener calendario completo de citas futuras/pendientes del veterinario autenticado
+    @GetMapping("/veterinario/calendario")
+    public ResponseEntity<List<CitaResponseDTO>> obtenerCalendarioCompleto(
+            @RequestHeader(value = "X-Usuario-Id") Long usuarioId) {
+        log.info("Solicitud de calendario completo para veterinario ID: {}", usuarioId);
+        List<CitaResponseDTO> citas = citaService.obtenerCitasFuturasPorVeterinario(usuarioId);
+        return ResponseEntity.ok(citas);
+    }
+    
 }

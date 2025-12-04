@@ -127,4 +127,11 @@ public class CitaServiceCacheProxy implements ICitaService {
         cache.remove(LocalDate.now());
     }
 
+    @Override
+    public List<co.cue.citas_service.dtos.CitaResponseDTO> obtenerCitasFuturasPorVeterinario(Long veterinarioId) {
+        log.debug("PROXY CACHE: (Bypass) Delegando solicitud de calendario completo al servicio real.");
+        // No cacheamos el calendario completo ya que es una vista dinámica que cambia constantemente
+        return realService.obtenerCitasFuturasPorVeterinario(veterinarioId);
+    }
+
 }

@@ -20,4 +20,11 @@ public interface CitaRepository extends JpaRepository<Cita, Long> {
     
     // Buscar una cita por su token de confirmación
     Optional<Cita> findByTokenConfirmacion(String tokenConfirmacion);
+    
+    // Buscar citas futuras/pendientes de un veterinario
+    // Citas con fechaHoraInicio >= fechaActual y estados pendientes (ESPERA, CONFIRMADA, EN_PROGRESO)
+    List<Cita> findByVeterinarianIdAndFechaHoraInicioGreaterThanEqualAndEstadoIn(
+            Long veterinarianId, 
+            LocalDateTime fechaActual, 
+            List<EstadoCita> estados);
 }

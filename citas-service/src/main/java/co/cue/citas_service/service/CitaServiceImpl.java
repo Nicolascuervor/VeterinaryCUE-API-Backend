@@ -729,4 +729,35 @@ public class CitaServiceImpl implements ICitaService {
         
         log.info("Cita ID: {} confirmada exitosamente mediante token", cita.getId());
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CitaResponseDTO> obtenerCitasFuturasPorVeterinario(Long veterinarioId) {
+        log.info("Obteniendo citas futuras/pendientes para veterinario ID: {}", veterinarioId);
+        
+        // Fecha y hora actual para filtrar solo citas futuras
+        LocalDateTime fechaActual = LocalDateTime.now();
+        
+        // Estados considerados como pendientes/futuros
+        List<EstadoCita> estadosPendientes = List.of(
+                EstadoCita.ESPERA,
+                EstadoCita.CONFIRMADA,
+                EstadoCita.EN_PROGRESO
+        );
+        
+        // Buscar citas del veterinario que sean futuras y estén en estados pendientes
+        List<Cita> citas = citaRepository.findByVeterinarianIdAndFechaHoraInicioGreaterThanEqualAndEstadoIn(
+                veterinarioId,
+                fechaActual,
+                estadosPendientes
+        );
+        
+        log.info("Se encontraron {} citas futuras/pendientes para veterinario ID: {}", citas.size(), veterinarioId);
+        
+        // Mapear a DTOs y ordenar por fecha de inicio (más próximas primero)
+        return citas.stream()
+                .sorted((c1, c2) -> c1.getFechaHoraInicio().compareTo(c2.getFechaHoraInicio()))
+                .map(mapper::mapToResponseDTO)
+                .toList();
+    }
 }
