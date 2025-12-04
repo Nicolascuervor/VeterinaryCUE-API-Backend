@@ -73,6 +73,12 @@ public enum NotificationType {
      * Estrategia para notificar cuando se crea un nuevo historial clínico para una mascota.
      * Requiere un payload con "correo", "nombreDuenio", "nombreMascota", "fecha", "diagnostico".
      */
-    HISTORIAL_CLINICO_CREADO
+    HISTORIAL_CLINICO_CREADO,
+
+    /**
+     * Estrategia para notificar cuando se reasigna el horario de una cita.
+     * Requiere un payload con "correo", "nombreDuenio", "nombreMascota", "fechaAnterior", "fechaNueva", "medico".
+     */
+    CITA_HORARIO_REASIGNADO
 
 }

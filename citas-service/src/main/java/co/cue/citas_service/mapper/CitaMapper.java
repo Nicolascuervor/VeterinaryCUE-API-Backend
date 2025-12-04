@@ -22,6 +22,14 @@ public class CitaMapper {
         cita.setExamenesRealizados(dto.getExamenesRealizados());
         cita.setMedicamentosRecetados(dto.getMedicamentosRecetados());
         cita.setProximaCita(dto.getProximaCita());
+        
+        // Actualizar fechas si se proporcionan (para reasignación de horario)
+        if (dto.getFechaHoraInicio() != null) {
+            cita.setFechaHoraInicio(dto.getFechaHoraInicio());
+        }
+        if (dto.getFechaHoraFin() != null) {
+            cita.setFechaHoraFin(dto.getFechaHoraFin());
+        }
     }
 
     // Convierte una entidad Cita a un DTO de respuesta para el cliente

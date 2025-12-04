@@ -295,4 +295,32 @@ public class EmailService {
             log.error("Error enviando correo de historial clínico creado: {}", e.getMessage());
         }
     }
+
+    /**
+     * Envía un correo cuando se reasigna el horario de una cita.
+     */
+    public void enviarNotificacionCitaHorarioReasignado(String correo, String nombreDuenio, String nombreMascota, String fechaAnterior, String fechaNueva, String medico) {
+        log.info("Enviando notificación de cambio de horario de cita a {}", correo);
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(NO_EMAIL);
+            message.setTo(correo);
+            message.setSubject("Cambio de Horario de Cita - Veterinaria CUE");
+            message.setText(SALUDO + nombreDuenio + ",\n\n" +
+                    "Te informamos que el horario de tu cita ha sido reasignado.\n\n" +
+                    "Detalles de la cita:\n" +
+                    "Mascota: " + nombreMascota + "\n" +
+                    "Veterinario: " + medico + "\n" +
+                    "Horario anterior: " + fechaAnterior + "\n" +
+                    "Nuevo horario: " + fechaNueva + "\n\n" +
+                    "Por favor ten en cuenta este cambio y llega 10 minutos antes del nuevo horario.\n\n" +
+                    "Si tienes alguna pregunta o necesitas realizar otro cambio, no dudes en contactarnos.\n\n" +
+                    "Lamentamos cualquier inconveniente.");
+            
+            mailSender.send(message);
+            log.info("Correo de cambio de horario enviado exitosamente.");
+        } catch (Exception e) {
+            log.error("Error enviando correo de cambio de horario: {}", e.getMessage());
+        }
+    }
 }

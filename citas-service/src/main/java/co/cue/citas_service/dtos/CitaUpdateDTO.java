@@ -6,6 +6,7 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 
 @Getter
@@ -47,4 +48,10 @@ public class CitaUpdateDTO {
 
     // Fecha de la próxima cita
     private LocalDate proximaCita;
+
+    // Fecha y hora de inicio de la cita (para reasignación de horario)
+    private LocalDateTime fechaHoraInicio;
+
+    // Fecha y hora de fin de la cita (opcional, se calcula si no se proporciona)
+    private LocalDateTime fechaHoraFin;
 }

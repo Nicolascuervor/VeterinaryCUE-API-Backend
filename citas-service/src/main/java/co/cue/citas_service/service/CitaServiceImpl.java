@@ -1,6 +1,5 @@
 package co.cue.citas_service.service;
 
-import co.cue.agendamiento_service.models.entities.dtos.ReservaRequestDTO;
 import co.cue.citas_service.client.AgendamientoServiceClient;
 import co.cue.citas_service.client.AuthServiceClient;
 import co.cue.citas_service.client.MascotaServiceClient;
@@ -22,7 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -154,6 +152,11 @@ public class CitaServiceImpl implements ICitaService {
 
         // Guardar el estado anterior para comparar
         EstadoCita estadoAnterior = cita.getEstado();
+        
+        // Guardar el horario anterior para detectar cambios
+        LocalDateTime fechaHoraInicioAnterior = cita.getFechaHoraInicio();
+        LocalDateTime fechaHoraFinAnterior = cita.getFechaHoraFin();
+        boolean horarioCambio = false;
 
         // Manejar transición de estado usando patrón State
         if (updateDTO.getEstado() != null && updateDTO.getEstado() != cita.getEstado()) {
@@ -168,12 +171,84 @@ public class CitaServiceImpl implements ICitaService {
                 default -> throw new IllegalArgumentException("Transición no soportada hacia: " + updateDTO.getEstado());
             }
         }
+        
+        // Manejar actualización de horario si se proporciona
+        if (updateDTO.getFechaHoraInicio() != null && !updateDTO.getFechaHoraInicio().equals(fechaHoraInicioAnterior)) {
+            log.info("Detectado cambio de horario para Cita ID: {}. Horario anterior: {}, Nuevo horario: {}", 
+                    id, fechaHoraInicioAnterior, updateDTO.getFechaHoraInicio());
+            horarioCambio = true;
+            
+            // Calcular la nueva fechaHoraFin si no se proporciona
+            LocalDateTime nuevaFechaHoraFin;
+            if (updateDTO.getFechaHoraFin() != null) {
+                nuevaFechaHoraFin = updateDTO.getFechaHoraFin();
+            } else {
+                // Obtener la duración del servicio para calcular la fecha fin
+                try {
+                    ServicioClienteDTO servicio = agendamientoClient.getServicioById(cita.getServicioId())
+                            .blockOptional()
+                            .orElseThrow(() -> new EntityNotFoundException("Servicio no encontrado: " + cita.getServicioId()));
+                    nuevaFechaHoraFin = updateDTO.getFechaHoraInicio().plusMinutes(servicio.getDuracionPromedioMinutos());
+                    updateDTO.setFechaHoraFin(nuevaFechaHoraFin);
+                } catch (Exception e) {
+                    log.error("Error al obtener duración del servicio. Usando duración del horario anterior.", e);
+                    // Si falla, usar la misma duración que tenía antes
+                    long duracionMinutos = java.time.Duration.between(fechaHoraInicioAnterior, fechaHoraFinAnterior).toMinutes();
+                    nuevaFechaHoraFin = updateDTO.getFechaHoraInicio().plusMinutes(duracionMinutos);
+                    updateDTO.setFechaHoraFin(nuevaFechaHoraFin);
+                }
+            }
+            
+            // 1. Liberar el espacio anterior en agendamiento
+            try {
+                log.info("Liberando espacio anterior en agendamiento para Cita ID: {}", id);
+                agendamientoClient.liberarEspacio(id).block();
+                log.info("Espacio anterior liberado exitosamente");
+            } catch (Exception e) {
+                log.error("Error al liberar espacio anterior. Continuando con la actualización. Error: {}", e.getMessage());
+                // No lanzamos excepción para permitir que continúe, pero registramos el error
+            }
+            
+            // 2. Reservar el nuevo espacio (esto valida automáticamente que no haya conflictos)
+            try {
+                OcupacionRequestDTO nuevaReservaDTO = OcupacionRequestDTO.builder()
+                        .veterinarioId(cita.getVeterinarianId())
+                        .fechaInicio(updateDTO.getFechaHoraInicio())
+                        .fechaFin(nuevaFechaHoraFin)
+                        .tipo("CITA")
+                        .referenciaExternaId(id)
+                        .observacion("Cita reasignada para mascota ID: " + cita.getPetId())
+                        .build();
+                
+                log.info("Reservando nuevo espacio en agendamiento para Cita ID: {}", id);
+                agendamientoClient.reservarEspacio(nuevaReservaDTO).block();
+                log.info("Nuevo espacio reservado exitosamente");
+            } catch (Exception e) {
+                log.error("Error al reservar nuevo espacio. Revirtiendo liberación del espacio anterior.", e);
+                // Intentar restaurar el espacio anterior
+                try {
+                    OcupacionRequestDTO reservaAnteriorDTO = OcupacionRequestDTO.builder()
+                            .veterinarioId(cita.getVeterinarianId())
+                            .fechaInicio(fechaHoraInicioAnterior)
+                            .fechaFin(fechaHoraFinAnterior)
+                            .tipo("CITA")
+                            .referenciaExternaId(id)
+                            .observacion("Restauración de cita para mascota ID: " + cita.getPetId())
+                            .build();
+                    agendamientoClient.reservarEspacio(reservaAnteriorDTO).block();
+                    log.info("Espacio anterior restaurado");
+                } catch (Exception restoreException) {
+                    log.error("Error crítico: No se pudo restaurar el espacio anterior. Cita ID: {}", id, restoreException);
+                }
+                throw new IllegalStateException("El nuevo horario seleccionado ya no está disponible o no es válido.", e);
+            }
+        }
+        
         // Actualizar campos de la cita
         mapper.updateEntityFromDTO(updateDTO, cita);
 
-        // Guardar cambios primero para tener la cita actualizada
+        // Guardar cambios
         Cita citaActualizada = citaRepository.save(cita);
-        mapper.updateEntityFromDTO(updateDTO, citaActualizada);
 
         // Enviar evento si la cita se finalizó (para crear historial clínico)
         if (citaActualizada.getEstado() == EstadoCita.FINALIZADA) {
@@ -192,6 +267,18 @@ public class CitaServiceImpl implements ICitaService {
                 enviarNotificacionCambioEstado(citaActualizada, estadoAnterior, duenioIdReal);
             } catch (Exception e) {
                 log.error("La cita se actualizó pero falló el envío de notificación. Cita ID: {}, Error: {}",
+                        citaActualizada.getId(), e.getMessage(), e);
+            }
+        }
+        
+        // Enviar notificación si cambió el horario
+        if (horarioCambio) {
+            try {
+                Long duenioIdReal = citaActualizada.getDuenioId();
+                log.info("Horario de cita cambió. Enviando notificación de reasignación al dueño real (ID: {})", duenioIdReal);
+                enviarNotificacionCambioHorario(citaActualizada, fechaHoraInicioAnterior, duenioIdReal);
+            } catch (Exception e) {
+                log.error("La cita se actualizó pero falló el envío de notificación de cambio de horario. Cita ID: {}, Error: {}",
                         citaActualizada.getId(), e.getMessage(), e);
             }
         }
@@ -374,6 +461,86 @@ public class CitaServiceImpl implements ICitaService {
         }
 
         log.info("=== FINALIZANDO ENVÍO DE NOTIFICACIÓN DE CAMBIO DE ESTADO ===");
+    }
+
+    private void enviarNotificacionCambioHorario(Cita cita, LocalDateTime horarioAnterior, Long duenioId) {
+        log.info("=== INICIANDO ENVÍO DE NOTIFICACIÓN DE CAMBIO DE HORARIO ===");
+        log.info("Cita ID: {}, Horario anterior: {}, Horario nuevo: {}, Dueño ID: {}",
+                cita.getId(), horarioAnterior, cita.getFechaHoraInicio(), duenioId);
+
+        try {
+            // Obtener datos del Dueño REAL de la mascota
+            UsuarioClienteDTO duenio = null;
+            try {
+                log.info("Obteniendo datos del dueño real (Dueño ID: {})...", duenioId);
+                duenio = authClient.obtenerUsuarioPorId(duenioId).block();
+                if (duenio != null) {
+                    log.info("Dueño obtenido: {} {} ({})", duenio.getNombre(), duenio.getApellido(), duenio.getCorreo());
+                } else {
+                    log.warn("No se pudo obtener datos del dueño. Dueño ID: {}", duenioId);
+                }
+            } catch (Exception e) {
+                log.error("Error al obtener datos del dueño. Dueño ID: {}, Error: {}", duenioId, e.getMessage(), e);
+            }
+
+            // Obtener nombre de la Mascota
+            String nombreMascota = "Tu Mascota";
+            try {
+                log.info("Obteniendo datos de la mascota (Pet ID: {})...", cita.getPetId());
+                MascotaClienteDTO mascota = mascotaClient.findMascotaById(cita.getPetId()).block();
+                if (mascota != null && mascota.getNombre() != null) {
+                    nombreMascota = mascota.getNombre();
+                    log.info("Mascota obtenida: {}", nombreMascota);
+                } else {
+                    log.warn("No se pudo obtener nombre de la mascota. Pet ID: {}", cita.getPetId());
+                }
+            } catch (Exception e) {
+                log.error("Error al obtener datos de la mascota. Pet ID: {}, Error: {}", cita.getPetId(), e.getMessage(), e);
+            }
+
+            // Obtener datos del Veterinario
+            String nombreVeterinario = "Dr. ID " + cita.getVeterinarianId();
+            try {
+                log.info("Obteniendo datos del veterinario (Veterinario ID: {})...", cita.getVeterinarianId());
+                UsuarioClienteDTO veterinario = authClient.obtenerUsuarioPorId(cita.getVeterinarianId()).block();
+                if (veterinario != null) {
+                    nombreVeterinario = "Dr. " + veterinario.getNombre() + " " + veterinario.getApellido();
+                    log.info("Veterinario obtenido: {}", nombreVeterinario);
+                }
+            } catch (Exception e) {
+                log.warn("No se pudo obtener datos del veterinario. Veterinario ID: {}, Error: {}",
+                        cita.getVeterinarianId(), e.getMessage());
+            }
+
+            if (duenio != null && duenio.getCorreo() != null && !duenio.getCorreo().isEmpty()) {
+                Map<String, String> payload = new HashMap<>();
+                payload.put("correo", duenio.getCorreo());
+                String nombreCompletoDuenio = ((duenio.getNombre() != null ? duenio.getNombre() : "") + " " +
+                        (duenio.getApellido() != null ? duenio.getApellido() : "")).trim();
+                payload.put("nombreDuenio", nombreCompletoDuenio);
+                payload.put("nombreMascota", nombreMascota);
+                payload.put("fechaAnterior", horarioAnterior.toString().replace("T", " "));
+                payload.put("fechaNueva", cita.getFechaHoraInicio().toString().replace("T", " "));
+                payload.put("medico", nombreVeterinario);
+
+                NotificationRequestDTO notificacion = new NotificationRequestDTO(
+                        NotificationType.CITA_HORARIO_REASIGNADO,
+                        payload
+                );
+
+                log.info("Enviando notificación de cambio de horario al dueño: {}", duenio.getCorreo());
+                kafkaProducer.enviarNotificacion(notificacion);
+                log.info("✅ Notificación de cambio de horario enviada para Cita ID: {}", cita.getId());
+            } else {
+                log.warn("No se puede enviar notificación. Dueño es null o no tiene correo. Cita ID: {}, Dueño ID: {}",
+                        cita.getId(), duenioId);
+            }
+        } catch (Exception e) {
+            log.error("❌ Error al enviar notificación de cambio de horario. Cita ID: {}, Error: {}",
+                    cita.getId(), e.getMessage(), e);
+        }
+
+        log.info("=== FINALIZANDO ENVÍO DE NOTIFICACIÓN DE CAMBIO DE HORARIO ===");
     }
 
     private void enviarNotificacionConfirmacion(Cita cita, Long usuarioId) {
