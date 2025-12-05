@@ -65,6 +65,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authz -> authz
                         // Endpoint público (Stripe Webhook)
                         .requestMatchers("/api/pedidos/stripe/webhook").permitAll()
+                        // Endpoints públicos para simulación de pagos (solo en desarrollo/testing)
+                        .requestMatchers("/api/pedidos/simulate/**").permitAll()
                         // Permite crear el proceso de checkout sin autenticación
                         .requestMatchers(HttpMethod.POST, "/api/pedidos/checkout").permitAll()
                         // Requiere autenticación para cualquier endpoint dentro de /api/pedidos/**

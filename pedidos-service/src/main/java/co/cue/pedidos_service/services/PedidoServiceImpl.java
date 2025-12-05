@@ -111,8 +111,11 @@ public class PedidoServiceImpl implements IPedidoService {
                 "cop"  // Pesos colombianos
         );
 
-
-        pedidoGuardado.setStripePaymentIntentId(clientSecret.split("_secret_")[0]);
+        // Extraer el PaymentIntent ID del clientSecret
+        // Formato Stripe: pi_xxx_secret_yyy
+        // Formato Simulado: pi_simulated_xxx_secret_simulated_yyy
+        String paymentIntentId = clientSecret.split("_secret_")[0];
+        pedidoGuardado.setStripePaymentIntentId(paymentIntentId);
         pedidoRepository.save(pedidoGuardado);
 
         return new CheckoutResponseDTO(pedidoGuardado.getId(), clientSecret);
