@@ -63,7 +63,7 @@ public class SecurityConfig {
                 // Reglas de autorización para cada endpoint según método HTTP
                 .authorizeHttpRequests(authz -> authz
                         .requestMatchers(HttpMethod.POST, "/api/inventario/productos/stock/descontar").permitAll()
-                        .requestMatchers("/api/inventario/uploads/**").permitAll() // Permitir acceso a imágenes
+                        .requestMatchers("/api/inventario/uploads/**").permitAll()
                         .requestMatchers(HttpMethod.GET, INVENTARIO_API_PATH).permitAll()
                         .requestMatchers(HttpMethod.POST, INVENTARIO_API_PATH).hasRole(ADMIN_ROLE)
                         .requestMatchers(HttpMethod.PUT, INVENTARIO_API_PATH).hasRole(ADMIN_ROLE)

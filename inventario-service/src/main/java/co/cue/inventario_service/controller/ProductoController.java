@@ -156,7 +156,7 @@ public class ProductoController {
 
     /**
      * GET: Obtiene productos disponibles para venta con paginación (público)
-     * Endpoint para el catálogo del ecommerce con paginación
+     * Endpoint para el catálogo del ecommerce
      */
     @GetMapping("/public/disponibles/paginado")
     public ResponseEntity<Page<ProductoResponseDTO>> listarProductosDisponiblesPaginado(
