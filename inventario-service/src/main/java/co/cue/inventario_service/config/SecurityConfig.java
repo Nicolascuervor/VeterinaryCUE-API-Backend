@@ -12,6 +12,8 @@ import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
+import org.springframework.security.oauth2.server.resource.web.BearerTokenResolver;
+import jakarta.servlet.http.HttpServletRequest;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.util.Base64;
@@ -53,10 +55,24 @@ public class SecurityConfig {
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 // Configura este servicio como servidor de recursos protegido con JWT
+                // PERO permite peticiones sin token para rutas públicas
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> jwt
                                 .jwtAuthenticationConverter(jwtAuthenticationConverter()) // Aplicamos nuestro conversor
                         )
+                        // IMPORTANTE: Permitir peticiones sin token para rutas públicas
+                        // Esto evita que Spring Security rechace peticiones sin token en rutas con permitAll()
+                        .bearerTokenResolver(new BearerTokenResolver() {
+                            @Override
+                            public String resolve(HttpServletRequest request) {
+                                String authHeader = request.getHeader("Authorization");
+                                if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                                    return authHeader.substring(7);
+                                }
+                                // Si no hay token, retornar null para permitir peticiones anónimas en rutas públicas
+                                return null;
+                            }
+                        })
                 );
 
         http
