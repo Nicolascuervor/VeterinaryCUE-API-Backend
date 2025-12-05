@@ -23,8 +23,6 @@ import java.util.Base64;
 @EnableWebSecurity
 @EnableMethodSecurity
 public class SecurityConfig {
-
-    // Roles permitidos en el sistema
     private static final String ADMIN_ROLE = "ADMIN";
     private static final String VETERINARIO_ROLE = "VETERINARIO";
     private static final String DUENIO_ROLE = "DUENIO";
