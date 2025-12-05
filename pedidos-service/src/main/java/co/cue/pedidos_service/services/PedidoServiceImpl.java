@@ -93,6 +93,7 @@ public class PedidoServiceImpl implements IPedidoService {
 // Crear el objeto Pedido a partir de la información procesada.
         Pedido pedido = new Pedido();
         pedido.setUsuarioId(usuarioId);
+        pedido.setSessionId(sessionId);  // Guardar sessionId para poder limpiar el carrito después
         pedido.setClienteNombre(cliente.getNombre() + " " + cliente.getApellido());
         pedido.setClienteEmail(cliente.getCorreo());
         pedido.setTotalPedido(totalPedido);

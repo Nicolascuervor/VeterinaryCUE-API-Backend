@@ -48,19 +48,20 @@ public class FacturaEmailNotificationStrategy implements NotificationStrategy {
         String numFactura = data.get("numFactura");
         String total = data.get("total");
         String fecha = data.get("fecha");
+        String detalleItems = data.get("detalleItems");  // Detalles de productos (opcional)
 
         // Validación de Integridad
         // Si faltan datos esenciales para generar el comprobante, abortamos la operación
         // para evitar enviar un correo con información vacía o corrupta ("null").
         if (nombre == null || correo == null || numFactura == null) {
-            log.error("Payload incompleto para Factura. Faltan datos.");
+            log.error("Payload incompleto para Factura. Faltan datos esenciales.");
             return;
         }
 
         // Ejecución del Envío
         // Invocamos el método especializado del servicio de correo que sabe cómo
-        // formatear el texto de una factura.
-        emailService.enviarResumenFactura(correo, nombre, numFactura, total, fecha);
+        // formatear el texto de una factura, incluyendo detalles de productos si están disponibles.
+        emailService.enviarResumenFactura(correo, nombre, numFactura, total, fecha, detalleItems);
     }
 
     /**

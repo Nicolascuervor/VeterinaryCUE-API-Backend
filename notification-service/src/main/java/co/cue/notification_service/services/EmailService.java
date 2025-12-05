@@ -69,6 +69,14 @@ public class EmailService {
      * Genera un cuerpo de texto con los detalles financieros de la transacción.
      */
     public void enviarResumenFactura(String correo, String nombre, String numFactura, String total, String fecha) {
+        enviarResumenFactura(correo, nombre, numFactura, total, fecha, null);
+    }
+
+    /**
+     * Construye y envía un comprobante de factura con detalles de productos.
+     * Genera un cuerpo de texto con los detalles financieros y los items comprados.
+     */
+    public void enviarResumenFactura(String correo, String nombre, String numFactura, String total, String fecha, String detalleItems) {
         log.info("Preparando correo de factura para {}", correo);
         try {
             SimpleMailMessage message = new SimpleMailMessage();
@@ -78,21 +86,31 @@ public class EmailService {
 
             // Construcción manual de la plantilla de texto.
             // En producción, esto se reemplazaría por un motor de plantillas como Thymeleaf o FreeMarker.
-            message.setText(SALUDO + nombre + ",\n\n" +
-                    "Gracias por tu compra en Veterinaria CUE.\n" +
-                    "Aquí tienes el resumen de tu factura:\n\n" +
-                    "-----------------------------------\n" +
-                    "No. Factura: " + numFactura + "\n" +
-                    "Fecha: " + fecha + "\n" +
-                    "TOTAL PAGADO: $" + total + "\n" +
-                    "-----------------------------------\n\n" +
-                    "Esperamos verte pronto.");
+            StringBuilder cuerpoCorreo = new StringBuilder();
+            cuerpoCorreo.append(SALUDO).append(nombre).append(",\n\n");
+            cuerpoCorreo.append("Gracias por tu compra en Veterinaria CUE.\n");
+            cuerpoCorreo.append("Aquí tienes el resumen de tu factura:\n\n");
+            cuerpoCorreo.append("-----------------------------------\n");
+            cuerpoCorreo.append("No. Factura: ").append(numFactura).append("\n");
+            cuerpoCorreo.append("Fecha: ").append(fecha).append("\n");
+            
+            // Agregar detalles de items si están disponibles
+            if (detalleItems != null && !detalleItems.trim().isEmpty()) {
+                cuerpoCorreo.append("\nDetalle de productos:\n");
+                cuerpoCorreo.append(detalleItems).append("\n");
+            }
+            
+            cuerpoCorreo.append("-----------------------------------\n");
+            cuerpoCorreo.append("TOTAL PAGADO: $").append(total).append("\n");
+            cuerpoCorreo.append("-----------------------------------\n\n");
+            cuerpoCorreo.append("Esperamos verte pronto.");
 
+            message.setText(cuerpoCorreo.toString());
             mailSender.send(message);
             log.info("Correo de factura enviado exitosamente a {}", correo);
 
         } catch (Exception e) {
-            log.error("Error al enviar factura: {}", e.getMessage());
+            log.error("Error al enviar factura: {}", e.getMessage(), e);
         }
     }
 

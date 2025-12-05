@@ -73,12 +73,15 @@ public class PedidoWebhookService {
 // 5. Actualización del estado del pedido en la BD
         pedido.setEstado(PedidoEstado.COMPLETADO);
         pedidoRepository.save(pedido);
-        // 6. Limpieza del carrito (no es crítico si falla)
-        String sessionId = (pedido.getUsuarioId() == null) ? "SESSION_ID_FALTANTE_EN_PEDIDO" : null;
+        
+        // 6. Limpieza del carrito usando el sessionId guardado en el pedido
         try {
-            carritoClient.limpiarCarrito(pedido.getUsuarioId(), sessionId).block();
+            log.info("Limpiando carrito para Usuario ID: {}, Session ID: {}", pedido.getUsuarioId(), pedido.getSessionId());
+            carritoClient.limpiarCarrito(pedido.getUsuarioId(), pedido.getSessionId()).block();
+            log.info("Carrito limpiado exitosamente.");
         } catch (Exception e) {
-            log.warn("No se pudo limpiar el carrito (no crítico): {}", e.getMessage());
+            log.error("Error al limpiar el carrito después del pago: {}", e.getMessage(), e);
+            // No lanzamos excepción porque el pago ya fue procesado, pero registramos el error
         }
 
         // 7. Envío del evento a Kafka para informar a otros microservicios

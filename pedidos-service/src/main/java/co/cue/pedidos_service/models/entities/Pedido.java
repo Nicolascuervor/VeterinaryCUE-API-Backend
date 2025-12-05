@@ -41,6 +41,13 @@ public class Pedido {
     @Column(name = "usuario_id", nullable = true)
     private Long usuarioId;
     /**
+     * ID de sesión del cliente invitado.
+     * Se usa para identificar el carrito cuando el usuario no está autenticado.
+     * Puede ser null si el pedido fue realizado por un usuario autenticado.
+     */
+    @Column(name = "session_id", length = 100, nullable = true)
+    private String sessionId;
+    /**
      * Nombre del cliente asociado al pedido.
      * Puede ser el nombre del usuario o el proporcionado por un cliente invitado.
      */
