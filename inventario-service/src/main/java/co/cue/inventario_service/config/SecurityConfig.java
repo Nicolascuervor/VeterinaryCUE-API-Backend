@@ -61,14 +61,20 @@ public class SecurityConfig {
 
         http
                 // Reglas de autorización para cada endpoint según método HTTP
+                // IMPORTANTE: El orden importa. Las reglas más específicas deben ir primero.
                 .authorizeHttpRequests(authz -> authz
-                        .requestMatchers(HttpMethod.POST, "/api/inventario/productos/stock/descontar").permitAll()
+                        // Permitir acceso público a las imágenes de productos (debe ir primero)
                         .requestMatchers("/api/inventario/uploads/**").permitAll()
+                        // Permitir descontar stock (llamado por otros servicios)
+                        .requestMatchers(HttpMethod.POST, "/api/inventario/productos/stock/descontar").permitAll()
+                        // Permitir acceso público a todas las operaciones GET (listar productos, buscar, etc.)
                         .requestMatchers(HttpMethod.GET, INVENTARIO_API_PATH).permitAll()
+                        // Operaciones administrativas requieren rol ADMIN
                         .requestMatchers(HttpMethod.POST, INVENTARIO_API_PATH).hasRole(ADMIN_ROLE)
                         .requestMatchers(HttpMethod.PUT, INVENTARIO_API_PATH).hasRole(ADMIN_ROLE)
                         .requestMatchers(HttpMethod.PATCH, INVENTARIO_API_PATH).hasRole(ADMIN_ROLE)
                         .requestMatchers(HttpMethod.DELETE, INVENTARIO_API_PATH).hasRole(ADMIN_ROLE)
+                        // Cualquier otra solicitud requiere autenticación
                         .anyRequest().authenticated());
         return http.build();
     }

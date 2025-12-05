@@ -56,6 +56,11 @@ public class GatewayConfig {
                 .route("mascotas_service_public", r -> r.path("/api/mascotas/public/**")
                         .uri("lb://mascotas-service"))
 
+                // Ruta específica para imágenes de productos (debe ir antes de las rutas generales de inventario)
+                // Permite acceso público a las imágenes sin autenticación
+                .route("inventario_uploads_public", r -> r.path("/api/inventario/uploads/**")
+                        .uri("lb://inventario-service"))
+
 
                 // RUTAS PROTEGIDAS
 
